@@ -1,0 +1,106 @@
+<section id="title" class="wrap">
+  <div class="hero">
+    <p class="eyebrow">A tennis career on your phone</p>
+    <h1>Tennis <span>Go</span></h1>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 14 · venues, crowds and sound</p>
+    <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
+  </div>
+  <div class="card">
+    <div class="row between"><h3>Career</h3><span class="chip" id="careerChip">No save yet</span></div>
+    <div class="row">
+      <button class="go" id="btnContinue" hidden>Continue career</button>
+      <button class="go" id="btnNew">New career</button>
+      <button class="ghost" id="btnNewConfirm" hidden>Tap again to erase your career</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Quick match</h3>
+    <div class="row">
+      <label style="flex:1">Surface
+        <select id="qmSurf"><option value="hard">Hard court</option><option value="clay">Clay</option><option value="grass">Grass</option></select>
+      </label>
+      <label style="flex:1">Opponent
+        <select id="qmLevel"><option value="2">Club player</option><option value="5" selected>College star</option><option value="8">Tour pro</option></select>
+      </label>
+    </div>
+    <label>Venue
+      <select id="qmVenue"><option value="club">Club court</option><option value="college">College court</option><option value="tour" selected>Tour stadium</option><option value="masters">Masters stadium</option>
+        <option value="major:Melbourne">Major: Melbourne (hard)</option><option value="major:Paris">Major: Paris (clay)</option><option value="major:London">Major: London (grass)</option><option value="major:New York">Major: New York, night (hard)</option></select>
+    </label>
+    <button id="btnQuick">Choose a player and play</button>
+  </div>
+  <div class="card">
+    <h3>How to play</h3>
+    <div class="how">
+      <b>Aim</b><span>Swipe up from anywhere on the screen. The angle of your swipe sets the direction.</span>
+      <b>Depth</b><span>The length of your swipe sets how deep it lands. Too long sails it out.</span>
+      <b>Power</b><span>The speed of your swipe sets the pace. A quick flick hits hard, a slow drag is safe.</span>
+      <b>Preview</b><span>While you swipe, the target on their court shows where it will land. Green is in, red is out.</span>
+      <b>Timing</b><span>None. Swipe any time once the ball is coming and your player swings when it arrives.</span>
+      <b>Move</b><span>Tap anywhere on your side of the court to move there. Tap near the net after a good shot to come in and volley.</span>
+      <b>Smash</b><span>At the net, a ball over your head becomes an overhead. Your player backs up under it and swings when you swipe.</span>
+      <b>Lob</b><span>When they rush the net, a long, slow swipe floats a lob over their head.</span>
+      <b>Serve</b><span>Swipe up into the glowing box.</span>
+    </div>
+  </div>
+</section>
+
+<section id="select" class="wrap" hidden>
+  <div class="hero"><p class="eyebrow" id="selEyebrow">New career</p><h2>Choose your player</h2><p class="muted" id="selIntro"></p></div>
+  <div class="roster" id="roster"></div>
+  <div class="sticky row"><button class="go" id="selGo" style="flex:1">Start</button><button class="ghost" id="selBack">Back</button></div>
+</section>
+
+<section id="style" class="wrap" hidden>
+  <div class="hero"><p class="eyebrow">New career</p><h2>Choose your play style</h2><p class="muted">Your style unlocks three perks as you win matches: one now, one at 15 career wins, one at 40.</p></div>
+  <div class="roster" id="styles"></div>
+  <div class="sticky row"><button class="go" id="styleGo" style="flex:1">Pick a play style</button><button class="ghost" id="styleBack">Back</button></div>
+</section>
+
+<section id="hub" class="wrap" hidden>
+  <div class="row between"><p class="eyebrow">Tennis Go</p><button class="ghost" id="hubMenu" style="padding:6px 12px;font-size:13px">Menu</button></div>
+  <div class="stepper" id="stepper"></div>
+  <div class="card" id="playerCard"></div>
+  <div class="card" id="nextCard"></div>
+  <div class="card" id="statsCard"></div>
+  <div class="card cal" id="calCard"></div>
+  <div class="card" id="trophyCard"></div>
+</section>
+
+<section id="recruit" class="wrap" hidden>
+  <div class="hero"><p class="eyebrow">Junior career complete</p><h2>Scholarship offers</h2><p class="muted" id="recruitIntro"></p></div>
+  <div id="offers" style="display:flex;flex-direction:column;gap:10px"></div>
+</section>
+
+<section id="season" class="wrap" hidden>
+  <div class="hero"><p class="eyebrow" id="seEyebrow"></p><h2 id="seTitle"></h2></div>
+  <div class="card"><p id="seText"></p><div class="row" id="seBtns"></div></div>
+</section>
+
+<section id="match" hidden>
+  <canvas id="gl" aria-label="Tennis court. Swipe up to hit."></canvas>
+  <div class="hud top">
+    <div class="board" id="board">
+      <div class="lab"><span id="bLabel">Match</span><span id="bSurf">Hard</span></div>
+      <div class="brow"><i class="srv" id="srv0"></i><span class="nm" id="n0">You</span><span class="sets num" id="s0"></span><span class="pt num" id="p0">0</span></div>
+      <div class="brow"><i class="srv" id="srv1"></i><span class="nm" id="n1">Opponent</span><span class="sets num" id="s1"></span><span class="pt num" id="p1">0</span></div>
+    </div>
+  </div>
+  <div id="call"></div>
+  <div class="hud bot">
+    <div id="power" hidden><b></b><i></i></div>
+    <p id="hint"></p>
+    <div class="msgbar"><p id="msg">Get ready</p><span class="row" style="gap:6px;flex-wrap:nowrap"><button class="ghost" id="snd">Sound on</button><button class="ghost" id="quit">Retire</button></span></div>
+  </div>
+  <div id="loading" hidden><span>Loading players</span><small class="muted" id="loadingSub" style="font-family:var(--body);text-transform:none;letter-spacing:0;font-size:14px"></small></div>
+</section>
+
+<section id="result" class="wrap" hidden>
+  <div class="card" style="gap:14px">
+    <p class="banner" id="rBanner">Match won</p>
+    <p class="score-line num" id="rScore">6–4</p>
+    <p id="rText"></p>
+    <div class="kv" id="rStats"></div>
+    <button class="go" id="rGo">Continue</button>
+  </div>
+</section>
