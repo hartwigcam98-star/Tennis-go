@@ -48,7 +48,7 @@ function fxTick(dt){
     if(!last||last.distanceToSquared(p)>0.0025){FX.tp.push(p.clone());if(FX.tp.length>14)FX.tp.shift()}}else FX.tp=[];
   const n=FX.tp.length,mx=new T.Matrix4(),c=new T.Color();let spd=0;
   if(n>2)spd=FX.tp[n-1].distanceTo(FX.tp[n-3])/Math.max(dt*2,0.008);
-  const sp=M&&M.shot?M.shot.speed||20:20,base=sp>=33?new T.Color(0xFF7A3D):sp>=26?new T.Color(0xFFD23F):new T.Color(0xFFFFFF);
+  const sp=M&&M.shot?M.shot.speed||20:20,mine=M&&M.shot&&M.shot.who==='me'&&myTrailColor()!=null,base=mine?new T.Color(myTrailColor()):sp>=33?new T.Color(0xFF7A3D):sp>=26?new T.Color(0xFFD23F):new T.Color(0xFFFFFF);
   for(let i=0;i<n;i++){const f=(i+1)/n,s=0.35+0.65*f;mx.makeScale(s,s,s).setPosition(FX.tp[i]);tr.setMatrixAt(i,mx);c.copy(base).multiplyScalar(f*f*(sp>=26?0.9:0.45));tr.setColorAt(i,c)}
   tr.count=n;tr.instanceMatrix.needsUpdate=true;if(tr.instanceColor)tr.instanceColor.needsUpdate=true;
   // puffs

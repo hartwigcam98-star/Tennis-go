@@ -133,7 +133,25 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 .lesson{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
 .lesson strong{font-family:var(--display);font-size:20px;text-transform:uppercase}
 .lesson.done{border-color:#2f5a3d}
-.tip{font-size:15px}.tip b{display:block;font-family:var(--display);font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--ball)}.lesson.done .eyebrow{color:var(--win)}
+.tip{font-size:15px}
+.pc.locked{opacity:.45}.pc.locked strong{color:var(--muted)}
+.gearb{color:var(--win);font-family:var(--body);font-size:12px;font-weight:600}
+.xpbar{height:10px}.xpbar i{background:linear-gradient(90deg,#9BE15D,var(--ball))}
+.coin{background:#3a3110;border-color:#6b5a1c;color:#F5D36B}
+.rewards{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:12px}
+.rewards .lvl{font-family:var(--display);font-size:22px;text-transform:uppercase}
+.notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.notes li{padding:6px 10px;border-radius:8px;background:var(--panel-2);border:1px solid var(--line)}
+.notes .n-lvl,.notes .n-unlock{border-color:var(--ball);color:var(--ball)}.notes .n-ach{border-color:#6b5a1c;color:#F5D36B}.notes .n-daily{border-color:#2f5a3d;color:var(--win)}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}.tabs button{flex:none;padding:8px 12px;font-size:14px}.tabs button[aria-pressed=true]{background:var(--ball);color:var(--ball-ink);border-color:var(--ball)}
+.lk-item{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.lk-item strong{font-size:16px}.lk-item .bar{margin-top:6px}.lk-item.done{border-color:#2f5a3d}
+.lk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.lk-p{display:flex;flex-direction:column;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
+.lk-p small{color:var(--muted);font-size:12px}.lk-p.locked{opacity:.6}.lk-p button{padding:6px 10px;font-size:13px;margin-top:4px}
+.pips{display:flex;gap:3px;margin-top:6px}.pips i{flex:1;height:6px;border-radius:3px;background:var(--panel-2);border:1px solid var(--line)}.pips i.on{background:var(--ball);border-color:var(--ball)}
+.pips.sm i{height:5px}
+.sw{display:block;height:14px;border-radius:7px;border:1px solid rgba(255,255,255,.25)}.tip b{display:block;font-family:var(--display);font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--ball)}.lesson.done .eyebrow{color:var(--win)}
 #replay{position:absolute;left:12px;top:calc(env(safe-area-inset-top,0px) + 96px);display:flex;align-items:center;gap:8px;background:rgba(5,12,20,.86);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:.12em;text-transform:uppercase;pointer-events:none}
 #replay i{width:10px;height:10px;border-radius:50%;background:#F28A78;animation:blink 1s steps(2) infinite}
 #replay small{font-family:var(--body);font-weight:500;font-size:12px;letter-spacing:0;text-transform:none;color:var(--muted)}

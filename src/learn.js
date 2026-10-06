@@ -99,11 +99,12 @@ function drillPoint(w,text,call){
   if(w===1&&!call&&text&&M.shot&&M.shot.who==='op')drillEvent({k:'none',why:/swipe in time/.test(text)?'Swipe before the ball reaches you.':'Out of reach. Swipe as soon as the ball is fed.'});
   setTimeout(drillNext,1100)}
 function drillComplete(){
-  const D=M.drill,L=D.L,i=D.i;D.finished=true;LEARN.done[L.id]=true;storeLearn();M.state='between';drillZone();
+  const D=M.drill,L=D.L,i=D.i;D.finished=true;const first=!LEARN.done[L.id];LEARN.done[L.id]=true;storeLearn();const rw=first?lessonReward():null;M.state='between';drillZone();
   crowdCheer(0.8,2);sndApplause(0.6);callOut('NICE!');
   const last=i===LESSONS.length-1;$('dDone').hidden=false;
   $('dDoneT').textContent=last?'You’re ready':'Lesson complete';
   $('dDoneP').textContent=last?'That’s everything. Coach Dot says: make them run, mix it up, and watch the glow. Your career is waiting.':'Nice work. Next up: '+LESSONS[i+1].t+'.';
+  if(rw)$('dDoneP').textContent+=' +100 XP, +50 coins.'+(rw.length?' '+rw.map(n=>n[1]).join(' '):'');
   $('dNext').textContent=last?(save?'Back to the menu':'Start a career'):'Next lesson';
   $('dNext').onclick=()=>{const m=M;if(m){m.over=true;m.winner=0;m.cfg.onEnd=last?(()=>{renderTitle();if(!save)openSelect('career')}):(()=>startLesson(i+1,false))}endMatch()};
   $('dMenu').onclick=()=>{if(M){M.over=true;M.winner=0}endMatch()}}

@@ -133,7 +133,25 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 .lesson{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
 .lesson strong{font-family:var(--display);font-size:20px;text-transform:uppercase}
 .lesson.done{border-color:#2f5a3d}
-.tip{font-size:15px}.tip b{display:block;font-family:var(--display);font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--ball)}.lesson.done .eyebrow{color:var(--win)}
+.tip{font-size:15px}
+.pc.locked{opacity:.45}.pc.locked strong{color:var(--muted)}
+.gearb{color:var(--win);font-family:var(--body);font-size:12px;font-weight:600}
+.xpbar{height:10px}.xpbar i{background:linear-gradient(90deg,#9BE15D,var(--ball))}
+.coin{background:#3a3110;border-color:#6b5a1c;color:#F5D36B}
+.rewards{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:12px}
+.rewards .lvl{font-family:var(--display);font-size:22px;text-transform:uppercase}
+.notes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.notes li{padding:6px 10px;border-radius:8px;background:var(--panel-2);border:1px solid var(--line)}
+.notes .n-lvl,.notes .n-unlock{border-color:var(--ball);color:var(--ball)}.notes .n-ach{border-color:#6b5a1c;color:#F5D36B}.notes .n-daily{border-color:#2f5a3d;color:var(--win)}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}.tabs button{flex:none;padding:8px 12px;font-size:14px}.tabs button[aria-pressed=true]{background:var(--ball);color:var(--ball-ink);border-color:var(--ball)}
+.lk-item{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.lk-item strong{font-size:16px}.lk-item .bar{margin-top:6px}.lk-item.done{border-color:#2f5a3d}
+.lk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.lk-p{display:flex;flex-direction:column;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
+.lk-p small{color:var(--muted);font-size:12px}.lk-p.locked{opacity:.6}.lk-p button{padding:6px 10px;font-size:13px;margin-top:4px}
+.pips{display:flex;gap:3px;margin-top:6px}.pips i{flex:1;height:6px;border-radius:3px;background:var(--panel-2);border:1px solid var(--line)}.pips i.on{background:var(--ball);border-color:var(--ball)}
+.pips.sm i{height:5px}
+.sw{display:block;height:14px;border-radius:7px;border:1px solid rgba(255,255,255,.25)}.tip b{display:block;font-family:var(--display);font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--ball)}.lesson.done .eyebrow{color:var(--win)}
 #replay{position:absolute;left:12px;top:calc(env(safe-area-inset-top,0px) + 96px);display:flex;align-items:center;gap:8px;background:rgba(5,12,20,.86);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:.12em;text-transform:uppercase;pointer-events:none}
 #replay i{width:10px;height:10px;border-radius:50%;background:#F28A78;animation:blink 1s steps(2) infinite}
 #replay small{font-family:var(--body);font-weight:500;font-size:12px;letter-spacing:0;text-transform:none;color:var(--muted)}
@@ -152,7 +170,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 20 · slice and serve types</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 21 · levels, gear and the locker room</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="learnCard">
@@ -167,6 +185,11 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
       <button class="go" id="btnNew">New career</button>
       <button class="ghost" id="btnNewConfirm" hidden>Tap again to erase your career</button>
     </div>
+  </div>
+  <div class="card" id="lockerCard">
+    <h3>Locker room</h3>
+    <p class="muted num" id="lockerSub" style="font-size:14px"></p>
+    <div class="row"><button id="btnLocker">Open the locker room</button></div>
   </div>
   <div class="card" id="saveCard">
     <h3>Keep your career safe</h3>
@@ -217,6 +240,13 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div id="lessons" style="display:flex;flex-direction:column;gap:10px"></div>
 </section>
 
+<section id="locker" class="wrap" hidden>
+  <div class="row between"><p class="eyebrow">Locker room</p><button class="ghost" id="lkBack" style="padding:6px 12px;font-size:13px">Back</button></div>
+  <div class="card" id="lkHead"></div>
+  <div class="tabs" id="lkTabs" role="tablist"><button data-t="daily">Daily</button><button data-t="gear">Gear</button><button data-t="players">Players</button><button data-t="style">Style</button><button data-t="trophies">Trophies</button></div>
+  <div id="lkBody" style="display:flex;flex-direction:column;gap:10px"></div>
+</section>
+
 <section id="select" class="wrap" hidden>
   <div class="hero"><p class="eyebrow" id="selEyebrow">New career</p><h2>Choose your player</h2><p class="muted" id="selIntro"></p></div>
   <div class="roster" id="roster"></div>
@@ -230,7 +260,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
 </section>
 
 <section id="hub" class="wrap" hidden>
-  <div class="row between"><p class="eyebrow">Tennis Go</p><button class="ghost" id="hubMenu" style="padding:6px 12px;font-size:13px">Menu</button></div>
+  <div class="row between"><p class="eyebrow">Tennis Go</p><span class="row" style="gap:6px;flex-wrap:nowrap"><button class="ghost" id="hubLocker" style="padding:6px 12px;font-size:13px">Locker room</button><button class="ghost" id="hubMenu" style="padding:6px 12px;font-size:13px">Menu</button></span></div>
   <div class="stepper" id="stepper"></div>
   <div class="card" id="playerCard"></div>
   <div class="card" id="nextCard"></div>
@@ -277,6 +307,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
     <p class="score-line num" id="rScore">6–4</p>
     <p id="rText"></p>
     <div class="kv" id="rStats"></div>
+    <div class="rewards" id="rRewards" hidden></div>
     <button class="go" id="rGo">Continue</button>
   </div>
 </section>
@@ -298,7 +329,7 @@ window.MCLIPS={"ready":{"fps":30,"t0":0,"n":120,"anim":[0,1,2,3,4,5,6,7,8,9,10,1
 const $=id=>document.getElementById(id);
 const T=THREE;
 const CHAR_BASE=window.CHAR_BASE||'https://hartwigcam98-star.github.io/golf-go/';
-const SECTIONS=['title','learn','select','style','hub','recruit','season','match','result'];
+const SECTIONS=['title','learn','locker','select','style','hub','recruit','season','match','result'];
 function show(id){SECTIONS.forEach(s=>{$(s).hidden=s!==id});if(id!=='match')window.scrollTo(0,0);if(id==='match')onResize()}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rnd(a,b){return a+Math.random()*(b-a)}
@@ -354,7 +385,7 @@ function fxTick(dt){
     if(!last||last.distanceToSquared(p)>0.0025){FX.tp.push(p.clone());if(FX.tp.length>14)FX.tp.shift()}}else FX.tp=[];
   const n=FX.tp.length,mx=new T.Matrix4(),c=new T.Color();let spd=0;
   if(n>2)spd=FX.tp[n-1].distanceTo(FX.tp[n-3])/Math.max(dt*2,0.008);
-  const sp=M&&M.shot?M.shot.speed||20:20,base=sp>=33?new T.Color(0xFF7A3D):sp>=26?new T.Color(0xFFD23F):new T.Color(0xFFFFFF);
+  const sp=M&&M.shot?M.shot.speed||20:20,mine=M&&M.shot&&M.shot.who==='me'&&myTrailColor()!=null,base=mine?new T.Color(myTrailColor()):sp>=33?new T.Color(0xFF7A3D):sp>=26?new T.Color(0xFFD23F):new T.Color(0xFFFFFF);
   for(let i=0;i<n;i++){const f=(i+1)/n,s=0.35+0.65*f;mx.makeScale(s,s,s).setPosition(FX.tp[i]);tr.setMatrixAt(i,mx);c.copy(base).multiplyScalar(f*f*(sp>=26?0.9:0.45));tr.setColorAt(i,c)}
   tr.count=n;tr.instanceMatrix.needsUpdate=true;if(tr.instanceColor)tr.instanceColor.needsUpdate=true;
   // puffs
@@ -550,9 +581,10 @@ function stageName(){return{junior:'Juniors',college:'College',pro:'Pro tour'}[s
 function renderTitle(){
   const has=!!save;$('btnContinue').hidden=!has;$('btnNewConfirm').hidden=true;$('btnNew').hidden=false;
   $('careerChip').textContent=has?(RBYID[save.char].name+' · '+stageName()+' season '+save.season):'No save yet';
-  $('btnNew').className=has?'':'go';renderSaveCard();learnCardState();show('title');
+  $('btnNew').className=has?'':'go';renderSaveCard();learnCardState();lockerCardState();show('title');
 }
 $('btnContinue').onclick=()=>renderHub();
+$('hubLocker').onclick=()=>openLocker(()=>renderHub());
 /* ---- keeping the career safe: home-screen install, persistent storage, backup codes ---- */
 const STANDALONE=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
 const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -562,19 +594,22 @@ function renderSaveCard(){
   $('installHint').textContent=STANDALONE?'Tennis Go is installed on this device, so your career is kept here. A backup code is still handy if you change phones.'
     :IOS?'Safari can delete website data if you go a week without opening the game. Add it to your Home Screen (Share, then Add to Home Screen) and play from that icon. The installed app keeps its own data, so copy a backup code here first and restore it there.'
     :'Install Tennis Go (browser menu, then Install app or Add to Home screen) so your career is kept and the game works offline. Copy a backup code first, then restore it in the installed app.';
-  $('btnBackup').disabled=!save;$('saveMsg').textContent='';$('saveCode').hidden=true;$('btnRestoreGo').hidden=true;$('btnRestoreGo').dataset.arm=''}
-function saveCode(){return'TG1:'+btoa(unescape(encodeURIComponent(JSON.stringify(save))))}
-$('btnBackup').onclick=async()=>{if(!save)return;const code=saveCode(),ta=$('saveCode');ta.hidden=false;ta.value=code;$('btnRestoreGo').hidden=true;
+  $('btnBackup').disabled=!save&&!PROF.xp;$('saveMsg').textContent='';$('saveCode').hidden=true;$('btnRestoreGo').hidden=true;$('btnRestoreGo').dataset.arm=''}
+function saveCode(){return'TG2:'+btoa(unescape(encodeURIComponent(JSON.stringify({c:save,p:PROF,l:LEARN}))))}
+$('btnBackup').onclick=async()=>{if(!save&&!PROF.xp)return;const code=saveCode(),ta=$('saveCode');ta.hidden=false;ta.value=code;$('btnRestoreGo').hidden=true;
   let ok=false;try{await navigator.clipboard.writeText(code);ok=true}catch(e){}
   if(!ok){ta.focus();ta.select()}
   $('saveMsg').textContent=ok?'Copied. Paste it somewhere safe, like Notes or a message to yourself.':'Copy the code above and keep it somewhere safe, like Notes.'};
 $('btnRestore').onclick=()=>{const ta=$('saveCode');ta.hidden=false;ta.value='';ta.focus();$('btnRestoreGo').hidden=false;$('btnRestoreGo').dataset.arm='';$('btnRestoreGo').textContent='Restore this career';$('saveMsg').textContent='Paste your backup code above.'};
 $('btnRestoreGo').onclick=()=>{
   const raw=$('saveCode').value.trim().replace(/\s+/g,'');let obj=null;
-  try{if(!raw.startsWith('TG1:'))throw 0;obj=JSON.parse(decodeURIComponent(escape(atob(raw.slice(4)))))}catch(e){obj=null}
-  if(!obj||!obj.char||!obj.stage||!obj.stats||!RBYID[obj.char]){$('saveMsg').textContent='That code doesn’t look right. Copy the whole code, starting with TG1:';return}
+  let prof=null,learn=null;
+  try{if(!/^TG[12]:/.test(raw))throw 0;const d=JSON.parse(decodeURIComponent(escape(atob(raw.slice(4)))));if(raw[2]==='2'){obj=d.c;prof=d.p;learn=d.l}else obj=d}catch(e){obj=null;prof=null}
+  const okC=obj&&obj.char&&obj.stage&&obj.stats&&RBYID[obj.char];if(!okC)obj=null;
+  if(!obj&&!(prof&&prof.v)){$('saveMsg').textContent='That code doesn’t look right. Copy the whole code, starting with TG.';return}
   const b=$('btnRestoreGo');if(save&&b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Tap again to replace your current career';return}
-  save=obj;store();renderTitle();$('saveMsg').textContent='Career restored: '+RBYID[save.char].name+', '+stageName()+' season '+save.season+'.'};
+  if(obj){save=obj;store()}if(prof&&prof.v){PROF=Object.assign(PROF_NEW(),prof);storeProf()}if(learn&&learn.done){LEARN=learn;storeLearn()}
+  renderTitle();$('saveMsg').textContent='Restored'+(obj?': '+RBYID[save.char].name+', '+stageName()+' season '+save.season:'')+(prof&&prof.v?' · Level '+LV():'')+'.'};
 $('btnNew').onclick=()=>{if(save){$('btnNew').hidden=true;$('btnNewConfirm').hidden=false}else openSelect('career')};
 $('btnNewConfirm').onclick=()=>openSelect('career');
 $('btnQuick').onclick=()=>openSelect('quick');
@@ -585,8 +620,8 @@ function openSelect(mode){
   selMode=mode;selId=mode==='quick'&&save?save.char:null;
   $('selEyebrow').textContent=mode==='career'?'New career':'Quick match';
   $('selIntro').textContent=mode==='career'?'Your player starts as a raw 16-year-old with a fraction of these ratings. Win matches and train to grow into them, and past them.':'Pick who you want to play as.';
-  $('roster').innerHTML=ROSTER.map(r=>'<button class="pc" data-id="'+r.id+'" aria-pressed="'+(r.id===selId)+'"><strong>'+esc(r.name)+'</strong><small>'+esc(r.nick)+'</small><div class="mini">'+STATS.map(([k,l])=>'<span>'+l+'</span><div class="bar"><i style="width:'+r.st[k]*10+'%"></i></div>').join('')+'</div></button>').join('');
-  $('roster').querySelectorAll('.pc').forEach(b=>b.onclick=()=>{selId=b.dataset.id;$('roster').querySelectorAll('.pc').forEach(x=>x.setAttribute('aria-pressed',x===b));updSel()});
+  $('roster').innerHTML=ROSTER.map(r=>{const ok=charUnlocked(r.id);return'<button class="pc'+(ok?'':' locked')+'" data-id="'+r.id+'" aria-pressed="'+(r.id===selId)+'" '+(ok?'':'disabled')+'><strong>'+esc(r.name)+'</strong><small>'+(ok?esc(r.nick)+' · '+OSTYLE[styleOfChar(r)].name+(masteryOf(r.id)?' · Mastery '+masteryOf(r.id):''):'Unlocks at level '+charUnlockLv(r.id))+'</small><div class="mini">'+STATS.map(([k,l])=>'<span>'+l+'</span><div class="bar"><i style="width:'+r.st[k]*10+'%"></i></div>').join('')+'</div></button>'}).join('');
+  $('roster').querySelectorAll('.pc:not(.locked)').forEach(b=>b.onclick=()=>{selId=b.dataset.id;$('roster').querySelectorAll('.pc').forEach(x=>x.setAttribute('aria-pressed',x===b));updSel()});
   updSel();show('select');
 }
 function updSel(){$('selGo').disabled=!selId;$('selGo').textContent=selId?(selMode==='career'?'Next: play style':'Play as '+RBYID[selId].name):'Pick a player'}
@@ -651,7 +686,7 @@ function renderHub(){
   $('btnPlay').onclick=playNext;
   const pl=perkLevel();
   $('statsCard').innerHTML='<div class="row between"><h3>Training</h3><span class="chip num">'+save.xp+' training pts</span></div>'+
-    STATS.map(([k,l,d])=>{const v=save.stats[k],c=trainCost(v);return'<div class="stat"><span title="'+d+'">'+l+'</span><div class="bar"><i style="width:'+v*10+'%"></i></div><button data-k="'+k+'" '+(v>=10||save.xp<c?'disabled':'')+'>'+(v>=10?'Max':'+1 · '+c)+'</button></div>'}).join('')+
+    STATS.map(([k,l,d])=>{const v=save.stats[k],c=trainCost(v);return'<div class="stat"><span title="'+d+'">'+l+(gearBonus(k)?' <small class="gearb">+'+gearBonus(k).toFixed(1)+'</small>':'')+'</span><div class="bar"><i style="width:'+v*10+'%"></i></div><button data-k="'+k+'" '+(v>=10||save.xp<c?'disabled':'')+'>'+(v>=10?'Max':'+1 · '+c)+'</button></div>'}).join('')+
     '<h3 style="margin-top:4px">'+S.name+' perks</h3><ul class="perklist">'+S.perks.map((p,i)=>'<li class="'+(i<pl?'on':'')+'"><span>'+(i<pl?'✓':PERK_AT[i]+' wins')+'</span>'+p+'</li>').join('')+'</ul>'+
     (save.stage!=='junior'?'<h3 style="margin-top:4px">Training camps</h3><p class="muted" style="font-size:13px;margin-top:-6px">Spend prize and sponsor money on extra training points. Bank: '+money(save.money)+'</p>'+
       CAMPS.map((c,i)=>'<div class="row between"><span>'+c.n+' <span class="muted">+'+c.xp+' pts</span></span><button data-camp="'+i+'" '+(save.money<c.cost?'disabled':'')+'>'+money(c.cost)+'</button></div>').join(''):'');
@@ -707,7 +742,7 @@ function careerResult(won,score,st){
   let text,champ=false,done=false,resLabel,prize=0;
   const mainRounds=c.total-c.qual,winsMain=Math.max(0,c.round-1-c.qual);
   if(won&&c.round===c.total){
-    champ=true;done=true;xp+=Math.round(40*xpMult());save.pts[stageKey].cur+=ev.pts;save.titles.push(ev.n+' '+save.season);save.rec.titles++;
+    champ=true;done=true;careerMilestone(ev,true);xp+=Math.round(40*xpMult());save.pts[stageKey].cur+=ev.pts;save.titles.push(ev.n+' '+save.season);save.rec.titles++;
     if(ev.major)save.majors[ev.major]=(save.majors[ev.major]||0)+1,save.rec.majors++;if(ev.tier==='Masters')save.rec.masters++;
     if(stageKey==='junior')save.juniorTotal+=ev.pts;
     prize=prizeFor(ev,mainRounds,mainRounds,true);
@@ -787,7 +822,7 @@ function showResult(won,score,st,text,lines,btn,next,champ){
   $('rScore').textContent=score;$('rText').textContent=text;
   const all=[['Aces',st.aces],['Winners',st.winners],['Perfect hits',st.perfect||0]].concat(lines||[]);
   $('rStats').innerHTML=all.map(([k,v])=>'<div><small>'+k+'</small><strong class="num" style="font-size:'+(String(v).length>10?'16px':'24px')+'">'+esc(v)+'</strong></div>').join('');
-  $('rGo').textContent=btn;resultNext=next;show('result');
+  $('rGo').textContent=btn;resultNext=next;renderRewards();show('result');
 }
 $('rGo').onclick=()=>{if(resultNext)resultNext()};
 
@@ -918,7 +953,7 @@ const READYS=mixP(READYP,READYP,0);
 
 function makeRacket(){
   const g=new T.Group();
-  const frameMat=new T.MeshStandardMaterial({color:0xE5484D,roughness:.45,metalness:.2});
+  const frameMat=new T.MeshStandardMaterial({color:0xE5484D,roughness:.45,metalness:.2});g.userData.frame=frameMat;
   const gripMat=new T.MeshStandardMaterial({color:0x1d1d1d,roughness:.9});
   const handle=new T.Mesh(new T.CylinderGeometry(1.5,1.7,24,8),gripMat);handle.position.y=8;g.add(handle);
   const throat=new T.Mesh(new T.CylinderGeometry(1.1,1.3,10,6),frameMat);throat.position.y=24;g.add(throat);
@@ -1587,6 +1622,7 @@ function landIn(sh,serve){if(sh.net)return false;const l=sh.land;if(serve){const
 
 function startMatch(cfg){
   if(window.__SIM){setTimeout(()=>cfg.onEnd(window.__SIM(cfg),'6–4',{aces:0,winners:0,big:0}),0);return}
+  if(!cfg.drill)cfg.stats=withGear(cfg.stats);
   initGL();show('match');$('loading').hidden=false;$('loadingSub').textContent=cfg.me+' vs '+cfg.opp.name;
   if(cfg.venue&&cfg.venue.startsWith('major:'))cfg.surf=MAJOR_LOOK[cfg.venue.slice(6)].surf;buildCourt(cfg.surf,cfg);
   let got={};const done=()=>{if(!('me' in got&&'op' in got))return;
@@ -1599,9 +1635,9 @@ function startMatch(cfg){
 function beginMatch(cfg){
   M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,ostyle:styleOfChar(RBYID[cfg.opp.id]),pat:[],readMe:false,readSaid:false,ostam:clamp(Math.round(((RBYID[cfg.opp.id]&&RBYID[cfg.opp.id].st.stamina)||5)*0.5+cfg.opp.skill*0.5),1,10),sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
     state:'between',shot:null,t0:0,me:{x:0.4,y:-0.05},op:{x:-0.4,y:1.08},fault:false,sw:null,preview:null,samples:[],land:null,aim:null,lock:false,commit:null,pending:null,
-    stat:{aces:0,winners:0,big:0,perfect:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
+    stat:{aces:0,winners:0,big:0,perfect:0,smashes:0,volleys:0,slices:0,rallyMax:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
-  $('quit').textContent='Retire';M.quitArm=false;
+  $('quit').textContent='Retire';M.quitArm=false;applyCosmetics();
   renderBoard();{const O=OSTYLE[M.ostyle];say(cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))}
   REP.setsN=1;REP.lastPt=-9;REP.buf=[];W3.camPos.set(0,4,22);
   if(cfg.drill){drillBegin(cfg);return}
@@ -1619,7 +1655,7 @@ function nextPoint(){
 }
 function pointTo(w,text,call){
   if(M&&M.drill){drillPoint(w,text,call);return}
-  if(!M||M.lock)return;M.lock=true;M.state='between';slowMo(false);REP.endT=GT;if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
+  if(!M||M.lock)return;M.lock=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
   {const rl=M.rally||0,big=call==='ACE'||call==='WINNER';
     if(big){crowdCheer(1,2.6,rl>=6||Math.random()<0.25?2.2:0);sndApplause(1);if(rl>=6)sndCrowdVoice('cheer',0.9)}
     else if(call==='NET'||call==='DOUBLE FAULT'){crowdCheer(0.35,1.4);sndCrowdVoice('ooh',0.7);setTimeout(()=>sndApplause(0.3),600)}
@@ -1634,7 +1670,7 @@ function pointTo(w,text,call){
   {const g2=M.sets.reduce((a,x)=>a+x[0]+x[1],0);if(M.sets.length!==ps)for(let i=0;i<2;i++)M.en[i]=Math.min(M.cap[i],M.en[i]+0.2);else if(g2!==pg&&g2%2===1)for(let i=0;i<2;i++)recover(i,0.07);}
   renderEnergy();renderBoard();setTimeout(()=>umpireScore(pg,ps),1000);
   const rp=wantReplay(w,call);
-  if(M.over){crowdCheer(1,6,6);sndApplause(1.2);sndCrowdVoice('cheer',1.2);P[M.winner].startReact(pick(['samba','uprock','robot']));P[1-M.winner].startReact('slump');if(rp)setTimeout(()=>{if(M)startReplay(3,()=>setTimeout(endMatch,1800))},1600);else setTimeout(endMatch,3200)}
+  if(M.over){crowdCheer(1,6,6);sndApplause(1.2);sndCrowdVoice('cheer',1.2);P[M.winner].startReact(M.winner===0?myDance():pick(['samba','uprock','robot']));P[1-M.winner].startReact('slump');if(rp)setTimeout(()=>{if(M)startReplay(3,()=>setTimeout(endMatch,1800))},1600);else setTimeout(endMatch,3200)}
   else if(rp)setTimeout(()=>{if(M)startReplay(2.8,()=>setTimeout(nextPoint,500))},900);else setTimeout(nextPoint,1700);
 }
 function gameWon(w){
@@ -1647,12 +1683,17 @@ function gameWon(w){
     M.sets.push([0,0]);setTimeout(()=>say(w===0?'You take the set!':M.cfg.opp.name+' takes the set.'),900)}
   else if(g[0]===G&&g[1]===G){M.tb=true;M.tbFirst=M.server}
 }
-function endMatch(){if(!M)return;drillCleanup();if(REP.on){REP.done=null;endReplay()}slowMo(false);const won=M.winner===0,score=M.sets.map(g=>g[0]+'–'+g[1]).join(', '),st=M.stat,cb=M.cfg.onEnd;M=null;cb(won,score,st)}
+function endMatch(){if(!M)return;drillCleanup();
+  if(!M.drill&&!M.retired&&M.over){const sets=M.sets,games=sets.reduce((a,g)=>a+g[0],0),V=W3.venue||{};
+    matchRewards({won:M.winner===0,games,lostFirst:sets.length>1&&sets[0][0]<sets[0][1],bagels:sets.filter(g=>g[0]===6&&g[1]===0).length,
+      surf:M.cfg.surf,venue:V.kind==='major'?'major:'+V.major:V.kind==='tour'&&V.rows>=16?'masters':V.kind||'tour',style:M.ostyle,skill:M.os,
+      career:!!M.cfg.ev,major:!!(M.cfg.ev&&M.cfg.ev.major),meId:M.cfg.meId,stat:M.stat})}
+  else if(M.retired){PROF.life.streak=0;storeProf();LAST_REWARDS=null}if(REP.on){REP.done=null;endReplay()}slowMo(false);const won=M.winner===0,score=M.sets.map(g=>g[0]+'–'+g[1]).join(', '),st=M.stat,cb=M.cfg.onEnd;M=null;cb(won,score,st)}
 $('quit').onclick=()=>{
   if(!M)return;
   if(M.drill){M.over=true;M.winner=0;M.lock=true;endMatch();return}
   if(!M.quitArm){M.quitArm=true;$('quit').textContent='Tap to confirm';setTimeout(()=>{if(M){M.quitArm=false;$('quit').textContent='Retire'}},2500);return}
-  M.over=true;M.winner=1;M.lock=true;M.state='between';say('You retire from the match.');setTimeout(endMatch,600);
+  M.over=true;M.winner=1;M.lock=true;M.retired=true;M.state='between';say('You retire from the match.');setTimeout(endMatch,600);
 };
 function recvPos(i){const st=M.mv[i],hm=M.home[i],hz=toW(0,hm.y).z;return{x:st.x,z:Math.abs(hz)<Math.abs(st.z)?hz:st.z}}
 function pointWins(w){const o=1-w,p=M.pts.slice();p[w]++;const game=M.tb?(p[w]>=7&&p[w]-p[o]>=2):(p[w]>=4&&p[w]-p[o]>=2);if(!game)return 0;if(M.tb)return 2;
@@ -1776,6 +1817,7 @@ function executeShot(){
   shot.w=w;shot.bonus=(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0)+(smh?0.12:0);
   M.shot=shot;M.t0=now();M.state='me';P[1].hop=0.15;
   fallbackHit(1,M.shot);M.returns=canReach(1,M.shot);M.oppPress=M.returns?pressureOf(1,M.shot):0;if(!M.returns&&(pointWins(0)===2||M.rally>=8))slowMo(true);
+  if(smh)M.stat.smashes++;if(vol)M.stat.volleys++;if(slc)M.stat.slices++;
   if(M.drill){M.returns=false;M.oppPress=0;drillEvent({k:'hit',in:true,land:shot.land,kmh:Math.round(spd*3.6),tim,volley:vol,smash:smh,slice:slc})}
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
   if(!M.drill)say((slc?'Slice. ':'')+(tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*3.6)+' km/h':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h'));
@@ -2053,19 +2095,240 @@ function drillPoint(w,text,call){
   if(w===1&&!call&&text&&M.shot&&M.shot.who==='op')drillEvent({k:'none',why:/swipe in time/.test(text)?'Swipe before the ball reaches you.':'Out of reach. Swipe as soon as the ball is fed.'});
   setTimeout(drillNext,1100)}
 function drillComplete(){
-  const D=M.drill,L=D.L,i=D.i;D.finished=true;LEARN.done[L.id]=true;storeLearn();M.state='between';drillZone();
+  const D=M.drill,L=D.L,i=D.i;D.finished=true;const first=!LEARN.done[L.id];LEARN.done[L.id]=true;storeLearn();const rw=first?lessonReward():null;M.state='between';drillZone();
   crowdCheer(0.8,2);sndApplause(0.6);callOut('NICE!');
   const last=i===LESSONS.length-1;$('dDone').hidden=false;
   $('dDoneT').textContent=last?'You’re ready':'Lesson complete';
   $('dDoneP').textContent=last?'That’s everything. Coach Dot says: make them run, mix it up, and watch the glow. Your career is waiting.':'Nice work. Next up: '+LESSONS[i+1].t+'.';
+  if(rw)$('dDoneP').textContent+=' +100 XP, +50 coins.'+(rw.length?' '+rw.map(n=>n[1]).join(' '):'');
   $('dNext').textContent=last?(save?'Back to the menu':'Start a career'):'Next lesson';
   $('dNext').onclick=()=>{const m=M;if(m){m.over=true;m.winner=0;m.cfg.onEnd=last?(()=>{renderTitle();if(!save)openSelect('career')}):(()=>startLesson(i+1,false))}endMatch()};
   $('dMenu').onclick=()=>{if(M){M.over=true;M.winner=0}endMatch()}}
 function drillCleanup(){document.querySelector('.hud.top .board').hidden=false;$('drillP').hidden=true;$('dDone').hidden=true;if(W3.zone)W3.zone.visible=false}
 
+/* ================= progression: one profile across quick matches, career and lessons =================
+   Level 1-60 (XP), coins, players unlocked by level, gear that lifts stats past 10, per-player mastery, cosmetics,
+   achievements in tiers, and three daily challenges. Everything is earned by playing. */
+const KEY_PROF='tennis-go-profile';
+const PROF_NEW=()=>({v:1,xp:0,coins:0,gear:{},mastery:{},life:{},ach:{},cos:{own:{},paint:'paint_red',trail:'trail_classic',dance:'dance_samba'},daily:null,streak:0,lastFull:null});
+let PROF=(()=>{try{const v=JSON.parse(localStorage.getItem(KEY_PROF)||'null');if(v&&v.v){const p=Object.assign(PROF_NEW(),v);p.cos=Object.assign(PROF_NEW().cos,v.cos||{});return p}}catch(e){}return PROF_NEW()})();
+function storeProf(){try{localStorage.setItem(KEY_PROF,JSON.stringify(PROF))}catch(e){}}
+const fmtN=n=>Math.round(n).toLocaleString('en-US');
+const ONE={sets:'set',matches:'match',times:'time',titles:'title',majors:'major',opponents:'opponent',aces:'ace',smashes:'smash',volleys:'volley',winners:'winner',slices:'slice',players:'player',challenges:'challenge',shots:'shot'};
+function nText(t,n){const s=t.replace('{n}',fmtN(n));return n===1?s.replace(/\b(sets|matches|times|titles|majors|opponents|aces|smashes|volleys|winners|slices|players|challenges|shots)\b/g,w=>ONE[w]):s}
+
+/* ---- levels: each level needs a little more than the last; about 163k XP to reach 60 ---- */
+const MAXLV=60;
+function needXP(L){return Math.round(80+30*L+1.5*L*L)}
+function levelOf(xp){let L=1,acc=0;while(L<MAXLV&&xp>=acc+needXP(L)){acc+=needXP(L);L++}return{L,into:xp-acc,need:L<MAXLV?needXP(L):0}}
+const LV=()=>levelOf(PROF.xp).L;
+
+/* ---- players: six to start, one more every three levels ---- */
+const START_CHARS=['ch08','ch31','ch01','ch12','remy','boss'];
+const CHAR_UNLOCK={ch09:3,ch06:6,ch23:9,ch24:12,ch28:15,ch42:18,brute:21,peasant:24,granny:27,ty:30,ch43:33,ch17:36,vegas:39,ch39:42};
+function charUnlockLv(id){return START_CHARS.includes(id)?1:(CHAR_UNLOCK[id]||1)}
+function charUnlocked(id){return LV()>=charUnlockLv(id)||(save&&save.char===id)||(PROF.mastery[id]||0)>0}
+function unlockedCount(){return ROSTER.filter(r=>charUnlocked(r.id)).length}
+
+/* ---- gear: five slots, ten upgrades each, +0.15 to one stat per upgrade (+1.5 at the top) ---- */
+const GEAR=[
+  {id:'racket',name:'Racket',stat:'power',tiers:['Club Classic','Graphite 100','Tour Carbon','Pro Frame','Signature Gold']},
+  {id:'strings',name:'Strings',stat:'control',tiers:['Synthetic gut','Multifilament','Co-poly','Hybrid pro','Natural gut']},
+  {id:'shoes',name:'Shoes',stat:'speed',tiers:['Club trainers','Court runners','Speed soles','Pro glide','Featherweight']},
+  {id:'grip',name:'Overgrip',stat:'serve',tiers:['Basic wrap','Tacky wrap','Pro wrap','Leather grip','Custom mould']},
+  {id:'fitness',name:'Fitness',stat:'stamina',tiers:['Jogging club','Interval plan','Altitude block','Pro conditioning','Iron lungs']}];
+const GEAR_REQ=[1,3,6,10,15,21,28,36,45,54];
+const GEAR_STEP=0.15;
+const gearCost=n=>Math.round(100*Math.pow(1.45,n-1)/10)*10;
+function gearLv(id){return PROF.gear[id]||0}
+function gearName(g){const n=gearLv(g.id);return n?g.tiers[Math.min(4,Math.floor((n-1)/2))]:'Standard issue'}
+function gearBonus(stat){const g=GEAR.find(x=>x.stat===stat);return g?gearLv(g.id)*GEAR_STEP:0}
+function withGear(st){const o={};for(const k in st)o[k]=st[k]+gearBonus(k);return o}
+function buyGear(id){const n=gearLv(id)+1;if(n>10)return false;if(LV()<GEAR_REQ[n-1]||PROF.coins<gearCost(n))return false;PROF.coins-=gearCost(n);PROF.gear[id]=n;storeProf();return true}
+
+/* ---- mastery: per player, from playing them ---- */
+const MASTERY=[250,700,1400,2400,3800,5600,8000,11000,15000,20000];
+function masteryOf(id){const x=PROF.mastery[id]||0;let l=0;while(l<10&&x>=MASTERY[l])l++;return l}
+
+/* ---- cosmetics ---- */
+const COS=[
+  {id:'paint_red',kind:'paint',name:'Classic red',col:0xE5484D,free:1},
+  {id:'paint_white',kind:'paint',name:'Chalk white',col:0xEDEDE6,cost:300},
+  {id:'paint_navy',kind:'paint',name:'Navy',col:0x23346B,cost:500},
+  {id:'paint_lime',kind:'paint',name:'Ball lime',col:0xC6F04A,cost:900},
+  {id:'paint_orange',kind:'paint',name:'Clay orange',col:0xE0703A,lv:10},
+  {id:'paint_black',kind:'paint',name:'Stealth black',col:0x222226,cost:1500},
+  {id:'paint_teal',kind:'paint',name:'Teal',col:0x2FB5A8,lv:25},
+  {id:'paint_pink',kind:'paint',name:'Neon pink',col:0xF07AB8,cost:2500},
+  {id:'paint_purple',kind:'paint',name:'Champion purple',col:0x7A4FD6,ach:'majors'},
+  {id:'paint_gold',kind:'paint',name:'Gold',col:0xE3B341,mast:10},
+  {id:'trail_classic',kind:'trail',name:'Classic (by pace)',col:null,free:1},
+  {id:'trail_ice',kind:'trail',name:'Ice',col:0x7FD8FF,cost:700},
+  {id:'trail_fire',kind:'trail',name:'Fire',col:0xFF5A2A,lv:15},
+  {id:'trail_lime',kind:'trail',name:'Glow',col:0xB8FF40,ach:'perfect',tier:2},
+  {id:'trail_violet',kind:'trail',name:'Violet',col:0xB07CFF,cost:3000},
+  {id:'trail_gold',kind:'trail',name:'Gold',col:0xFFD25A,lv:50},
+  {id:'dance_samba',kind:'dance',name:'Samba',clip:'samba',free:1},
+  {id:'dance_uprock',kind:'dance',name:'Uprock',clip:'uprock',lv:8},
+  {id:'dance_robot',kind:'dance',name:'Robot',clip:'robot',lv:20}];
+function cosOwned(c){if(c.free||PROF.cos.own[c.id])return true;if(c.lv&&LV()>=c.lv)return true;if(c.ach&&(PROF.ach[c.ach]||0)>=(c.tier||1))return true;if(c.mast&&ROSTER.some(r=>masteryOf(r.id)>=c.mast))return true;return false}
+function cosHow(c){return c.cost?fmtN(c.cost)+' coins':c.lv?'Level '+c.lv:c.ach?ACH.find(a=>a.id===c.ach).name+(c.tier>1?' tier '+c.tier:''):c.mast?'Mastery '+c.mast+' with any player':''}
+const cosOf=kind=>COS.find(c=>c.id===PROF.cos[kind])||COS.find(c=>c.kind===kind&&c.free);
+
+/* ---- achievements ---- */
+const ACH=[
+  {id:'wins',name:'Winner',d:'Win {n} matches',k:'wins',t:[5,50,250]},
+  {id:'played',name:'Regular',d:'Play {n} matches',k:'matches',t:[10,100,500]},
+  {id:'aces',name:'Ace machine',d:'Serve {n} aces',k:'aces',t:[10,100,500]},
+  {id:'winners',name:'Shotmaker',d:'Hit {n} winners',k:'winners',t:[25,250,1500]},
+  {id:'perfect',name:'In the zone',d:'Hit {n} perfect shots',k:'perfect',t:[25,300,2000]},
+  {id:'smashes',name:'Overhead',d:'Land {n} smashes',k:'smashes',t:[5,50,300]},
+  {id:'volleys',name:'Net rusher',d:'Land {n} volleys',k:'volleys',t:[10,150,800]},
+  {id:'slices',name:'Slicer',d:'Land {n} slices',k:'slices',t:[20,250,1500]},
+  {id:'rally',name:'Marathon',d:'Play a rally of {n} shots',k:'rallyMax',t:[10,20,35]},
+  {id:'bagel',name:'Bakery',d:'Win {n} sets 6–0',k:'bagels',t:[1,10,40]},
+  {id:'comeback',name:'Comeback',d:'Win {n} matches after losing the first set',k:'comebacks',t:[1,5,20]},
+  {id:'streak',name:'On a roll',d:'Win {n} matches in a row',k:'bestStreak',t:[3,7,15]},
+  {id:'surfaces',name:'All-surface',d:'Win {n} matches on every surface',k:'surfMin',t:[1,10,40]},
+  {id:'venues',name:'Globetrotter',d:'Win at {n} different venues',k:'venuesWon',t:[3,6,8]},
+  {id:'styles',name:'Tactician',d:'Beat every play style {n} times',k:'styleMin',t:[1,5,20]},
+  {id:'pros',name:'Giant killer',d:'Beat {n} opponents rated 8 or higher',k:'proWins',t:[1,25,100]},
+  {id:'titles',name:'Silverware',d:'Win {n} career titles',k:'titles',t:[1,10,40]},
+  {id:'majors',name:'Major champion',d:'Win {n} majors',k:'majors',t:[1,4,10]},
+  {id:'slam',name:'Career Grand Slam',d:'Win all four majors',k:'slam',t:[1]},
+  {id:'daily',name:'Daily grind',d:'Complete {n} daily challenges',k:'dailies',t:[5,30,150]},
+  {id:'mastery',name:'Master',d:'Reach mastery 10 with {n} players',k:'mast10',t:[1,5,20]},
+  {id:'collector',name:'Full roster',d:'Unlock {n} players',k:'unlocked',t:[10,15,20]},
+  {id:'learn',name:'Star pupil',d:'Finish every lesson',k:'lessons',t:[1]}];
+const ACH_REW=[{xp:150,c:100},{xp:600,c:400},{xp:2000,c:1500}];
+function lifeVal(k){const L=PROF.life;switch(k){
+  case 'surfMin':return Math.min(...['hard','clay','grass'].map(s=>(L.surf||{})[s]||0));
+  case 'venuesWon':return Object.keys(L.venues||{}).length;
+  case 'styleMin':return Math.min(...['server','baseliner','allcourt','counter'].map(s=>(L.styles||{})[s]||0));
+  case 'majors':return L.majors||0;
+  case 'slam':return['Melbourne','Paris','London','New York'].every(m=>(L.majorSet||{})[m])?1:0;
+  case 'mast10':return ROSTER.filter(r=>masteryOf(r.id)>=10).length;
+  case 'unlocked':return unlockedCount();
+  case 'lessons':return typeof LESSONS!=='undefined'&&LESSONS.every(l=>LEARN.done[l.id])?1:0;
+  default:return L[k]||0}}
+function achTier(a){const v=lifeVal(a.k);let t=0;while(t<a.t.length&&v>=a.t[t])t++;return t}
+
+/* ---- daily challenges: three a day, picked from the date so they are the same all day ---- */
+const DAILY_T=[
+  {k:'perfect',n:[6,10,14],d:'Hit {n} perfect shots'},{k:'aces',n:[2,3,4],d:'Serve {n} aces'},{k:'winners',n:[6,10,15],d:'Hit {n} winners'},
+  {k:'wins',n:[1,2,3],d:'Win {n} matches'},{k:'smashes',n:[1,2,3],d:'Land {n} smashes'},{k:'volleys',n:[3,6,9],d:'Land {n} volleys'},
+  {k:'slices',n:[5,10,15],d:'Land {n} slices'},{k:'games',n:[10,16,24],d:'Win {n} games'},{k:'rally',n:[10,12,16],d:'Play a rally of {n} shots',max:1},
+  {k:'surf:clay',n:[1],d:'Win a match on clay'},{k:'surf:grass',n:[1],d:'Win a match on grass'},{k:'surf:hard',n:[1],d:'Win a match on a hard court'},
+  {k:'style:server',n:[1],d:'Beat a Big Server'},{k:'style:counter',n:[1],d:'Beat a Counterpuncher'},{k:'style:allcourt',n:[1],d:'Beat an All-Court player'},{k:'style:baseliner',n:[1],d:'Beat a Baseliner'}];
+const DAILY_REW={xp:120,c:80},DAILY_ALL=150;
+function todayKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function seeded(str){let h=2166136261;for(const ch of str){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return()=>{h=Math.imul(h^(h>>>15),2246822507);h=Math.imul(h^(h>>>13),3266489909);h^=h>>>16;return(h>>>0)/4294967296}}
+function ensureDaily(){const k=todayKey();if(PROF.daily&&PROF.daily.day===k)return PROF.daily;
+  const r=seeded('tg'+k),pool=DAILY_T.slice(),list=[],hard=Math.min(2,Math.floor(LV()/15));
+  while(list.length<3){const i=Math.floor(r()*pool.length),t=pool.splice(i,1)[0];if(list.some(x=>x.k.split(':')[0]===t.k.split(':')[0]))continue;const n=t.n[Math.min(t.n.length-1,hard)];list.push({k:t.k,n,d:nText(t.d,n),p:0,done:false,max:!!t.max})}
+  PROF.daily={day:k,list,bonus:false};storeProf();return PROF.daily}
+
+/* ---- granting rewards ---- */
+let LAST_REWARDS=null;
+function grant(xp,coins,notes){const before=LV();PROF.xp+=Math.round(xp);PROF.coins+=Math.round(coins);const after=LV();
+  for(let L=before+1;L<=after;L++){notes.push(['lvl','Level '+L+'!']);
+    for(const r of ROSTER)if(CHAR_UNLOCK[r.id]===L)notes.push(['unlock','New player unlocked: '+r.name]);
+    GEAR_REQ.forEach((q,i)=>{if(q===L&&i>0)notes.push(['unlock','Gear upgrade '+(i+1)+' now available in the locker room'])});
+    for(const c of COS)if(c.lv===L)notes.push(['unlock','New '+(c.kind==='paint'?'racket paint':c.kind==='trail'?'ball trail':'victory dance')+': '+c.name])}}
+function checkAch(notes){for(const a of ACH){const was=PROF.ach[a.id]||0,now=achTier(a);if(now>was){for(let t=was;t<now;t++){const R=a.t.length===1?{xp:1500,c:1000}:ACH_REW[t];
+      notes.push(['ach','Achievement: '+a.name+(a.t.length>1?' '+['I','II','III'][t]:'')+' (+'+fmtN(R.xp)+' XP, +'+fmtN(R.c)+' coins)']);PROF.ach[a.id]=t+1;grant(R.xp,R.c,notes)}}}}
+function lifeAdd(k,n){PROF.life[k]=(PROF.life[k]||0)+n}
+/* called when a real match ends (not lessons, not retirements) */
+function matchRewards(m){
+  const notes=[],L=PROF.life,S=m.stat;
+  const xp=Math.round((45+6*m.games+(m.won?70:0)+4*S.aces+2*S.winners+2*S.perfect+3*(S.smashes||0))*(0.7+0.06*m.skill)*(m.career?1.25:1)*(m.major?1.5:1));
+  const coins=Math.round(xp*0.35)+(m.won?20:0);
+  // lifetime stats
+  lifeAdd('matches',1);if(m.won)lifeAdd('wins',1);for(const k of['aces','winners','perfect','smashes','volleys','slices'])lifeAdd(k,S[k]||0);
+  L.rallyMax=Math.max(L.rallyMax||0,S.rallyMax||0);lifeAdd('bagels',m.bagels);lifeAdd('games',m.games);
+  if(m.won&&m.lostFirst)lifeAdd('comebacks',1);
+  L.streak=m.won?(L.streak||0)+1:0;L.bestStreak=Math.max(L.bestStreak||0,L.streak);
+  if(m.won){L.surf=L.surf||{};L.surf[m.surf]=(L.surf[m.surf]||0)+1;L.venues=L.venues||{};L.venues[m.venue]=1;L.styles=L.styles||{};L.styles[m.style]=(L.styles[m.style]||0)+1;if(m.skill>=8)lifeAdd('proWins',1)}
+  // mastery for the player you used
+  const mb=masteryOf(m.meId);PROF.mastery[m.meId]=(PROF.mastery[m.meId]||0)+xp;const ma=masteryOf(m.meId);
+  for(let l=mb+1;l<=ma;l++){notes.push(['mast',RBYID[m.meId].name+' mastery '+l+(l===10?': Master!':'')]);grant(l*40,l*75,notes)}
+  grant(xp,coins,notes);
+  // daily challenges
+  const D=ensureDaily();
+  for(const c of D.list){if(c.done)continue;const [k,arg]=c.k.split(':');let add=0;
+    if(k==='surf')add=m.won&&m.surf===arg?1:0;else if(k==='style')add=m.won&&m.style===arg?1:0;else if(k==='wins')add=m.won?1:0;else if(k==='games')add=m.games;else if(k==='rally')add=0;else add=S[k]||0;
+    if(c.max)c.p=Math.max(c.p,S.rallyMax||0);else c.p+=add;
+    if(c.p>=c.n){c.done=true;lifeAdd('dailies',1);notes.push(['daily','Daily challenge done: '+c.d+' (+'+DAILY_REW.xp+' XP, +'+DAILY_REW.c+' coins)']);grant(DAILY_REW.xp,DAILY_REW.c,notes)}}
+  if(!D.bonus&&D.list.every(c=>c.done)){D.bonus=true;const y=new Date(Date.now()-864e5),yk=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');
+    PROF.streak=PROF.lastFull===yk?PROF.streak+1:1;PROF.lastFull=D.day;const b=DAILY_ALL+50*Math.min(PROF.streak-1,6);notes.push(['daily','All three dailies done! +'+b+' coins'+(PROF.streak>1?' ('+PROF.streak+'-day streak)':'')]);grant(0,b,notes)}
+  checkAch(notes);storeProf();
+  LAST_REWARDS={xp,coins,notes};return LAST_REWARDS}
+/* career milestones that land after the match result */
+function careerMilestone(ev,champ){if(!champ)return;const notes=LAST_REWARDS?LAST_REWARDS.notes:[];lifeAdd('titles',1);
+  if(ev.major){lifeAdd('majors',1);PROF.life.majorSet=PROF.life.majorSet||{};PROF.life.majorSet[ev.major]=1}
+  checkAch(notes);storeProf()}
+function lessonReward(){const notes=[];grant(100,50,notes);checkAch(notes);storeProf();return notes}
+
+/* ---- the rewards panel on the result screen ---- */
+function renderRewards(){const el=$('rRewards');const R=LAST_REWARDS;LAST_REWARDS=null;if(!R){el.hidden=true;return}
+  const lv=levelOf(PROF.xp);el.hidden=false;
+  el.innerHTML='<div class="row between"><strong class="lvl">Level '+lv.L+'</strong><span class="num">Match: +'+fmtN(R.xp)+' XP · +'+fmtN(R.coins)+' coins</span></div>'+
+    '<div class="bar xpbar"><i style="width:'+(lv.need?Math.round(lv.into/lv.need*100):100)+'%"></i></div>'+
+    '<p class="muted num" style="font-size:13px">'+(lv.need?fmtN(lv.need-lv.into)+' XP to level '+(lv.L+1):'Max level')+' · '+fmtN(PROF.coins)+' coins</p>'+
+    (R.notes.length?'<ul class="notes">'+R.notes.map(([t,s])=>'<li class="n-'+t+'">'+esc(s)+'</li>').join('')+'</ul>':'')}
+
+/* ================= locker room ================= */
+let lockerTab='daily',lockerBack=null;
+function openLocker(back){lockerBack=back||lockerBack||(()=>renderTitle());renderLocker();show('locker')}
+function renderLocker(){
+  const lv=levelOf(PROF.xp),D=ensureDaily();
+  const nextChar=ROSTER.filter(r=>!charUnlocked(r.id)).sort((a,b)=>charUnlockLv(a.id)-charUnlockLv(b.id))[0];
+  $('lkHead').innerHTML='<div class="row between"><h2 style="font-size:34px">Level '+lv.L+'</h2><span class="chip num coin">'+fmtN(PROF.coins)+' coins</span></div>'+
+    '<div class="bar xpbar"><i style="width:'+(lv.need?Math.round(lv.into/lv.need*100):100)+'%"></i></div>'+
+    '<p class="muted num" style="font-size:13px">'+(lv.need?fmtN(lv.into)+' / '+fmtN(lv.need)+' XP':'Max level')+(nextChar?' · Next player: '+esc(nextChar.name)+' at level '+charUnlockLv(nextChar.id):' · Every player unlocked')+'</p>';
+  document.querySelectorAll('#lkTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===lockerTab)));
+  const B=$('lkBody');let h='';
+  if(lockerTab==='daily'){
+    h+='<p class="muted" style="font-size:14px">New challenges every day. Each pays '+DAILY_REW.xp+' XP and '+DAILY_REW.c+' coins; finish all three for '+DAILY_ALL+' more, plus 50 for every day of your streak.'+(PROF.streak>1?' Current streak: '+PROF.streak+' days.':'')+'</p>';
+    h+=D.list.map(c=>'<div class="lk-item'+(c.done?' done':'')+'"><div style="min-width:0;flex:1"><strong>'+esc(c.d)+'</strong><div class="bar"><i style="width:'+Math.min(100,Math.round(c.p/c.n*100))+'%"></i></div></div><span class="chip num">'+(c.done?'Done':Math.min(c.p,c.n)+' / '+c.n)+'</span></div>').join('');}
+  else if(lockerTab==='gear'){
+    h+='<p class="muted" style="font-size:14px">Each upgrade adds '+GEAR_STEP+' to one stat, up to +1.5, which can take a stat past 10. Gear counts in quick matches and your career.</p>';
+    h+=GEAR.map(g=>{const n=gearLv(g.id),nx=n+1,st=STATS.find(s=>s[0]===g.stat)[1];let btn;
+      if(n>=10)btn='<button disabled>Maxed</button>';else if(LV()<GEAR_REQ[nx-1])btn='<button disabled>Level '+GEAR_REQ[nx-1]+'</button>';
+      else btn='<button data-g="'+g.id+'" '+(PROF.coins<gearCost(nx)?'disabled':'class="go"')+'>Upgrade · '+fmtN(gearCost(nx))+' coins</button>';
+      return'<div class="lk-item"><div style="min-width:0;flex:1"><p class="eyebrow">'+g.name+' · '+st+' +'+(n*GEAR_STEP).toFixed(2)+'</p><strong>'+esc(gearName(g))+'</strong><div class="pips">'+Array.from({length:10},(_,i)=>'<i class="'+(i<n?'on':'')+'"></i>').join('')+'</div></div>'+btn+'</div>'}).join('');}
+  else if(lockerTab==='players'){
+    h+='<p class="muted" style="font-size:14px">New players unlock as you level up. Playing a player raises their mastery (10 levels), which pays out coins and XP.</p><div class="lk-grid">'+
+      ROSTER.map(r=>{const ok=charUnlocked(r.id),m=masteryOf(r.id),st=OSTYLE[styleOfChar(r)].name;
+        return'<div class="lk-p'+(ok?'':' locked')+'"><strong>'+esc(r.name)+'</strong><small>'+st+'</small>'+(ok?'<div class="pips sm">'+Array.from({length:10},(_,i)=>'<i class="'+(i<m?'on':'')+'"></i>').join('')+'</div><small>Mastery '+m+'</small>':'<small>Unlocks at level '+charUnlockLv(r.id)+'</small>')+'</div>'}).join('')+'</div>';}
+  else if(lockerTab==='style'){
+    for(const [kind,title] of[['paint','Racket paint'],['trail','Ball trail'],['dance','Victory dance']]){
+      h+='<h3 style="margin-top:6px">'+title+'</h3><div class="lk-grid">'+COS.filter(c=>c.kind===kind).map(c=>{const own=cosOwned(c),on=PROF.cos[kind]===c.id;
+        const sw=c.col!=null?'<span class="sw" style="background:'+hex(c.col)+'"></span>':kind==='trail'?'<span class="sw" style="background:linear-gradient(90deg,#fff,#FFD23F,#FF7A3D)"></span>':'';
+        const btn=on?'<button disabled>Equipped</button>':own?'<button data-eq="'+c.id+'">Use</button>':c.cost?'<button data-buy="'+c.id+'" '+(PROF.coins<c.cost?'disabled':'')+'>Buy · '+fmtN(c.cost)+' coins</button>':'<button disabled>'+esc(cosHow(c))+'</button>';
+        return'<div class="lk-p'+(own?'':' locked')+'">'+sw+'<strong>'+esc(c.name)+'</strong>'+btn+'</div>'}).join('')+'</div>'}}
+  else{
+    const tot=ACH.reduce((a,x)=>a+x.t.length,0),got=ACH.reduce((a,x)=>a+(PROF.ach[x.id]||0),0);
+    h+='<p class="muted num" style="font-size:14px">'+got+' of '+tot+' tiers earned.</p>';
+    h+=ACH.map(a=>{const t=PROF.ach[a.id]||0,next=a.t[Math.min(t,a.t.length-1)],v=lifeVal(a.k),done=t>=a.t.length;
+      return'<div class="lk-item'+(done?' done':'')+'"><div style="min-width:0;flex:1"><p class="eyebrow">'+(a.t.length>1?'Tier '+Math.min(t+1,a.t.length)+' of '+a.t.length:'One-off')+'</p><strong>'+esc(a.name)+'</strong><small class="muted" style="display:block">'+esc(nText(a.d,next))+'</small><div class="bar"><i style="width:'+(done?100:Math.min(100,Math.round(v/next*100)))+'%"></i></div></div><span class="chip num">'+(done?'Done':fmtN(Math.min(v,next))+' / '+fmtN(next))+'</span></div>'}).join('')}
+  B.innerHTML=h;
+  B.querySelectorAll('button[data-g]').forEach(b=>b.onclick=()=>{if(buyGear(b.dataset.g))renderLocker()});
+  B.querySelectorAll('button[data-eq]').forEach(b=>b.onclick=()=>{const c=COS.find(x=>x.id===b.dataset.eq);PROF.cos[c.kind]=c.id;storeProf();renderLocker()});
+  B.querySelectorAll('button[data-buy]').forEach(b=>b.onclick=()=>{const c=COS.find(x=>x.id===b.dataset.buy);if(PROF.coins>=c.cost){PROF.coins-=c.cost;PROF.cos.own[c.id]=1;PROF.cos[c.kind]=c.id;storeProf();renderLocker()}})}
+document.querySelectorAll('#lkTabs button').forEach(b=>b.onclick=()=>{lockerTab=b.dataset.t;renderLocker()});
+$('lkBack').onclick=()=>{const f=lockerBack;lockerBack=null;(f||renderTitle)()};
+$('btnLocker').onclick=()=>openLocker(()=>renderTitle());
+function lockerCardState(){const lv=levelOf(PROF.xp),D=ensureDaily(),left=D.list.filter(c=>!c.done).length;
+  $('lockerSub').textContent='Level '+lv.L+' · '+fmtN(PROF.coins)+' coins · '+(left?left+' daily challenge'+(left>1?'s':'')+' left today':'Dailies done for today')}
+/* cosmetics in the match */
+function applyCosmetics(){const p=cosOf('paint');if(P[0]&&P[0].racket&&P[0].racket.userData.frame)P[0].racket.userData.frame.color.setHex(p.col)}
+function myTrailColor(){const t=cosOf('trail');return t&&t.col!=null?t.col:null}
+function myDance(){const d=cosOf('dance');return d?d.clip:'samba'}
+
 document.addEventListener('pointerdown',sndResume,{passive:true});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{get GT(){return GT},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
 </script>

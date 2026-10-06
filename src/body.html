@@ -2,7 +2,7 @@
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 20 · slice and serve types</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 21 · levels, gear and the locker room</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="learnCard">
@@ -17,6 +17,11 @@
       <button class="go" id="btnNew">New career</button>
       <button class="ghost" id="btnNewConfirm" hidden>Tap again to erase your career</button>
     </div>
+  </div>
+  <div class="card" id="lockerCard">
+    <h3>Locker room</h3>
+    <p class="muted num" id="lockerSub" style="font-size:14px"></p>
+    <div class="row"><button id="btnLocker">Open the locker room</button></div>
   </div>
   <div class="card" id="saveCard">
     <h3>Keep your career safe</h3>
@@ -67,6 +72,13 @@
   <div id="lessons" style="display:flex;flex-direction:column;gap:10px"></div>
 </section>
 
+<section id="locker" class="wrap" hidden>
+  <div class="row between"><p class="eyebrow">Locker room</p><button class="ghost" id="lkBack" style="padding:6px 12px;font-size:13px">Back</button></div>
+  <div class="card" id="lkHead"></div>
+  <div class="tabs" id="lkTabs" role="tablist"><button data-t="daily">Daily</button><button data-t="gear">Gear</button><button data-t="players">Players</button><button data-t="style">Style</button><button data-t="trophies">Trophies</button></div>
+  <div id="lkBody" style="display:flex;flex-direction:column;gap:10px"></div>
+</section>
+
 <section id="select" class="wrap" hidden>
   <div class="hero"><p class="eyebrow" id="selEyebrow">New career</p><h2>Choose your player</h2><p class="muted" id="selIntro"></p></div>
   <div class="roster" id="roster"></div>
@@ -80,7 +92,7 @@
 </section>
 
 <section id="hub" class="wrap" hidden>
-  <div class="row between"><p class="eyebrow">Tennis Go</p><button class="ghost" id="hubMenu" style="padding:6px 12px;font-size:13px">Menu</button></div>
+  <div class="row between"><p class="eyebrow">Tennis Go</p><span class="row" style="gap:6px;flex-wrap:nowrap"><button class="ghost" id="hubLocker" style="padding:6px 12px;font-size:13px">Locker room</button><button class="ghost" id="hubMenu" style="padding:6px 12px;font-size:13px">Menu</button></span></div>
   <div class="stepper" id="stepper"></div>
   <div class="card" id="playerCard"></div>
   <div class="card" id="nextCard"></div>
@@ -127,6 +139,7 @@
     <p class="score-line num" id="rScore">6–4</p>
     <p id="rText"></p>
     <div class="kv" id="rStats"></div>
+    <div class="rewards" id="rRewards" hidden></div>
     <button class="go" id="rGo">Continue</button>
   </div>
 </section>

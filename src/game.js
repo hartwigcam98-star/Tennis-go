@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id);
 const T=THREE;
 const CHAR_BASE=window.CHAR_BASE||'https://hartwigcam98-star.github.io/golf-go/';
-const SECTIONS=['title','learn','select','style','hub','recruit','season','match','result'];
+const SECTIONS=['title','learn','locker','select','style','hub','recruit','season','match','result'];
 function show(id){SECTIONS.forEach(s=>{$(s).hidden=s!==id});if(id!=='match')window.scrollTo(0,0);if(id==='match')onResize()}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rnd(a,b){return a+Math.random()*(b-a)}
@@ -151,9 +151,10 @@ function stageName(){return{junior:'Juniors',college:'College',pro:'Pro tour'}[s
 function renderTitle(){
   const has=!!save;$('btnContinue').hidden=!has;$('btnNewConfirm').hidden=true;$('btnNew').hidden=false;
   $('careerChip').textContent=has?(RBYID[save.char].name+' · '+stageName()+' season '+save.season):'No save yet';
-  $('btnNew').className=has?'':'go';renderSaveCard();learnCardState();show('title');
+  $('btnNew').className=has?'':'go';renderSaveCard();learnCardState();lockerCardState();show('title');
 }
 $('btnContinue').onclick=()=>renderHub();
+$('hubLocker').onclick=()=>openLocker(()=>renderHub());
 /* ---- keeping the career safe: home-screen install, persistent storage, backup codes ---- */
 const STANDALONE=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
 const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -163,19 +164,22 @@ function renderSaveCard(){
   $('installHint').textContent=STANDALONE?'Tennis Go is installed on this device, so your career is kept here. A backup code is still handy if you change phones.'
     :IOS?'Safari can delete website data if you go a week without opening the game. Add it to your Home Screen (Share, then Add to Home Screen) and play from that icon. The installed app keeps its own data, so copy a backup code here first and restore it there.'
     :'Install Tennis Go (browser menu, then Install app or Add to Home screen) so your career is kept and the game works offline. Copy a backup code first, then restore it in the installed app.';
-  $('btnBackup').disabled=!save;$('saveMsg').textContent='';$('saveCode').hidden=true;$('btnRestoreGo').hidden=true;$('btnRestoreGo').dataset.arm=''}
-function saveCode(){return'TG1:'+btoa(unescape(encodeURIComponent(JSON.stringify(save))))}
-$('btnBackup').onclick=async()=>{if(!save)return;const code=saveCode(),ta=$('saveCode');ta.hidden=false;ta.value=code;$('btnRestoreGo').hidden=true;
+  $('btnBackup').disabled=!save&&!PROF.xp;$('saveMsg').textContent='';$('saveCode').hidden=true;$('btnRestoreGo').hidden=true;$('btnRestoreGo').dataset.arm=''}
+function saveCode(){return'TG2:'+btoa(unescape(encodeURIComponent(JSON.stringify({c:save,p:PROF,l:LEARN}))))}
+$('btnBackup').onclick=async()=>{if(!save&&!PROF.xp)return;const code=saveCode(),ta=$('saveCode');ta.hidden=false;ta.value=code;$('btnRestoreGo').hidden=true;
   let ok=false;try{await navigator.clipboard.writeText(code);ok=true}catch(e){}
   if(!ok){ta.focus();ta.select()}
   $('saveMsg').textContent=ok?'Copied. Paste it somewhere safe, like Notes or a message to yourself.':'Copy the code above and keep it somewhere safe, like Notes.'};
 $('btnRestore').onclick=()=>{const ta=$('saveCode');ta.hidden=false;ta.value='';ta.focus();$('btnRestoreGo').hidden=false;$('btnRestoreGo').dataset.arm='';$('btnRestoreGo').textContent='Restore this career';$('saveMsg').textContent='Paste your backup code above.'};
 $('btnRestoreGo').onclick=()=>{
   const raw=$('saveCode').value.trim().replace(/\s+/g,'');let obj=null;
-  try{if(!raw.startsWith('TG1:'))throw 0;obj=JSON.parse(decodeURIComponent(escape(atob(raw.slice(4)))))}catch(e){obj=null}
-  if(!obj||!obj.char||!obj.stage||!obj.stats||!RBYID[obj.char]){$('saveMsg').textContent='That code doesn’t look right. Copy the whole code, starting with TG1:';return}
+  let prof=null,learn=null;
+  try{if(!/^TG[12]:/.test(raw))throw 0;const d=JSON.parse(decodeURIComponent(escape(atob(raw.slice(4)))));if(raw[2]==='2'){obj=d.c;prof=d.p;learn=d.l}else obj=d}catch(e){obj=null;prof=null}
+  const okC=obj&&obj.char&&obj.stage&&obj.stats&&RBYID[obj.char];if(!okC)obj=null;
+  if(!obj&&!(prof&&prof.v)){$('saveMsg').textContent='That code doesn’t look right. Copy the whole code, starting with TG.';return}
   const b=$('btnRestoreGo');if(save&&b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Tap again to replace your current career';return}
-  save=obj;store();renderTitle();$('saveMsg').textContent='Career restored: '+RBYID[save.char].name+', '+stageName()+' season '+save.season+'.'};
+  if(obj){save=obj;store()}if(prof&&prof.v){PROF=Object.assign(PROF_NEW(),prof);storeProf()}if(learn&&learn.done){LEARN=learn;storeLearn()}
+  renderTitle();$('saveMsg').textContent='Restored'+(obj?': '+RBYID[save.char].name+', '+stageName()+' season '+save.season:'')+(prof&&prof.v?' · Level '+LV():'')+'.'};
 $('btnNew').onclick=()=>{if(save){$('btnNew').hidden=true;$('btnNewConfirm').hidden=false}else openSelect('career')};
 $('btnNewConfirm').onclick=()=>openSelect('career');
 $('btnQuick').onclick=()=>openSelect('quick');
@@ -186,8 +190,8 @@ function openSelect(mode){
   selMode=mode;selId=mode==='quick'&&save?save.char:null;
   $('selEyebrow').textContent=mode==='career'?'New career':'Quick match';
   $('selIntro').textContent=mode==='career'?'Your player starts as a raw 16-year-old with a fraction of these ratings. Win matches and train to grow into them, and past them.':'Pick who you want to play as.';
-  $('roster').innerHTML=ROSTER.map(r=>'<button class="pc" data-id="'+r.id+'" aria-pressed="'+(r.id===selId)+'"><strong>'+esc(r.name)+'</strong><small>'+esc(r.nick)+'</small><div class="mini">'+STATS.map(([k,l])=>'<span>'+l+'</span><div class="bar"><i style="width:'+r.st[k]*10+'%"></i></div>').join('')+'</div></button>').join('');
-  $('roster').querySelectorAll('.pc').forEach(b=>b.onclick=()=>{selId=b.dataset.id;$('roster').querySelectorAll('.pc').forEach(x=>x.setAttribute('aria-pressed',x===b));updSel()});
+  $('roster').innerHTML=ROSTER.map(r=>{const ok=charUnlocked(r.id);return'<button class="pc'+(ok?'':' locked')+'" data-id="'+r.id+'" aria-pressed="'+(r.id===selId)+'" '+(ok?'':'disabled')+'><strong>'+esc(r.name)+'</strong><small>'+(ok?esc(r.nick)+' · '+OSTYLE[styleOfChar(r)].name+(masteryOf(r.id)?' · Mastery '+masteryOf(r.id):''):'Unlocks at level '+charUnlockLv(r.id))+'</small><div class="mini">'+STATS.map(([k,l])=>'<span>'+l+'</span><div class="bar"><i style="width:'+r.st[k]*10+'%"></i></div>').join('')+'</div></button>'}).join('');
+  $('roster').querySelectorAll('.pc:not(.locked)').forEach(b=>b.onclick=()=>{selId=b.dataset.id;$('roster').querySelectorAll('.pc').forEach(x=>x.setAttribute('aria-pressed',x===b));updSel()});
   updSel();show('select');
 }
 function updSel(){$('selGo').disabled=!selId;$('selGo').textContent=selId?(selMode==='career'?'Next: play style':'Play as '+RBYID[selId].name):'Pick a player'}
@@ -252,7 +256,7 @@ function renderHub(){
   $('btnPlay').onclick=playNext;
   const pl=perkLevel();
   $('statsCard').innerHTML='<div class="row between"><h3>Training</h3><span class="chip num">'+save.xp+' training pts</span></div>'+
-    STATS.map(([k,l,d])=>{const v=save.stats[k],c=trainCost(v);return'<div class="stat"><span title="'+d+'">'+l+'</span><div class="bar"><i style="width:'+v*10+'%"></i></div><button data-k="'+k+'" '+(v>=10||save.xp<c?'disabled':'')+'>'+(v>=10?'Max':'+1 · '+c)+'</button></div>'}).join('')+
+    STATS.map(([k,l,d])=>{const v=save.stats[k],c=trainCost(v);return'<div class="stat"><span title="'+d+'">'+l+(gearBonus(k)?' <small class="gearb">+'+gearBonus(k).toFixed(1)+'</small>':'')+'</span><div class="bar"><i style="width:'+v*10+'%"></i></div><button data-k="'+k+'" '+(v>=10||save.xp<c?'disabled':'')+'>'+(v>=10?'Max':'+1 · '+c)+'</button></div>'}).join('')+
     '<h3 style="margin-top:4px">'+S.name+' perks</h3><ul class="perklist">'+S.perks.map((p,i)=>'<li class="'+(i<pl?'on':'')+'"><span>'+(i<pl?'✓':PERK_AT[i]+' wins')+'</span>'+p+'</li>').join('')+'</ul>'+
     (save.stage!=='junior'?'<h3 style="margin-top:4px">Training camps</h3><p class="muted" style="font-size:13px;margin-top:-6px">Spend prize and sponsor money on extra training points. Bank: '+money(save.money)+'</p>'+
       CAMPS.map((c,i)=>'<div class="row between"><span>'+c.n+' <span class="muted">+'+c.xp+' pts</span></span><button data-camp="'+i+'" '+(save.money<c.cost?'disabled':'')+'>'+money(c.cost)+'</button></div>').join(''):'');
@@ -308,7 +312,7 @@ function careerResult(won,score,st){
   let text,champ=false,done=false,resLabel,prize=0;
   const mainRounds=c.total-c.qual,winsMain=Math.max(0,c.round-1-c.qual);
   if(won&&c.round===c.total){
-    champ=true;done=true;xp+=Math.round(40*xpMult());save.pts[stageKey].cur+=ev.pts;save.titles.push(ev.n+' '+save.season);save.rec.titles++;
+    champ=true;done=true;careerMilestone(ev,true);xp+=Math.round(40*xpMult());save.pts[stageKey].cur+=ev.pts;save.titles.push(ev.n+' '+save.season);save.rec.titles++;
     if(ev.major)save.majors[ev.major]=(save.majors[ev.major]||0)+1,save.rec.majors++;if(ev.tier==='Masters')save.rec.masters++;
     if(stageKey==='junior')save.juniorTotal+=ev.pts;
     prize=prizeFor(ev,mainRounds,mainRounds,true);
@@ -388,7 +392,7 @@ function showResult(won,score,st,text,lines,btn,next,champ){
   $('rScore').textContent=score;$('rText').textContent=text;
   const all=[['Aces',st.aces],['Winners',st.winners],['Perfect hits',st.perfect||0]].concat(lines||[]);
   $('rStats').innerHTML=all.map(([k,v])=>'<div><small>'+k+'</small><strong class="num" style="font-size:'+(String(v).length>10?'16px':'24px')+'">'+esc(v)+'</strong></div>').join('');
-  $('rGo').textContent=btn;resultNext=next;show('result');
+  $('rGo').textContent=btn;resultNext=next;renderRewards();show('result');
 }
 $('rGo').onclick=()=>{if(resultNext)resultNext()};
 
@@ -519,7 +523,7 @@ const READYS=mixP(READYP,READYP,0);
 
 function makeRacket(){
   const g=new T.Group();
-  const frameMat=new T.MeshStandardMaterial({color:0xE5484D,roughness:.45,metalness:.2});
+  const frameMat=new T.MeshStandardMaterial({color:0xE5484D,roughness:.45,metalness:.2});g.userData.frame=frameMat;
   const gripMat=new T.MeshStandardMaterial({color:0x1d1d1d,roughness:.9});
   const handle=new T.Mesh(new T.CylinderGeometry(1.5,1.7,24,8),gripMat);handle.position.y=8;g.add(handle);
   const throat=new T.Mesh(new T.CylinderGeometry(1.1,1.3,10,6),frameMat);throat.position.y=24;g.add(throat);
@@ -850,6 +854,7 @@ function landIn(sh,serve){if(sh.net)return false;const l=sh.land;if(serve){const
 
 function startMatch(cfg){
   if(window.__SIM){setTimeout(()=>cfg.onEnd(window.__SIM(cfg),'6–4',{aces:0,winners:0,big:0}),0);return}
+  if(!cfg.drill)cfg.stats=withGear(cfg.stats);
   initGL();show('match');$('loading').hidden=false;$('loadingSub').textContent=cfg.me+' vs '+cfg.opp.name;
   if(cfg.venue&&cfg.venue.startsWith('major:'))cfg.surf=MAJOR_LOOK[cfg.venue.slice(6)].surf;buildCourt(cfg.surf,cfg);
   let got={};const done=()=>{if(!('me' in got&&'op' in got))return;
@@ -862,9 +867,9 @@ function startMatch(cfg){
 function beginMatch(cfg){
   M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,ostyle:styleOfChar(RBYID[cfg.opp.id]),pat:[],readMe:false,readSaid:false,ostam:clamp(Math.round(((RBYID[cfg.opp.id]&&RBYID[cfg.opp.id].st.stamina)||5)*0.5+cfg.opp.skill*0.5),1,10),sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
     state:'between',shot:null,t0:0,me:{x:0.4,y:-0.05},op:{x:-0.4,y:1.08},fault:false,sw:null,preview:null,samples:[],land:null,aim:null,lock:false,commit:null,pending:null,
-    stat:{aces:0,winners:0,big:0,perfect:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
+    stat:{aces:0,winners:0,big:0,perfect:0,smashes:0,volleys:0,slices:0,rallyMax:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
-  $('quit').textContent='Retire';M.quitArm=false;
+  $('quit').textContent='Retire';M.quitArm=false;applyCosmetics();
   renderBoard();{const O=OSTYLE[M.ostyle];say(cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))}
   REP.setsN=1;REP.lastPt=-9;REP.buf=[];W3.camPos.set(0,4,22);
   if(cfg.drill){drillBegin(cfg);return}
@@ -882,7 +887,7 @@ function nextPoint(){
 }
 function pointTo(w,text,call){
   if(M&&M.drill){drillPoint(w,text,call);return}
-  if(!M||M.lock)return;M.lock=true;M.state='between';slowMo(false);REP.endT=GT;if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
+  if(!M||M.lock)return;M.lock=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
   {const rl=M.rally||0,big=call==='ACE'||call==='WINNER';
     if(big){crowdCheer(1,2.6,rl>=6||Math.random()<0.25?2.2:0);sndApplause(1);if(rl>=6)sndCrowdVoice('cheer',0.9)}
     else if(call==='NET'||call==='DOUBLE FAULT'){crowdCheer(0.35,1.4);sndCrowdVoice('ooh',0.7);setTimeout(()=>sndApplause(0.3),600)}
@@ -897,7 +902,7 @@ function pointTo(w,text,call){
   {const g2=M.sets.reduce((a,x)=>a+x[0]+x[1],0);if(M.sets.length!==ps)for(let i=0;i<2;i++)M.en[i]=Math.min(M.cap[i],M.en[i]+0.2);else if(g2!==pg&&g2%2===1)for(let i=0;i<2;i++)recover(i,0.07);}
   renderEnergy();renderBoard();setTimeout(()=>umpireScore(pg,ps),1000);
   const rp=wantReplay(w,call);
-  if(M.over){crowdCheer(1,6,6);sndApplause(1.2);sndCrowdVoice('cheer',1.2);P[M.winner].startReact(pick(['samba','uprock','robot']));P[1-M.winner].startReact('slump');if(rp)setTimeout(()=>{if(M)startReplay(3,()=>setTimeout(endMatch,1800))},1600);else setTimeout(endMatch,3200)}
+  if(M.over){crowdCheer(1,6,6);sndApplause(1.2);sndCrowdVoice('cheer',1.2);P[M.winner].startReact(M.winner===0?myDance():pick(['samba','uprock','robot']));P[1-M.winner].startReact('slump');if(rp)setTimeout(()=>{if(M)startReplay(3,()=>setTimeout(endMatch,1800))},1600);else setTimeout(endMatch,3200)}
   else if(rp)setTimeout(()=>{if(M)startReplay(2.8,()=>setTimeout(nextPoint,500))},900);else setTimeout(nextPoint,1700);
 }
 function gameWon(w){
@@ -910,12 +915,17 @@ function gameWon(w){
     M.sets.push([0,0]);setTimeout(()=>say(w===0?'You take the set!':M.cfg.opp.name+' takes the set.'),900)}
   else if(g[0]===G&&g[1]===G){M.tb=true;M.tbFirst=M.server}
 }
-function endMatch(){if(!M)return;drillCleanup();if(REP.on){REP.done=null;endReplay()}slowMo(false);const won=M.winner===0,score=M.sets.map(g=>g[0]+'–'+g[1]).join(', '),st=M.stat,cb=M.cfg.onEnd;M=null;cb(won,score,st)}
+function endMatch(){if(!M)return;drillCleanup();
+  if(!M.drill&&!M.retired&&M.over){const sets=M.sets,games=sets.reduce((a,g)=>a+g[0],0),V=W3.venue||{};
+    matchRewards({won:M.winner===0,games,lostFirst:sets.length>1&&sets[0][0]<sets[0][1],bagels:sets.filter(g=>g[0]===6&&g[1]===0).length,
+      surf:M.cfg.surf,venue:V.kind==='major'?'major:'+V.major:V.kind==='tour'&&V.rows>=16?'masters':V.kind||'tour',style:M.ostyle,skill:M.os,
+      career:!!M.cfg.ev,major:!!(M.cfg.ev&&M.cfg.ev.major),meId:M.cfg.meId,stat:M.stat})}
+  else if(M.retired){PROF.life.streak=0;storeProf();LAST_REWARDS=null}if(REP.on){REP.done=null;endReplay()}slowMo(false);const won=M.winner===0,score=M.sets.map(g=>g[0]+'–'+g[1]).join(', '),st=M.stat,cb=M.cfg.onEnd;M=null;cb(won,score,st)}
 $('quit').onclick=()=>{
   if(!M)return;
   if(M.drill){M.over=true;M.winner=0;M.lock=true;endMatch();return}
   if(!M.quitArm){M.quitArm=true;$('quit').textContent='Tap to confirm';setTimeout(()=>{if(M){M.quitArm=false;$('quit').textContent='Retire'}},2500);return}
-  M.over=true;M.winner=1;M.lock=true;M.state='between';say('You retire from the match.');setTimeout(endMatch,600);
+  M.over=true;M.winner=1;M.lock=true;M.retired=true;M.state='between';say('You retire from the match.');setTimeout(endMatch,600);
 };
 function recvPos(i){const st=M.mv[i],hm=M.home[i],hz=toW(0,hm.y).z;return{x:st.x,z:Math.abs(hz)<Math.abs(st.z)?hz:st.z}}
 function pointWins(w){const o=1-w,p=M.pts.slice();p[w]++;const game=M.tb?(p[w]>=7&&p[w]-p[o]>=2):(p[w]>=4&&p[w]-p[o]>=2);if(!game)return 0;if(M.tb)return 2;
@@ -1039,6 +1049,7 @@ function executeShot(){
   shot.w=w;shot.bonus=(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0)+(smh?0.12:0);
   M.shot=shot;M.t0=now();M.state='me';P[1].hop=0.15;
   fallbackHit(1,M.shot);M.returns=canReach(1,M.shot);M.oppPress=M.returns?pressureOf(1,M.shot):0;if(!M.returns&&(pointWins(0)===2||M.rally>=8))slowMo(true);
+  if(smh)M.stat.smashes++;if(vol)M.stat.volleys++;if(slc)M.stat.slices++;
   if(M.drill){M.returns=false;M.oppPress=0;drillEvent({k:'hit',in:true,land:shot.land,kmh:Math.round(spd*3.6),tim,volley:vol,smash:smh,slice:slc})}
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
   if(!M.drill)say((slc?'Slice. ':'')+(tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*3.6)+' km/h':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h'));
@@ -1216,8 +1227,9 @@ function camera(dt){
   W3.sun.target.position.set(0,0,0);
 }
 /*@LEARN*/
+/*@PROGRESS*/
 document.addEventListener('pointerdown',sndResume,{passive:true});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{get GT(){return GT},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
