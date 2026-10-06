@@ -81,6 +81,16 @@ select{background:var(--panel-2);border:1px solid var(--line);border-radius:10px
 .mini{display:grid;grid-template-columns:auto 1fr;gap:3px 8px;align-items:center;font-size:12px;color:var(--muted)}
 .mini .bar{height:5px}
 .sticky{position:sticky;bottom:0;padding-block:12px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,var(--night) 30%)}
+/* career extras */
+.note{font-size:14px;color:var(--chalk);background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.opp{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.quote{font-style:italic;font-size:15px}
+ol.perks{margin:4px 0 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:13px}
+ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);text-transform:uppercase;letter-spacing:.05em}
+.perklist{list-style:none;margin:-4px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--muted)}
+.perklist li{display:grid;grid-template-columns:62px 1fr;gap:8px}
+.perklist li span{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em}
+.perklist li.on{color:var(--chalk)}.perklist li.on span{color:var(--win)}
 /* match */
 #match{position:fixed;inset:0;overscroll-behavior:none;touch-action:none;user-select:none;-webkit-user-select:none;background:#0B1622}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
@@ -160,6 +170,12 @@ select{background:var(--panel-2);border:1px solid var(--line);border-radius:10px
   <div class="sticky row"><button class="go" id="selGo" style="flex:1">Start</button><button class="ghost" id="selBack">Back</button></div>
 </section>
 
+<section id="style" class="wrap" hidden>
+  <div class="hero"><p class="eyebrow">New career</p><h2>Choose your play style</h2><p class="muted">Your style unlocks three perks as you win matches: one now, one at 15 career wins, one at 40.</p></div>
+  <div class="roster" id="styles"></div>
+  <div class="sticky row"><button class="go" id="styleGo" style="flex:1">Pick a play style</button><button class="ghost" id="styleBack">Back</button></div>
+</section>
+
 <section id="hub" class="wrap" hidden>
   <div class="row between"><p class="eyebrow">Tennis Go</p><button class="ghost" id="hubMenu" style="padding:6px 12px;font-size:13px">Menu</button></div>
   <div class="stepper" id="stepper"></div>
@@ -175,9 +191,9 @@ select{background:var(--panel-2);border:1px solid var(--line);border-radius:10px
   <div id="offers" style="display:flex;flex-direction:column;gap:10px"></div>
 </section>
 
-<section id="turnpro" class="wrap" hidden>
-  <div class="hero"><p class="eyebrow">College career complete</p><h2>Turning pro</h2></div>
-  <div class="card"><p id="proIntro"></p><button class="go" id="btnTurnPro">Join the tour</button></div>
+<section id="season" class="wrap" hidden>
+  <div class="hero"><p class="eyebrow" id="seEyebrow"></p><h2 id="seTitle"></h2></div>
+  <div class="card"><p id="seText"></p><div class="row" id="seBtns"></div></div>
 </section>
 
 <section id="match" hidden>
@@ -224,9 +240,8 @@ window.MCLIPS={"ready":{"fps":30,"t0":0,"n":120,"anim":[0,1,2,3,4,5,6,7,8,9,10,1
 'use strict';
 const $=id=>document.getElementById(id);
 const T=THREE;
-const KEY='tennis-go-v1';
 const CHAR_BASE=window.CHAR_BASE||'https://hartwigcam98-star.github.io/golf-go/';
-const SECTIONS=['title','select','hub','recruit','turnpro','match','result'];
+const SECTIONS=['title','select','style','hub','recruit','season','match','result'];
 function show(id){SECTIONS.forEach(s=>{$(s).hidden=s!==id});if(id!=='match')window.scrollTo(0,0);if(id==='match')onResize()}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rnd(a,b){return a+Math.random()*(b-a)}
@@ -262,58 +277,102 @@ const STATS=[['power','Power','Pace on drives'],['control','Control','Tighter st
 
 /* ================= career data ================= */
 const SURF={hard:{name:'Hard',sp:1,b:1},clay:{name:'Clay',sp:0.82,b:1.35},grass:{name:'Grass',sp:1.2,b:0.6}};
-const JUNIOR=[
-  {n:'Twin Cities Junior Open',tier:'Local',surf:'hard',rounds:2,sk:[1,2],pts:50,bo:1,g:4},
-  {n:'Upper Midwest Sectionals',tier:'Sectional',surf:'clay',rounds:3,sk:[1.5,3],pts:120,bo:1,g:4},
-  {n:'National Junior Hardcourts',tier:'National',surf:'hard',rounds:3,sk:[2.5,4],pts:220,bo:1,g:4},
-  {n:'National Junior Clay Courts',tier:'National',surf:'clay',rounds:3,sk:[3,4.5],pts:220,bo:1,g:4},
-  {n:'Junior Major',tier:'Junior major',surf:'grass',rounds:4,sk:[3.5,5.5],pts:400,bo:1,g:4}
+const KEY_V='tennis-go-v2';
+/* each week: a main event with an entry rule, and the alternate you play if you miss the cut */
+const EV=(n,tier,surf,rounds,sk,pts,extra)=>Object.assign({n,tier,surf,rounds,sk,pts},extra||{});
+const JUNIOR_WEEKS=[
+  {main:EV('Twin Cities Junior Open','Local','hard',2,[1,2],50)},
+  {main:EV('Midwest Junior Sectionals','Sectional','clay',3,[1.5,3],120,{cut:40}),alt:EV('Minnesota Junior Classic','Local','clay',2,[1,2],40)},
+  {main:EV('National Junior Hardcourts','National','hard',3,[2.5,4],220,{cut:150}),alt:EV('Great Lakes Regional','Regional','hard',3,[1.5,3],90)},
+  {main:EV('National Junior Clay Courts','National','clay',3,[3,4.5],220,{cut:220}),alt:EV('Heartland Regional Clay','Regional','clay',3,[2,3],90)},
+  {main:EV('Junior Major','Junior major','grass',4,[3.5,5.5],400,{cut:380}),alt:EV('Junior International Open','International','grass',3,[2.5,4],160)}
 ];
 const PROGRAMS=[
-  {id:'lakeshore',name:'Lakeshore University',need:650,o:1,xp:1.5,blurb:'National title contender. Tougher lineups, best coaching (50% more training points).'},
-  {id:'northstar',name:'North Star State',need:300,o:0,xp:1.25,blurb:'Solid conference team. Balanced schedule, good coaching (25% more training points).'},
-  {id:'driftless',name:'Driftless College',need:0,o:-1,xp:1,blurb:'Small program where you play No. 1 from day one. Easier opponents.'}
+  {id:'lakeshore',name:'Lakeshore University',need:900,o:1,xp:1.5,start:250,blurb:'National title contender. Tougher lineups, the big invitationals, best coaching (50% more training points).'},
+  {id:'northstar',name:'North Star State',need:450,o:0,xp:1.25,start:120,blurb:'Solid conference team. Balanced schedule, good coaching (25% more training points).'},
+  {id:'driftless',name:'Driftless College',need:0,o:-1,xp:1,start:0,blurb:'Small program where you play No. 1 from day one. Easier opponents, but you have to earn your way into the big events.'}
 ];
-function collegeCal(id){const p=PROGRAMS.find(x=>x.id===id)||PROGRAMS[2],o=p.o;return[
-  {n:'Fall Invitational',tier:'College',surf:'hard',rounds:2,sk:[4+o,4.5+o],pts:80,bo:1,g:4},
-  {n:'Dual match: rival school',tier:'Dual match',surf:'hard',rounds:1,sk:[4.5+o,4.5+o],pts:60,bo:1,g:6},
-  {n:'Indoor Team Championship',tier:'National indoor',surf:'hard',rounds:2,sk:[4.5+o,5.5+o],pts:150,bo:1,g:4},
-  {n:'Spring Clay Classic',tier:'College',surf:'clay',rounds:2,sk:[4.5+o,5.5+o],pts:120,bo:1,g:4},
-  {n:'Conference Championship',tier:'Conference',surf:'hard',rounds:3,sk:[5+o,6+o],pts:250,bo:1,g:4},
-  {n:'NCAA Singles Championship',tier:'National',surf:'hard',rounds:4,sk:[5+o,7+o],pts:500,bo:1,g:6}
+function collegeWeeks(id){const p=PROGRAMS.find(x=>x.id===id)||PROGRAMS[2],o=p.o;return[
+  {main:EV('Fall Invitational','College','hard',2,[4+o,4.5+o],80)},
+  {main:EV('Dual match: rival school','Dual match','hard',1,[4.5+o,4.5+o],60)},
+  {main:EV('All-American Championships','National','hard',3,[5,6],200,{crank:60,topProgram:true}),alt:EV('Regional Championships','Regional','hard',3,[4+o,5+o],100)},
+  {main:EV('Spring Clay Classic','College','clay',2,[4.5+o,5.5+o],120)},
+  {main:EV('Conference Championship','Conference','hard',3,[5+o,6+o],250)},
+  {main:EV('NCAA Singles Championship','National','hard',4,[5.5,7],500,{crank:64}),alt:EV('Summer Futures (as an amateur)','Futures','hard',3,[4.5,5.5],60)}
 ]}
-const PRO=[
-  {n:'Futures Duluth',tier:'Futures',surf:'hard',rounds:3,sk:[4.5,5.5],pts:60,bo:1,g:4},
-  {n:'Futures Tampa',tier:'Futures',surf:'clay',rounds:3,sk:[4.5,6],pts:80,bo:1,g:4},
-  {n:'Melbourne Major',tier:'Major',surf:'hard',rounds:5,sk:[6,9],pts:2000,bo:3,g:4,major:'Melbourne'},
-  {n:'Challenger Cancun',tier:'Challenger',surf:'hard',rounds:4,sk:[5.5,6.5],pts:125,bo:1,g:4},
-  {n:'Tour 250 Marrakech',tier:'Tour 250',surf:'clay',rounds:4,sk:[6,7],pts:250,bo:1,g:4},
-  {n:'Paris Major',tier:'Major',surf:'clay',rounds:5,sk:[6,9],pts:2000,bo:3,g:4,major:'Paris'},
-  {n:'Tour 250 Eastbourne',tier:'Tour 250',surf:'grass',rounds:4,sk:[6,7],pts:250,bo:1,g:4},
-  {n:'London Major',tier:'Major',surf:'grass',rounds:5,sk:[6,9],pts:2000,bo:3,g:4,major:'London'},
-  {n:'Tour 500 Washington',tier:'Tour 500',surf:'hard',rounds:4,sk:[6.5,8],pts:500,bo:1,g:4},
-  {n:'Masters Cincinnati',tier:'Masters',surf:'hard',rounds:5,sk:[7,8.5],pts:1000,bo:1,g:4},
-  {n:'New York Major',tier:'Major',surf:'hard',rounds:5,sk:[6,9],pts:2000,bo:3,g:4,major:'New York'}
-];
+const PRO_WEEKS=[
+  ['Brisbane 250','Tour 250','hard',4,[6,7],250,{rank:80}],
+  ['Melbourne Major','Major','hard',5,[6,9],2000,{major:'Melbourne'}],
+  ['Rotterdam 500','Tour 500','hard',4,[6.5,8],500,{rank:40}],
+  ['Desert Masters','Masters','hard',5,[7,8.5],1000,{rank:50}],
+  ['Barcelona 500','Tour 500','clay',4,[6.5,8],500,{rank:40}],
+  ['Madrid Masters','Masters','clay',5,[7,8.5],1000,{rank:50}],
+  ['Paris Major','Major','clay',5,[6,9],2000,{major:'Paris'}],
+  ['Queen’s 500','Tour 500','grass',4,[6.5,8],500,{rank:40}],
+  ['London Major','Major','grass',5,[6,9],2000,{major:'London'}],
+  ['Washington 500','Tour 500','hard',4,[6.5,8],500,{rank:40}],
+  ['Cincinnati Masters','Masters','hard',5,[7,8.5],1000,{rank:50}],
+  ['New York Major','Major','hard',5,[6,9],2000,{major:'New York'}]
+].map(([n,t,s,r,sk,p,x])=>({main:EV(n,t,s,r,sk,p,x),alt:'pro'}));
+const ALT_CITIES=['Canberra','Burnie','Tenerife','Monterrey','Sarasota','Aix','Bordeaux','Ilkley','Nottingham','Lexington','Granby','Cary'];
+function proAlt(wk){const surf=PRO_WEEKS[wk].main.surf;return proRank()<=300?EV('Challenger '+ALT_CITIES[wk],'Challenger',surf,4,[5,6.5],150):EV('Futures '+ALT_CITIES[wk],'Futures',surf,3,[4,5.5],80)}
+const PRIZE={Futures:15000,Challenger:40000,'Tour 250':100000,'Tour 500':250000,Masters:600000,Major:2500000};
 const MAJORS=['Melbourne','Paris','London','New York'];
+const STYLES=[
+  {id:'server',name:'Big Server',d:'Builds points off the serve.',perks:['More aces on first serves','Second serves stray 40% less','Faster serves and even more aces']},
+  {id:'baseliner',name:'Baseliner',d:'Lives on the baseline and grinds.',perks:['Deep shots stray 25% less','Reach wider balls','Deep shots force more errors']},
+  {id:'allcourt',name:'All-Court',d:'Touch, angles and variety.',perks:['Drop shots are much harder to return','Sharp angles force more errors','Every shot strays 10% less']},
+  {id:'counter',name:'Counterpuncher',d:'Gets everything back and waits.',perks:['Opponents make more unforced errors','Long rallies wear opponents down','Reach almost anything']}
+];
+const PERK_AT=[0,15,40];
+const SPONSORS=[
+  {id:'nil',name:'Hometown Pizza NIL deal',pay:5000,when:'Top 25 college ranking'},
+  {id:'strings',name:'Northstar Strings',pay:50000,when:'First pro title'},
+  {id:'apparel',name:'Baseline Apparel',pay:150000,when:'Top 100 world ranking'},
+  {id:'ace',name:'Ace Sportswear',pay:1000000,when:'Top 10 world ranking'},
+  {id:'watch',name:'Grand Slam Watches',pay:3000000,when:'Win a major'}
+];
+const CAMPS=[{n:'Weekend clinic',cost:5000,xp:25},{n:'Pro academy block',cost:60000,xp:110},{n:'Elite coaching retreat',cost:600000,xp:400}];
+const RIVAL_TYPES=[
+  {t:'Showman',lines:['Hope you brought a camera. I put on a show.','The crowd came to see me, not you.','Last time was a warm-up.']},
+  {t:'Grinder',lines:['I’ll be out here all day if I have to.','You’ll have to hit through me.','Bring your legs.']},
+  {t:'Ice cold',lines:['Nothing personal.','I don’t lose finals.','Another day at the office.']}
+];
 
 let save=null;
-function load(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null}catch(e){return null}}
-function store(){try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}}
+function load(){try{const s=localStorage.getItem(KEY_V);return s?JSON.parse(s):null}catch(e){return null}}
+function store(){try{localStorage.setItem(KEY_V,JSON.stringify(save))}catch(e){}}
 save=load();
-function calendar(){return save.stage==='junior'?JUNIOR:save.stage==='college'?collegeCal(save.college):PRO}
-function proRank(){return Math.max(1,Math.round(1500*Math.exp(-save.pts.pro/1400)))}
+const roll=k=>Math.round(save.pts[k].cur+0.5*save.pts[k].prev);
+function proRank(){return Math.max(1,Math.round(1500*Math.exp(-roll('pro')/500)))}
+function collegeRank(){return Math.max(1,Math.round(400*Math.exp(-roll('college')/300)))}
 function program(){return PROGRAMS.find(p=>p.id===save.college)}
 function xpMult(){return save.stage==='college'&&program()?program().xp:1}
-function age(){return save.stage==='junior'?15+Math.floor(save.eventIdx/2):save.stage==='college'?19+Math.floor(save.eventIdx/2):22+save.season-1}
-function roundName(r,total,qual){if(r<=qual)return'Qualifying '+r;const left=total-r;return left===0?'Final':left===1?'Semifinal':left===2?'Quarterfinal':left===3?'Round of 16':'Round of 32'}
+function weeks(){return save.stage==='junior'?JUNIOR_WEEKS:save.stage==='college'?collegeWeeks(save.college):PRO_WEEKS}
+function fmt(stage,ev){if(stage==='junior')return{bo:1,g:4};if(stage==='college')return{bo:1,g:6};return ev.tier==='Major'?{bo:3,g:6}:{bo:3,g:4}}
+function perkLevel(){if(!save)return 0;return PERK_AT.filter(n=>save.careerW>=n).length}
+function money(n){return n>=1e6?'$'+(n/1e6).toFixed(n>=1e7?0:1)+'M':n>=1e3?'$'+Math.round(n/1e3)+'k':'$'+n}
+function hof(){const r=save.rec;return r.majors*100+r.masters*25+r.titles*10+r.weeks1*5+(MAJORS.every(m=>save.majors[m])?200:0)}
+/* which event you play this week, and how you got in */
+function entry(wk){
+  const W=weeks()[wk],ev=W.main;
+  if(save.stage==='junior'){if(!ev.cut||roll('junior')>=ev.cut)return{ev,how:'direct',qual:0};return{ev:W.alt,how:'alt',qual:0,missed:ev,why:'needs '+ev.cut+' junior points'}}
+  if(save.stage==='college'){if(!ev.crank)return{ev,how:'direct',qual:0};
+    if(collegeRank()<=ev.crank||(ev.topProgram&&program().o===1))return{ev,how:'direct',qual:0};
+    return{ev:W.alt,how:'alt',qual:0,missed:ev,why:'needs a top-'+ev.crank+' college ranking'}}
+  const r=proRank();
+  if(ev.major){if(r<=100)return{ev,how:'direct',qual:0};if(r<=200)return{ev,how:'qual',qual:3};return{ev:proAlt(wk),how:'alt',qual:0,missed:ev,why:'needs a top-200 ranking for qualifying'}}
+  if(r<=ev.rank)return{ev,how:'direct',qual:0};
+  return{ev:proAlt(wk),how:'alt',qual:0,missed:ev,why:'needs a top-'+ev.rank+' ranking'};
+}
+function roundName(r,total,qual){if(r<=qual)return'Qualifying '+r;const left=total-r;return left===0?'Final':left===1?'Semifinal':left===2?'Quarterfinal':left===3?'Round of 16':left===4?'Round of 32':'Round of 64'}
 function trainCost(l){return l*15}
-function oppPool(){return ROSTER.filter(r=>!save||r.id!==save.char)}
 
 /* ================= title ================= */
+function stageName(){return{junior:'Juniors',college:'College',pro:'Pro tour'}[save.stage]}
 function renderTitle(){
   const has=!!save;$('btnContinue').hidden=!has;$('btnNewConfirm').hidden=true;$('btnNew').hidden=false;
-  $('careerChip').textContent=has?(RBYID[save.char].name+' · '+({junior:'Juniors',college:'College',pro:'Pro tour'}[save.stage])):'No save yet';
+  $('careerChip').textContent=has?(RBYID[save.char].name+' · '+stageName()+' season '+save.season):'No save yet';
   $('btnNew').className=has?'':'go';show('title');
 }
 $('btnContinue').onclick=()=>renderHub();
@@ -321,129 +380,214 @@ $('btnNew').onclick=()=>{if(save){$('btnNew').hidden=true;$('btnNewConfirm').hid
 $('btnNewConfirm').onclick=()=>openSelect('career');
 $('btnQuick').onclick=()=>openSelect('quick');
 
-/* ================= player select ================= */
-let selMode='career',selId=null;
+/* ================= player select + play style ================= */
+let selMode='career',selId=null,styleId=null;
 function openSelect(mode){
   selMode=mode;selId=mode==='quick'&&save?save.char:null;
   $('selEyebrow').textContent=mode==='career'?'New career':'Quick match';
-  $('selIntro').textContent=mode==='career'?'Your player starts as a raw junior with a fraction of these ratings. Win matches and train to grow into them, and past them.':'Pick who you want to play as.';
+  $('selIntro').textContent=mode==='career'?'Your player starts as a raw 16-year-old with a fraction of these ratings. Win matches and train to grow into them, and past them.':'Pick who you want to play as.';
   $('roster').innerHTML=ROSTER.map(r=>'<button class="pc" data-id="'+r.id+'" aria-pressed="'+(r.id===selId)+'"><strong>'+esc(r.name)+'</strong><small>'+esc(r.nick)+'</small><div class="mini">'+STATS.map(([k,l])=>'<span>'+l+'</span><div class="bar"><i style="width:'+r.st[k]*10+'%"></i></div>').join('')+'</div></button>').join('');
   $('roster').querySelectorAll('.pc').forEach(b=>b.onclick=()=>{selId=b.dataset.id;$('roster').querySelectorAll('.pc').forEach(x=>x.setAttribute('aria-pressed',x===b));updSel()});
   updSel();show('select');
 }
-function updSel(){$('selGo').disabled=!selId;$('selGo').textContent=selId?(selMode==='career'?'Start career as '+RBYID[selId].name:'Play as '+RBYID[selId].name):'Pick a player'}
+function updSel(){$('selGo').disabled=!selId;$('selGo').textContent=selId?(selMode==='career'?'Next: play style':'Play as '+RBYID[selId].name):'Pick a player'}
 $('selBack').onclick=()=>renderTitle();
 $('selGo').onclick=()=>{
   if(!selId)return;
-  if(selMode==='career'){
-    const c=RBYID[selId],st={};for(const [k] of STATS)st[k]=Math.max(1,Math.round(c.st[k]*0.45));
-    const pool=ROSTER.filter(r=>r.id!==selId).sort(()=>Math.random()-0.5).slice(0,3);
-    save={char:selId,stats:st,xp:0,stage:'junior',season:1,eventIdx:0,pts:{junior:0,college:0,pro:0},history:[],titles:[],majors:{},
-      rivals:pool.map((r,i)=>({id:r.id,edge:[0.6,0.9,1.2][i],w:0,l:0})),college:null,cur:null,careerW:0,careerL:0};
-    store();renderHub();
-  }else{
-    const lvl=+$('qmLevel').value,me=RBYID[selId],stats={};for(const [k] of STATS)stats[k]=clamp(me.st[k],1,10);
-    const o=pick(ROSTER.filter(r=>r.id!==selId));
-    startMatch({surf:$('qmSurf').value,bo:1,g:6,stats,meId:selId,me:me.name,opp:{id:o.id,name:o.name,skill:lvl},label:'Quick match',
-      onEnd:(won,score,st)=>showResult(won,score,st,won?'Nice set. Try a tougher opponent next.':'Shake it off and run it back.',[],'Back to menu',()=>renderTitle())});
-  }
+  if(selMode==='career'){openStyle();return}
+  const lvl=+$('qmLevel').value,me=RBYID[selId],stats={};for(const [k] of STATS)stats[k]=clamp(me.st[k],1,10);
+  const o=pick(ROSTER.filter(r=>r.id!==selId));
+  startMatch({surf:$('qmSurf').value,bo:1,g:6,stats,meId:selId,me:me.name,opp:{id:o.id,name:o.name,skill:lvl},label:'Quick match',style:null,perks:0,
+    onEnd:(won,score,st)=>showResult(won,score,st,won?'Nice set. Try a tougher opponent next.':'Shake it off and run it back.',[],'Back to menu',()=>renderTitle())});
+};
+function openStyle(){
+  styleId=null;
+  $('styles').innerHTML=STYLES.map(s=>'<button class="pc" data-id="'+s.id+'" aria-pressed="false"><strong>'+s.name+'</strong><small>'+s.d+'</small><ol class="perks">'+s.perks.map((p,i)=>'<li><span class="muted">'+(i===0?'Start':PERK_AT[i]+' wins')+'</span> '+p+'</li>').join('')+'</ol></button>').join('');
+  $('styles').querySelectorAll('.pc').forEach(b=>b.onclick=()=>{styleId=b.dataset.id;$('styles').querySelectorAll('.pc').forEach(x=>x.setAttribute('aria-pressed',x===b));$('styleGo').disabled=false;$('styleGo').textContent='Start career as a '+STYLES.find(s=>s.id===styleId).name});
+  $('styleGo').disabled=true;$('styleGo').textContent='Pick a play style';show('style');
+}
+$('styleBack').onclick=()=>openSelect('career');
+$('styleGo').onclick=()=>{
+  if(!styleId)return;
+  const c=RBYID[selId],st={};for(const [k] of STATS)st[k]=Math.max(1,Math.round(c.st[k]*0.45));
+  const pool=ROSTER.filter(r=>r.id!==selId).sort(()=>Math.random()-0.5).slice(0,3);
+  save={char:selId,style:styleId,stats:st,xp:0,stage:'junior',season:1,week:0,age:16,
+    pts:{junior:{cur:0,prev:0},college:{cur:0,prev:0},pro:{cur:0,prev:0}},juniorTotal:0,
+    history:[],titles:[],majors:{},money:0,earnings:0,sponsors:[],
+    rec:{titles:0,majors:0,masters:0,weeks1:0,best:9999},
+    rivals:pool.map((r,i)=>({id:r.id,edge:[0.6,0.9,1.2][i],type:i,w:0,l:0,last:null})),
+    college:null,collegeSeasons:0,cur:null,careerW:0,careerL:0,retireAsked:false,retired:false};
+  store();renderHub();
 };
 
 /* ================= hub ================= */
+function standing(){
+  if(save.stage==='junior')return['Junior points',roll('junior')];
+  if(save.stage==='college')return['College rank','#'+collegeRank()];
+  return['World rank','#'+proRank()];
+}
 function renderHub(){
   if(!save){renderTitle();return}
-  if(save.stage==='junior'&&save.eventIdx>=JUNIOR.length){renderRecruit();return}
-  if(save.stage==='college'&&save.eventIdx>=collegeCal(save.college).length){renderTurnPro();return}
-  if(save.stage==='pro'&&save.eventIdx>=PRO.length){save.season++;save.eventIdx=0;store()}
-  const C=RBYID[save.char];
+  if(save.week>=weeks().length){seasonEnd();return}
+  const C=RBYID[save.char],S=STYLES.find(s=>s.id===save.style);
   const stages=[['junior','Juniors'],['college','College'],['pro','Pro tour']],si=stages.findIndex(s=>s[0]===save.stage);
   $('stepper').innerHTML=stages.map((s,i)=>'<div class="step '+(i<si?'done':i===si?'now':'')+'">'+s[1]+'</div>').join('');
-  let standing,standingLab;
-  if(save.stage==='junior'){standing=save.pts.junior;standingLab='Junior points'}
-  else if(save.stage==='college'){standing=save.pts.college;standingLab='College points'}
-  else{standing='#'+proRank();standingLab='World rank'}
-  $('playerCard').innerHTML='<div style="min-width:0"><h2 style="font-size:32px">'+esc(C.name)+'</h2><p class="muted">'+esc(C.nick)+' · Age '+age()+(save.stage==='college'?' · '+esc(program().name):'')+(save.stage==='pro'?' · Season '+save.season:'')+'</p></div>'+
-    '<div class="kv"><div><small>'+standingLab+'</small><strong class="num">'+standing+'</strong></div><div><small>Record</small><strong class="num">'+save.careerW+'–'+save.careerL+'</strong></div><div><small>Titles</small><strong class="num">'+save.titles.length+'</strong></div></div>';
-  const cal=calendar(),ev=cal[save.eventIdx];
-  const qual=save.cur?save.cur.qual:(save.stage==='pro'&&ev.major&&proRank()>128?2:0);
-  const total=save.cur?save.cur.total:ev.rounds+qual;
+  const [sl,sv]=standing();
+  $('playerCard').innerHTML='<div style="min-width:0"><h2 style="font-size:32px">'+esc(C.name)+'</h2><p class="muted">'+S.name+' · Age '+save.age+' · '+stageName()+' season '+save.season+(save.stage==='college'?' · '+esc(program().name):'')+'</p></div>'+
+    '<div class="kv"><div><small>'+sl+'</small><strong class="num">'+sv+'</strong></div><div><small>Record</small><strong class="num">'+save.careerW+'–'+save.careerL+'</strong></div><div><small>'+(save.stage==='pro'?'Bank':'Titles')+'</small><strong class="num">'+(save.stage==='pro'?money(save.money):save.titles.length)+'</strong></div></div>';
+  const W=weeks(),wk=save.week;
+  const E=save.cur?{ev:save.cur.ev,how:save.cur.how,qual:save.cur.qual,missed:save.cur.missed,why:save.cur.why}:entry(wk);
+  const ev=E.ev,f=fmt(save.stage,ev),total=save.cur?save.cur.total:ev.rounds+E.qual;
+  let note='';
+  if(E.how==='alt')note='<p class="note">You missed the cut for the <b>'+esc(E.missed.n)+'</b> ('+E.why+'), so you play the alternate event this week.</p>';
+  if(E.how==='qual')note='<p class="note">Your ranking gets you into qualifying. Win '+E.qual+' qualifying matches to reach the main draw.</p>';
   let oppHtml='';
-  if(save.cur&&save.cur.opp){const o=save.cur.opp;oppHtml='<div class="row between" style="border-top:1px solid var(--line);padding-top:10px"><div style="min-width:0"><p class="eyebrow">'+roundName(save.cur.round,total,save.cur.qual)+(o.rival!=null?' · Rival':'')+'</p><p style="font-weight:600;font-size:18px">'+esc(o.name)+'</p></div><div style="width:110px"><p class="muted" style="font-size:12px">Rating '+o.skill.toFixed(1)+'</p><div class="bar"><i style="width:'+o.skill*10+'%;background:var(--loss)"></i></div></div></div>'}
-  $('nextCard').innerHTML='<p class="eyebrow">'+(save.cur?'In progress':'Next event')+' · '+esc(ev.tier)+'</p><h3 style="font-size:26px">'+esc(ev.n)+'</h3>'+
-    '<div class="row"><span class="chip"><span class="dot s-'+ev.surf+'"></span>'+SURF[ev.surf].name+'</span><span class="chip num">'+total+(total===1?' match':' rounds')+'</span><span class="chip">'+(ev.bo===3?'Best of 3 sets':'One set')+' to '+ev.g+'</span><span class="chip num">'+ev.pts+' pts to winner</span></div>'+
-    (qual&&!save.cur?'<p class="muted" style="font-size:14px">Your ranking is outside the top 128, so you start in qualifying.</p>':'')+oppHtml+
-    '<button class="go" id="btnPlay">'+(save.cur?'Play '+roundName(save.cur.round,total,save.cur.qual).toLowerCase():'Enter tournament')+'</button>';
+  if(save.cur&&save.cur.opp){const o=save.cur.opp,rv=o.rival!=null?save.rivals[o.rival]:null;
+    oppHtml='<div class="opp"><div class="row between"><div style="min-width:0"><p class="eyebrow">'+roundName(save.cur.round,total,save.cur.qual)+(rv?' · Rival · '+RIVAL_TYPES[rv.type].t:'')+'</p><p style="font-weight:600;font-size:18px">'+esc(o.name)+'</p></div><div style="width:110px"><p class="muted" style="font-size:12px">Rating '+o.skill.toFixed(1)+'</p><div class="bar"><i style="width:'+o.skill*10+'%;background:var(--loss)"></i></div></div></div>'+
+      (rv?'<p class="quote">“'+esc(o.line)+'”</p><p class="muted" style="font-size:13px">Head-to-head '+rv.w+'–'+rv.l+(rv.last==='l'?' · Revenge match':'')+'</p>':'')+'</div>'}
+  $('nextCard').innerHTML='<p class="eyebrow">Week '+(wk+1)+' of '+W.length+' · '+esc(ev.tier)+(save.cur?' · In progress':'')+'</p><h3 style="font-size:26px">'+esc(ev.n)+'</h3>'+
+    '<div class="row"><span class="chip"><span class="dot s-'+ev.surf+'"></span>'+SURF[ev.surf].name+'</span><span class="chip num">'+total+(total===1?' match':' rounds')+'</span><span class="chip">'+(f.bo===3?'Best of 3 sets':'One set')+' to '+f.g+'</span>'+
+    '<span class="chip num">'+(save.stage==='pro'?money(PRIZE[ev.tier]||0)+' · ':'')+ev.pts+' pts</span></div>'+note+oppHtml+
+    '<button class="go" id="btnPlay">'+(save.cur?'Play '+roundName(save.cur.round,total,save.cur.qual).toLowerCase():'Enter '+(E.how==='qual'?'qualifying':'tournament'))+'</button>';
   $('btnPlay').onclick=playNext;
+  const pl=perkLevel();
   $('statsCard').innerHTML='<div class="row between"><h3>Training</h3><span class="chip num">'+save.xp+' training pts</span></div>'+
     STATS.map(([k,l,d])=>{const v=save.stats[k],c=trainCost(v);return'<div class="stat"><span title="'+d+'">'+l+'</span><div class="bar"><i style="width:'+v*10+'%"></i></div><button data-k="'+k+'" '+(v>=10||save.xp<c?'disabled':'')+'>'+(v>=10?'Max':'+1 · '+c)+'</button></div>'}).join('')+
-    '<p class="muted" style="font-size:13px">Power adds pace, Control tightens your stray circle, Speed reaches sharp angles, Serve adds aces.</p>';
+    '<h3 style="margin-top:4px">'+S.name+' perks</h3><ul class="perklist">'+S.perks.map((p,i)=>'<li class="'+(i<pl?'on':'')+'"><span>'+(i<pl?'✓':PERK_AT[i]+' wins')+'</span>'+p+'</li>').join('')+'</ul>'+
+    (save.stage!=='junior'?'<h3 style="margin-top:4px">Training camps</h3><p class="muted" style="font-size:13px;margin-top:-6px">Spend prize and sponsor money on extra training points. Bank: '+money(save.money)+'</p>'+
+      CAMPS.map((c,i)=>'<div class="row between"><span>'+c.n+' <span class="muted">+'+c.xp+' pts</span></span><button data-camp="'+i+'" '+(save.money<c.cost?'disabled':'')+'>'+money(c.cost)+'</button></div>').join(''):'');
   $('statsCard').querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k,c=trainCost(save.stats[k]);if(save.xp>=c&&save.stats[k]<10){save.xp-=c;save.stats[k]++;store();renderHub()}});
-  const label={junior:'Junior calendar',college:esc(program()?program().name:'College')+' season',pro:'Season '+save.season+' calendar'}[save.stage];
-  $('calCard').innerHTML='<h3>'+label+'</h3><ul>'+cal.map((e,i)=>{const h=save.history.find(x=>x.stage===save.stage&&x.i===i&&(save.stage!=='pro'||x.season===save.season));
-    const r=h?'<span class="res '+(h.champ?'w':'')+'">'+h.res+'</span>':i===save.eventIdx?'<span class="res next">Next</span>':'<span class="res up">'+e.tier+'</span>';
-    return'<li class="'+(i===save.eventIdx?'is-next':'')+'"><span class="dot s-'+e.surf+'"></span><span style="min-width:0">'+esc(e.n)+'</span>'+r+'</li>'}).join('')+'</ul>';
-  const rv=save.rivals.map(r=>'<div class="row between" style="font-size:15px"><span>'+esc(RBYID[r.id].name)+'</span><span class="num muted">'+r.w+'–'+r.l+'</span></div>').join('');
+  $('statsCard').querySelectorAll('button[data-camp]').forEach(b=>b.onclick=()=>{const c=CAMPS[+b.dataset.camp];if(save.money>=c.cost){save.money-=c.cost;save.xp+=c.xp;store();renderHub()}});
+  $('calCard').innerHTML='<h3>'+stageName()+' season '+save.season+'</h3><ul>'+W.map((w,i)=>{
+    const h=save.history.find(x=>x.stage===save.stage&&x.season===save.season&&x.wk===i);
+    const nm=h?h.name:(i===wk?ev.n:w.main.n);
+    const r=h?'<span class="res '+(h.champ?'w':'')+'">'+h.res+'</span>':i===wk?'<span class="res next">Now</span>':'<span class="res up">'+(w.main.tier)+'</span>';
+    return'<li class="'+(i===wk?'is-next':'')+'"><span class="dot s-'+w.main.surf+'"></span><span style="min-width:0">'+esc(nm)+'</span>'+r+'</li>'}).join('')+'</ul>';
+  const rv=save.rivals.map(r=>'<div class="row between" style="font-size:15px"><span>'+esc(RBYID[r.id].name)+' <span class="muted">· '+RIVAL_TYPES[r.type].t+'</span></span><span class="num muted">'+r.w+'–'+r.l+'</span></div>').join('');
+  const sp=save.sponsors.length?save.sponsors.map(id=>{const s=SPONSORS.find(x=>x.id===id);return'<div class="row between" style="font-size:15px"><span>'+s.name+'</span><span class="num muted">'+money(s.pay)+'/season</span></div>'}).join(''):'<p class="muted" style="font-size:14px">No deals yet. Next: '+SPONSORS.find(s=>!save.sponsors.includes(s.id)).when+'.</p>';
+  const R=save.rec,slam=MAJORS.every(m=>save.majors[m]);
   $('trophyCard').innerHTML='<h3>Major titles</h3><div class="slots">'+MAJORS.map(m=>{const n=save.majors[m]||0;return'<div class="slot '+(n?'won':'')+'"><strong>'+m+'</strong><span class="num">'+(n?n+(n>1?' titles':' title'):'Not yet won')+'</span></div>'}).join('')+'</div>'+
-    '<h3 style="margin-top:6px">Rivals</h3><p class="muted" style="font-size:13px;margin-top:-6px">They follow you through every level. Your head-to-head record:</p>'+rv;
+    '<div class="kv"><div><small>Titles</small><strong class="num">'+R.titles+'</strong></div><div><small>Earnings</small><strong class="num">'+money(save.earnings)+'</strong></div><div><small>Hall of Fame</small><strong class="num">'+hof()+'</strong></div></div>'+
+    '<div class="kv"><div><small>Best rank</small><strong class="num">'+(R.best<9999?'#'+R.best:'–')+'</strong></div><div><small>Weeks at No. 1</small><strong class="num">'+R.weeks1+'</strong></div><div><small>Career Slam</small><strong>'+(slam?'Yes':'Not yet')+'</strong></div></div>'+
+    '<h3 style="margin-top:6px">Sponsors</h3>'+sp+
+    '<h3 style="margin-top:6px">Rivals</h3>'+rv;
   show('hub');
 }
 $('hubMenu').onclick=()=>renderTitle();
 function makeOpp(){
-  const ev=calendar()[save.eventIdx],c=save.cur,r=c.round;
-  let skill,rival=null,who;
-  if(r<=c.qual){skill=ev.sk[0]-1+rnd(-0.3,0.3)}
+  const c=save.cur,ev=c.ev,r=c.round;
+  let skill,rival=null,who,line=null;
+  if(r<=c.qual)skill=ev.sk[0]-1.2+rnd(-0.3,0.3);
   else{const mr=r-c.qual,mt=c.total-c.qual;skill=ev.sk[0]+(ev.sk[1]-ev.sk[0])*(mt>1?(mr-1)/(mt-1):1)+rnd(-0.4,0.4)}
   const rivIds=save.rivals.map(x=>x.id);who=pick(ROSTER.filter(x=>x.id!==save.char&&!rivIds.includes(x.id)));
-  if(r===c.total&&c.total>=3){rival=save.history.length%3;const rv=save.rivals[rival];who=RBYID[rv.id];skill=ev.sk[1]+rv.edge*0.5}
-  c.opp={id:who.id,name:who.name,skill:Math.round(clamp(skill,1,10)*10)/10,rival};
+  const mainLeft=c.total-r;
+  if(r>c.qual&&c.total-c.qual>=3&&(mainLeft===0||(mainLeft===1&&ev.tier==='Major'))){
+    rival=(save.history.length+(mainLeft===1?1:0))%3;const rv=save.rivals[rival];who=RBYID[rv.id];skill=ev.sk[1]+rv.edge*0.5-(mainLeft===1?0.4:0);
+    line=rv.last==='l'?'Back for more? I remember how the last one went.':pick(RIVAL_TYPES[rv.type].lines)}
+  c.opp={id:who.id,name:who.name,skill:Math.round(clamp(skill,1,10)*10)/10,rival,line};
 }
 function playNext(){
-  const ev=calendar()[save.eventIdx];
-  if(!save.cur){const qual=save.stage==='pro'&&ev.major&&proRank()>128?2:0;save.cur={round:1,total:ev.rounds+qual,qual,opp:null}}
+  if(!save.cur){const E=entry(save.week);save.cur={ev:E.ev,how:E.how,qual:E.qual,missed:E.missed||null,why:E.why||null,round:1,total:E.ev.rounds+E.qual,opp:null,prize:0}}
   if(!save.cur.opp)makeOpp();store();
-  const c=save.cur;
-  startMatch({surf:ev.surf,bo:ev.bo,g:ev.g,stats:save.stats,meId:save.char,me:RBYID[save.char].name,opp:c.opp,
-    label:ev.n+' · '+roundName(c.round,c.total,c.qual),onEnd:careerResult});
+  const c=save.cur,f=fmt(save.stage,c.ev);
+  startMatch({surf:c.ev.surf,bo:f.bo,g:f.g,stats:save.stats,meId:save.char,me:RBYID[save.char].name,opp:c.opp,style:save.style,perks:perkLevel(),
+    label:c.ev.n+' · '+roundName(c.round,c.total,c.qual),intro:c.opp.line?c.opp.name+': “'+c.opp.line+'”':null,onEnd:careerResult});
+}
+const SHORT={Semifinal:'SF',Quarterfinal:'QF','Round of 16':'R16','Round of 32':'R32','Round of 64':'R64'};
+function prizeFor(ev,winsInMain,mainRounds,champ){const P=PRIZE[ev.tier];if(!P||save.stage!=='pro')return 0;if(champ)return P;const fr=[0.015,0.03,0.06,0.12,0.25,0.5];return Math.round(P*(fr[clamp(winsInMain,0,5)]||0.5)*(mainRounds>=5?1:1.3))}
+function checkSponsors(lines){
+  const add=id=>{if(!save.sponsors.includes(id)){save.sponsors.push(id);const s=SPONSORS.find(x=>x.id===id);lines.push(['New sponsor',s.name]);}};
+  if(save.stage==='college'&&collegeRank()<=25)add('nil');
+  if(save.stage==='pro'){if(save.history.some(h=>h.stage==='pro'&&h.champ))add('strings');if(proRank()<=100)add('apparel');if(proRank()<=10)add('ace');if(Object.keys(save.majors).length)add('watch')}
 }
 function careerResult(won,score,st){
-  const ev=calendar()[save.eventIdx],c=save.cur,o=c.opp,lines=[];
+  const c=save.cur,ev=c.ev,o=c.opp,lines=[],stageKey=save.stage;
   let xp=Math.round((won?25+Math.round(ev.pts/40):10)*xpMult());
   if(won)save.careerW++;else save.careerL++;
-  if(o.rival!=null){const rv=save.rivals[o.rival];if(won)rv.w++;else rv.l++}
-  let text,btn='Back to hub',champ=false,done=false,resLabel;
-  const stageKey=save.stage;
+  if(o.rival!=null){const rv=save.rivals[o.rival];if(won)rv.w++;else rv.l++;rv.last=won?'w':'l'}
+  let text,champ=false,done=false,resLabel,prize=0;
+  const mainRounds=c.total-c.qual,winsMain=Math.max(0,c.round-1-c.qual);
   if(won&&c.round===c.total){
-    champ=true;done=true;xp+=Math.round(40*xpMult());save.pts[stageKey]+=ev.pts;save.titles.push(ev.n+(save.stage==='pro'?' '+save.season:''));
-    if(ev.major)save.majors[ev.major]=(save.majors[ev.major]||0)+1;
+    champ=true;done=true;xp+=Math.round(40*xpMult());save.pts[stageKey].cur+=ev.pts;save.titles.push(ev.n+' '+save.season);save.rec.titles++;
+    if(ev.major)save.majors[ev.major]=(save.majors[ev.major]||0)+1,save.rec.majors++;if(ev.tier==='Masters')save.rec.masters++;
+    if(stageKey==='junior')save.juniorTotal+=ev.pts;
+    prize=prizeFor(ev,mainRounds,mainRounds,true);
     text=ev.major?'You are a major champion. '+ev.n+' is yours.':'Champion of the '+ev.n+'!';resLabel='W';lines.push(['Points','+'+ev.pts]);
-  }else if(won){c.round++;c.opp=null;text='Into the '+roundName(c.round,c.total,c.qual).toLowerCase()+'.'}
-  else{
-    done=true;const wins=c.round-1-c.qual,mainRounds=c.total-c.qual;
-    const earned=wins>0?Math.round(ev.pts*Math.pow(0.55,mainRounds-wins)):(c.round>c.qual?Math.round(ev.pts*0.03):0);
-    save.pts[stageKey]+=earned;
-    resLabel=c.round<=c.qual?'Q'+c.round:c.round===c.total?'F':roundName(c.round,c.total,c.qual).replace('Semifinal','SF').replace('Quarterfinal','QF').replace('Round of ','R');
-    text=o.rival!=null?'Your rival '+o.name+' gets the better of you this time.':'Out in the '+roundName(c.round,c.total,c.qual).toLowerCase()+'.';
+  }else if(won){
+    const wasQual=c.round===c.qual;c.round++;c.opp=null;
+    text=wasQual?'Through qualifying! You are in the main draw.':'Into the '+roundName(c.round,c.total,c.qual).toLowerCase()+'.';
+  }else{
+    done=true;
+    const earned=winsMain>0?Math.round(ev.pts*Math.pow(0.55,mainRounds-winsMain)):(c.round>c.qual?Math.round(ev.pts*0.03):0);
+    save.pts[stageKey].cur+=earned;if(stageKey==='junior')save.juniorTotal+=earned;
+    prize=c.round>c.qual?prizeFor(ev,winsMain,mainRounds,false):(save.stage==='pro'&&PRIZE[ev.tier]?Math.round(PRIZE[ev.tier]*0.005):0);
+    const rn=roundName(c.round,c.total,c.qual);resLabel=c.round<=c.qual?'Q'+c.round:c.round===c.total?'F':(SHORT[rn]||'R1');
+    text=o.rival!=null?'Your rival '+o.name+' gets the better of you this time.':'Out in the '+rn.toLowerCase()+'.';
     lines.push(['Points','+'+earned]);
   }
+  if(prize){save.money+=prize;save.earnings+=prize;lines.push(['Prize money',money(prize)])}
   save.xp+=xp;lines.unshift(['Training pts','+'+xp]);
-  if(done){save.history.push({stage:stageKey,i:save.eventIdx,season:save.season,res:resLabel,champ});save.eventIdx++;save.cur=null}
-  store();showResult(won,score,st,text,lines,btn,()=>renderHub(),champ);
+  if(done){
+    if(save.stage==='pro'){const r=proRank();save.rec.best=Math.min(save.rec.best,r);if(r===1)save.rec.weeks1++}
+    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});save.week++;save.cur=null;
+    const before=perkLevel();checkSponsors(lines);
+  }
+  const pl=perkLevel(),S=STYLES.find(s=>s.id===save.style);
+  if(won&&PERK_AT.includes(save.careerW)&&save.careerW>0)lines.push(['Perk unlocked',S.perks[PERK_AT.indexOf(save.careerW)]]);
+  store();showResult(won,score,st,text,lines,'Back to hub',()=>renderHub(),champ);
 }
+
+/* ================= season transitions ================= */
+function settle(amount){const k=save.stage+save.season;if(save.settled!==k){save.settled=k;if(amount){save.money+=amount;save.earnings+=amount}store()}}
+function newSeasonPts(k){save.pts[k].prev=save.pts[k].cur;save.pts[k].cur=0}
+function seasonScreen(eyebrow,title,text,buttons){
+  $('seEyebrow').textContent=eyebrow;$('seTitle').textContent=title;$('seText').innerHTML=text;
+  $('seBtns').innerHTML='';buttons.forEach(([label,cls,fn])=>{const b=document.createElement('button');b.textContent=label;if(cls)b.className=cls;b.onclick=fn;$('seBtns').appendChild(b)});
+  show('season');
+}
+function seasonSummary(){const hs=save.history.filter(h=>h.stage===save.stage&&h.season===save.season);const w=hs.filter(h=>h.champ).length;return hs.length+' events, '+w+(w===1?' title':' titles')}
+function seasonEnd(){
+  const st=save.stage;
+  if(st==='junior'){
+    if(save.season<2){seasonScreen('Junior season 1 complete','On to season 2',seasonSummary()+'. You have '+roll('junior')+' junior points. Points carry into next season at half value, so keep climbing.',
+      [['Start junior season 2','go',()=>{save.season=2;save.week=0;save.age++;newSeasonPts('junior');store();renderHub()}]]);return}
+    renderRecruit();return}
+  if(st==='college'){
+    save.collegeSeasons=save.season;
+    const nil=save.sponsors.includes('nil')?5000:0;settle(nil);
+    const sum=seasonSummary()+'. College rank #'+collegeRank()+'.'+(nil?' Your NIL deal paid '+money(nil)+'.':'');
+    const next=()=>{save.season++;save.week=0;save.age++;newSeasonPts('college');store();renderHub()};
+    if(save.season<2){seasonScreen('College season 1 complete','Back for season 2',sum+' Every player stays at least two seasons.',[['Start college season 2','go',next]]);return}
+    if(save.season>=4){seasonScreen('College career complete','Turning pro',sum+' Four seasons done. Time for the tour.',[['Turn pro','go',turnPro]]);return}
+    seasonScreen('College season '+save.season+' complete','Stay or go pro?',sum+' You can come back for another season (up to four) to keep earning training points from the coaching staff, or turn pro now.',
+      [['Turn pro','go',turnPro],['Return for season '+(save.season+1),'',next]]);return}
+  // pro
+  let pay=0;save.sponsors.forEach(id=>{if(id!=='nil')pay+=SPONSORS.find(s=>s.id===id).pay});
+  settle(pay);
+  const sum=seasonSummary()+'. World rank #'+proRank()+'.'+(pay?' Sponsors paid '+money(pay)+'.':'');
+  const next=()=>{save.season++;save.week=0;save.age++;newSeasonPts('pro');store();renderHub()};
+  if(save.age+1>=35&&!save.retireAsked){save.retireAsked=true;store();
+    seasonScreen('Season '+save.season+' complete','Time to retire?',sum+'<br><br>'+legacyText(),[['Retire','go',retire],['Keep playing','',next]]);return}
+  seasonScreen('Season '+save.season+' complete','On to season '+(save.season+1),sum,[['Start season '+(save.season+1),'go',next]]);
+}
+function legacyText(){const R=save.rec,slam=MAJORS.every(m=>save.majors[m]);
+  return R.titles+' titles, '+R.majors+' majors'+(slam?' (a Career Slam)':'')+', best ranking #'+(R.best<9999?R.best:'–')+', '+R.weeks1+' weeks at No. 1, '+money(save.earnings)+' in earnings. Hall of Fame score '+hof()+(hof()>=600?': a first-ballot Hall of Famer.':hof()>=250?': Hall of Fame worthy.':'.')}
+function retire(){save.retired=true;store();seasonScreen('Career over','Thanks for the memories',RBYID[save.char].name+' retires at '+(save.age+1)+'. '+legacyText(),[['Back to menu','go',()=>renderTitle()],['Keep playing anyway','',()=>{save.retired=false;save.season++;save.week=0;save.age++;newSeasonPts('pro');store();renderHub()}]])}
+function turnPro(){save.stage='pro';save.season=1;save.week=0;save.age++;save.pts.pro={cur:Math.round(roll('college')*0.6),prev:0};store();
+  seasonScreen('Welcome to the tour','Pro season 1','You start ranked #'+proRank()+'. Majors need a top-100 ranking for direct entry and top-200 for qualifying. Below that you play Challengers or Futures to climb.',[['Start pro season 1','go',()=>renderHub()]])}
 function renderRecruit(){
-  const p=save.pts.junior;
-  $('recruitIntro').textContent='You finished juniors with '+p+' points. Pick where you play college tennis.';
+  const p=save.juniorTotal;
+  $('recruitIntro').textContent='You finished juniors with '+p+' junior points across two seasons. Pick where you play college tennis.';
   $('offers').innerHTML=PROGRAMS.map(pr=>{const ok=p>=pr.need;return'<button class="offer card" data-id="'+pr.id+'" '+(ok?'':'disabled')+'><span class="eyebrow">'+(ok?'Offer':'Needs '+pr.need+' junior points')+'</span><strong>'+pr.name+'</strong><span class="muted">'+pr.blurb+'</span></button>'}).join('');
-  $('offers').querySelectorAll('button').forEach(b=>b.onclick=()=>{save.college=b.dataset.id;save.stage='college';save.eventIdx=0;save.cur=null;store();renderHub()});
+  $('offers').querySelectorAll('button').forEach(b=>b.onclick=()=>{save.college=b.dataset.id;save.stage='college';save.season=1;save.week=0;save.age++;save.pts.college={cur:program().start,prev:0};save.cur=null;store();renderHub()});
   show('recruit');
 }
-function renderTurnPro(){$('proIntro').textContent='You leave '+program().name+' with '+save.pts.college+' college points and a '+save.careerW+'–'+save.careerL+' career record. You start the tour unranked, so the majors begin in qualifying until you climb into the top 128.';show('turnpro')}
-$('btnTurnPro').onclick=()=>{save.stage='pro';save.eventIdx=0;save.season=1;save.cur=null;store();renderHub()};
 let resultNext=null;
 function showResult(won,score,st,text,lines,btn,next,champ){
   $('rBanner').textContent=champ?'Champion':won?'Match won':'Match lost';$('rBanner').className='banner '+(won?'w':'l');
   $('rScore').textContent=score;$('rText').textContent=text;
   const all=[['Aces',st.aces],['Winners',st.winners],['Big hits',st.big]].concat(lines||[]);
-  $('rStats').innerHTML=all.map(([k,v])=>'<div><small>'+k+'</small><strong class="num">'+v+'</strong></div>').join('');
+  $('rStats').innerHTML=all.map(([k,v])=>'<div><small>'+k+'</small><strong class="num" style="font-size:'+(String(v).length>10?'16px':'24px')+'">'+esc(v)+'</strong></div>').join('');
   $('rGo').textContent=btn;resultNext=next;show('result');
 }
 $('rGo').onclick=()=>{if(resultNext)resultNext()};
@@ -707,7 +851,8 @@ function say(t){$('msg').textContent=t}
 let callTimer=0;
 function callOut(t){const c=$('call');c.textContent=t;c.classList.add('on');clearTimeout(callTimer);callTimer=setTimeout(()=>c.classList.remove('on'),900)}
 function side(){return(M.pts[0]+M.pts[1])%2===0?'deuce':'ad'}
-function reach(){return 1.1+M.S.speed*0.03}
+function hasPerk(style,lvl){return M&&M.style===style&&M.perks>=lvl}
+function reach(){return 1.1+M.S.speed*0.03+(hasPerk('baseliner',2)?0.12:0)+(hasPerk('counter',3)?0.15:0)}
 const PB=2/3;
 function mk(a,bx,by,Tm,h1,h2,o){
   const toMe=by<a.y,hy=toMe?-0.05:1.08,hx=bx+(bx-a.x)*0.18,k=(0.9-PB)/(1-PB);
@@ -716,6 +861,7 @@ function mk(a,bx,by,Tm,h1,h2,o){
 function pos(s,p){if(p<=PB){const t=p/PB;return{x:s.a.x+(s.b.x-s.a.x)*t,y:s.a.y+(s.b.y-s.a.y)*t,z:s.h0*(1-t)+s.h1*4*t*(1-t)}}const t=(p-PB)/(1-PB);return{x:s.b.x+(s.c.x-s.b.x)*t,y:s.b.y+(s.c.y-s.b.y)*t,z:Math.max(0,s.h2*4*t*(1-t))}}
 
 function startMatch(cfg){
+  if(window.__SIM){setTimeout(()=>cfg.onEnd(window.__SIM(cfg),'6–4',{aces:0,winners:0,big:0}),0);return}
   initGL();show('match');$('loading').hidden=false;$('loadingSub').textContent=cfg.me+' vs '+cfg.opp.name;
   buildCourt(cfg.surf);
   let got={};const done=()=>{if(!('me' in got&&'op' in got))return;
@@ -728,17 +874,17 @@ function startMatch(cfg){
 function beginMatch(cfg){
   M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
     state:'between',shot:null,t0:0,me:{x:0.4,y:-0.05},op:{x:-0.4,y:1.08},fault:false,sw:null,preview:null,samples:[],land:null,aim:null,lock:false,commit:null,pending:null,
-    stat:{aces:0,winners:0,big:0},meSide:'fh',opSide:'fh',offMe:0,offOp:0};
+    stat:{aces:0,winners:0,big:0},meSide:'fh',opSide:'fh',offMe:0,offOp:0,style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
   $('quit').textContent='Retire';M.quitArm=false;
-  renderBoard();say(M.server===0?'You win the toss and serve first.':cfg.opp.name+' serves first.');
-  W3.camPos.set(0,4,22);setTimeout(nextPoint,1100);
+  renderBoard();say(cfg.intro||(M.server===0?'You win the toss and serve first.':cfg.opp.name+' serves first.'));
+  W3.camPos.set(0,4,22);setTimeout(nextPoint,cfg.intro?2600:1100);
 }
 function ptLabel(i){const a=M.pts[i],b=M.pts[1-i];if(M.tb)return String(a);if(a>=3&&b>=3)return a===b?'40':a>b?'AD':'40';return['0','15','30','40'][Math.min(a,3)]}
 function renderBoard(){for(let i=0;i<2;i++){$('s'+i).innerHTML=M.sets.map((g,k)=>'<span class="'+(k===M.sets.length-1?'cur':'')+'">'+g[i]+'</span>').join('');$('p'+i).textContent=ptLabel(i);$('srv'+i).classList.toggle('on',M.server===i)}}
 function nextPoint(){
   if(!M||M.over)return;
-  M.lock=false;M.fault=false;M.shot=null;M.land=null;M.aim=null;M.commit=null;M.pending=null;
+  M.lock=false;M.fault=false;M.shot=null;M.land=null;M.aim=null;M.commit=null;M.pending=null;M.rally=0;
   const d=side()==='deuce';
   if(M.server===0){M.me={x:d?0.4:-0.4,y:-0.05};M.op={x:d?-0.45:0.45,y:1.08};M.state='serveMe';say((M.tb?'Tiebreak. ':'')+'Your serve. Swipe up into the box.')}
   else{M.op={x:d?-0.4:0.4,y:1.08};M.me={x:d?0.45:-0.45,y:-0.05};M.state='oppServe';say(M.cfg.opp.name+' to serve.');setTimeout(oppServeStart,900)}
@@ -792,7 +938,8 @@ function oppServeLaunch(){
 }
 function oppHit(from){
   const s=M.os;let bx,by,err=false;
-  if(Math.random()<Math.max(0.02,0.10-s*0.01)){err=true;if(Math.random()<0.5){bx=(Math.random()-0.5)*1.2;by=-0.1}else{bx=(Math.random()<0.5?-1:1)*rnd(1.08,1.2);by=rnd(0.15,0.3)}}
+  M.rally++;const ue=Math.max(0.02,0.10-s*0.01)+(hasPerk('counter',1)?0.03:0)+(hasPerk('counter',2)&&M.rally>=4?0.05:0);
+  if(Math.random()<ue){err=true;if(Math.random()<0.5){bx=(Math.random()-0.5)*1.2;by=-0.1}else{bx=(Math.random()<0.5?-1:1)*rnd(1.08,1.2);by=rnd(0.15,0.3)}}
   else{const span=0.35+s*0.045;bx=(Math.random()*2-1)*span;by=rnd(0.1,0.32)}
   M.shot=mk(from,bx,by,(1.6-s*0.04+Math.random()*0.25)/M.surf.sp,0.65,0.8*M.surf.b,{who:'op',err});
   if(!err)setReach(M.shot);else M.shot.hx=pos(M.shot,0.9).x;
@@ -807,7 +954,10 @@ function aimFromSwipe(dx,dy,serve,spd){
   let tx,ty;
   if(serve){const ctr=side()==='deuce'?-0.5:0.5;tx=ctr+(dx/fwd)*0.9;ty=0.5+f*0.3}
   else{tx=M.me.x*0.25+(dx/fwd)*1.0;ty=0.54+f*0.44}
-  const r=0.03+pw*pw*(serve?0.15:0.2)*(1.15-S.control*0.07)+f*0.03;
+  let r=0.03+pw*pw*(serve?0.15:0.2)*(1.15-S.control*0.07)+f*0.03;
+  if(serve&&M.fault&&hasPerk('server',2))r*=0.6;
+  if(!serve&&ty>0.85&&hasPerk('baseliner',1))r*=0.75;
+  if(hasPerk('allcourt',3))r*=0.9;
   return{x:clamp(tx,-1.4,1.4),y:ty,f,pw,r};
 }
 function swipeSpeed(){const sm=M.samples;if(!sm||sm.length<2)return 0;const last=sm[sm.length-1];let first=last;for(let i=sm.length-1;i>=0;i--){if(last.t-sm[i].t>90)break;first=sm[i]}const dt=last.t-first.t;return dt>0?Math.hypot(last.x-first.x,last.y-first.y)/dt:0}
@@ -826,7 +976,7 @@ function executeShot(){
   if(type==='drop'){Tm=1.9;h1=0.4;h2=0.45*M.surf.b}else{Tm=Math.max(0.8,1.85-Math.min(c.pw,1)*0.85-S.power*0.025);h1=0.8-Math.min(c.pw,1)*0.35}
   if(c.pw>=0.85)M.stat.big++;
   const r=Math.abs(tx-M.op.x),s=M.os;
-  const miss=clamp(0.02+Math.min(c.pw,1)*0.12+(r>0.9?0.2:r>0.6?0.08:0)+(ty>0.92?0.05:0)+(type==='drop'?0.1:0)+(S.power-3)*0.01-(s-3)*0.03,0.02,0.6);
+  const miss=clamp(0.02+Math.min(c.pw,1)*0.12+(r>0.9?0.2:r>0.6?0.08:0)+(ty>0.92?0.05:0)+(type==='drop'?0.1:0)+(S.power-3)*0.01-(s-3)*0.03+(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0),0.02,0.65);
   M.returns=Math.random()>miss;
   M.shot=mk(bp,tx,ty,Tm/M.surf.sp,h1,h2,{who:'me',type});M.t0=now();M.state='me';
   M.opSide=sideFor(1,pos(M.shot,0.9).x);
@@ -843,8 +993,8 @@ function doServe(a){
     else{M.fault=true;callOut('FAULT');setTimeout(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null;say('Fault, '+why+'. Second serve. A slower swipe is safer.')},1100)}
     return}
   const edge=Math.min(Math.abs(tx-lo),Math.abs(hi-tx));
-  const ace=clamp(0.03+Math.min(a.pw,1)*0.14+S.serve*0.02+(edge<0.12?0.12:0)-M.os*0.025-(M.fault?0.08:0),0.02,0.6);
-  const Tm=(1.45-Math.min(a.pw,1)*0.45-S.serve*0.03)*(M.fault?1.15:1)/M.surf.sp;
+  const ace=clamp(0.03+Math.min(a.pw,1)*0.14+S.serve*0.02+(edge<0.12?0.12:0)-M.os*0.025-(M.fault?0.08:0)+(!M.fault&&hasPerk('server',1)?0.06:0)+(!M.fault&&hasPerk('server',3)?0.06:0),0.02,0.65);
+  const Tm=(1.45-Math.min(a.pw,1)*0.45-S.serve*0.03-(hasPerk('server',3)?0.08:0))*(M.fault?1.15:1)/M.surf.sp;
   if(a.pw>=0.85)M.stat.big++;
   M.shot=mk(from,tx,ty,Tm,0.25,0.9*M.surf.b,{who:'me',type:'serve'});M.returns=Math.random()>ace;M.t0=now();M.state='me';
   M.opSide=sideFor(1,pos(M.shot,0.9).x);
