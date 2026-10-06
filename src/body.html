@@ -2,7 +2,7 @@
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 14 · venues, crowds and sound</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 15 · real rallies, safe saves</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card">
@@ -12,6 +12,14 @@
       <button class="go" id="btnNew">New career</button>
       <button class="ghost" id="btnNewConfirm" hidden>Tap again to erase your career</button>
     </div>
+  </div>
+  <div class="card" id="saveCard">
+    <h3>Keep your career safe</h3>
+    <p class="muted" id="installHint" style="font-size:14px"></p>
+    <div class="row"><button id="btnBackup">Copy backup code</button><button class="ghost" id="btnRestore">Restore from a code</button></div>
+    <textarea id="saveCode" rows="3" hidden aria-label="Backup code" spellcheck="false" autocomplete="off"></textarea>
+    <button class="go" id="btnRestoreGo" hidden>Restore this career</button>
+    <p class="note" id="saveMsg" role="status"></p>
   </div>
   <div class="card">
     <h3>Quick match</h3>
@@ -40,6 +48,7 @@
       <b>Move</b><span>Tap anywhere on your side of the court to move there. Tap near the net after a good shot to come in and volley.</span>
       <b>Smash</b><span>At the net, a ball over your head becomes an overhead. Your player backs up under it and swings when you swipe.</span>
       <b>Lob</b><span>When they rush the net, a long, slow swipe floats a lob over their head.</span>
+      <b>Pressure</b><span>Make them run and they miss, or float back a weak, short ball. When you're the one stretched, the hint says so: swipe safer to keep it in.</span>
       <b>Serve</b><span>Swipe up into the glowing box.</span>
     </div>
   </div>

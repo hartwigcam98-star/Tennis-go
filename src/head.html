@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0B1622">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tennis Go">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Tennis Go</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=Barlow:wght@400;500;600&display=swap">
@@ -121,6 +127,8 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 .score-line{font-family:var(--display);font-size:46px;font-weight:800;line-height:1}
 .banner{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:18px;letter-spacing:.1em}
 .banner.w{color:var(--win)}.banner.l{color:var(--loss)}
+textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:13px/1.4 ui-monospace,Menlo,monospace;color:var(--chalk);resize:vertical;word-break:break-all}
+#saveMsg:empty{display:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>

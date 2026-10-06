@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0B1622">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tennis Go">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Tennis Go</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=Barlow:wght@400;500;600&display=swap">
@@ -121,6 +127,8 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 .score-line{font-family:var(--display);font-size:46px;font-weight:800;line-height:1}
 .banner{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:18px;letter-spacing:.1em}
 .banner.w{color:var(--win)}.banner.l{color:var(--loss)}
+textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:13px/1.4 ui-monospace,Menlo,monospace;color:var(--chalk);resize:vertical;word-break:break-all}
+#saveMsg:empty{display:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -129,7 +137,7 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 14 · venues, crowds and sound</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 15 · real rallies, safe saves</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card">
@@ -139,6 +147,14 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
       <button class="go" id="btnNew">New career</button>
       <button class="ghost" id="btnNewConfirm" hidden>Tap again to erase your career</button>
     </div>
+  </div>
+  <div class="card" id="saveCard">
+    <h3>Keep your career safe</h3>
+    <p class="muted" id="installHint" style="font-size:14px"></p>
+    <div class="row"><button id="btnBackup">Copy backup code</button><button class="ghost" id="btnRestore">Restore from a code</button></div>
+    <textarea id="saveCode" rows="3" hidden aria-label="Backup code" spellcheck="false" autocomplete="off"></textarea>
+    <button class="go" id="btnRestoreGo" hidden>Restore this career</button>
+    <p class="note" id="saveMsg" role="status"></p>
   </div>
   <div class="card">
     <h3>Quick match</h3>
@@ -167,6 +183,7 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
       <b>Move</b><span>Tap anywhere on your side of the court to move there. Tap near the net after a good shot to come in and volley.</span>
       <b>Smash</b><span>At the net, a ball over your head becomes an overhead. Your player backs up under it and swings when you swipe.</span>
       <b>Lob</b><span>When they rush the net, a long, slow swipe floats a lob over their head.</span>
+      <b>Pressure</b><span>Make them run and they miss, or float back a weak, short ball. When you're the one stretched, the hint says so: swipe safer to keep it in.</span>
       <b>Serve</b><span>Swipe up into the glowing box.</span>
     </div>
   </div>
@@ -382,9 +399,31 @@ function stageName(){return{junior:'Juniors',college:'College',pro:'Pro tour'}[s
 function renderTitle(){
   const has=!!save;$('btnContinue').hidden=!has;$('btnNewConfirm').hidden=true;$('btnNew').hidden=false;
   $('careerChip').textContent=has?(RBYID[save.char].name+' · '+stageName()+' season '+save.season):'No save yet';
-  $('btnNew').className=has?'':'go';show('title');
+  $('btnNew').className=has?'':'go';renderSaveCard();show('title');
 }
 $('btnContinue').onclick=()=>renderHub();
+/* ---- keeping the career safe: home-screen install, persistent storage, backup codes ---- */
+const STANDALONE=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+function renderSaveCard(){
+  $('installHint').textContent=STANDALONE?'Tennis Go is installed on this device, so your career is kept here. A backup code is still handy if you change phones.'
+    :IOS?'Safari can delete website data if you go a week without opening the game. Add it to your Home Screen (Share, then Add to Home Screen) and play from that icon. The installed app keeps its own data, so copy a backup code here first and restore it there.'
+    :'Install Tennis Go (browser menu, then Install app or Add to Home screen) so your career is kept and the game works offline. Copy a backup code first, then restore it in the installed app.';
+  $('btnBackup').disabled=!save;$('saveMsg').textContent='';$('saveCode').hidden=true;$('btnRestoreGo').hidden=true;$('btnRestoreGo').dataset.arm=''}
+function saveCode(){return'TG1:'+btoa(unescape(encodeURIComponent(JSON.stringify(save))))}
+$('btnBackup').onclick=async()=>{if(!save)return;const code=saveCode(),ta=$('saveCode');ta.hidden=false;ta.value=code;$('btnRestoreGo').hidden=true;
+  let ok=false;try{await navigator.clipboard.writeText(code);ok=true}catch(e){}
+  if(!ok){ta.focus();ta.select()}
+  $('saveMsg').textContent=ok?'Copied. Paste it somewhere safe, like Notes or a message to yourself.':'Copy the code above and keep it somewhere safe, like Notes.'};
+$('btnRestore').onclick=()=>{const ta=$('saveCode');ta.hidden=false;ta.value='';ta.focus();$('btnRestoreGo').hidden=false;$('btnRestoreGo').dataset.arm='';$('btnRestoreGo').textContent='Restore this career';$('saveMsg').textContent='Paste your backup code above.'};
+$('btnRestoreGo').onclick=()=>{
+  const raw=$('saveCode').value.trim().replace(/\s+/g,'');let obj=null;
+  try{if(!raw.startsWith('TG1:'))throw 0;obj=JSON.parse(decodeURIComponent(escape(atob(raw.slice(4)))))}catch(e){obj=null}
+  if(!obj||!obj.char||!obj.stage||!obj.stats||!RBYID[obj.char]){$('saveMsg').textContent='That code doesn’t look right. Copy the whole code, starting with TG1:';return}
+  const b=$('btnRestoreGo');if(save&&b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Tap again to replace your current career';return}
+  save=obj;store();renderTitle();$('saveMsg').textContent='Career restored: '+RBYID[save.char].name+', '+stageName()+' season '+save.season+'.'};
 $('btnNew').onclick=()=>{if(save){$('btnNew').hidden=true;$('btnNewConfirm').hidden=false}else openSelect('career')};
 $('btnNewConfirm').onclick=()=>openSelect('career');
 $('btnQuick').onclick=()=>openSelect('quick');
@@ -1453,10 +1492,21 @@ $('quit').onclick=()=>{
 };
 function recvPos(i){const st=M.mv[i],hm=M.home[i],hz=toW(0,hm.y).z;return{x:st.x,z:Math.abs(hz)<Math.abs(st.z)?hz:st.z}}
 function vmaxOf(i){return i===0?4.4+M.S.speed*0.13+(hasPerk('baseliner',2)?0.35:0)+(hasPerk('counter',3)?0.45:0):4.2+M.os*0.13}
-function canReach(i,sh){const st=M.mv[i],dx=sh.hx*HW-st.x,dz=toW(0,sh.hy).z-st.z,back=sh.smash?Math.max(0,i===0?dz:-dz):0;const dist=Math.max(0,Math.hypot(dx,dz)+back*0.7-(sh.smash?0.5:1.2)),vm=vmaxOf(i);
-  const tNeed=dist<=vm*vm/(2*ACC)?Math.sqrt(2*dist/ACC):dist/vm+vm/(2*ACC);return tNeed<=0.9*sh.T+0.18}
+/* reach: time the player needs to get to the ball (accelerating, top speed, a lunge at the end) against the time the ball
+   gives them, less a reaction delay (longer when returning serve). The spare time becomes the shot's pressure. */
+function reachMargin(i,sh){const st=M.mv[i],dx=sh.hx*HW-st.x,dz=toW(0,sh.hy).z-st.z,back=sh.smash?Math.max(0,i===0?dz:-dz):0;const dist=Math.max(0,Math.hypot(dx,dz)+back*0.7-(sh.smash?0.5:1.2)),vm=vmaxOf(i);
+  const tNeed=dist<=vm*vm/(2*ACC)?Math.sqrt(2*dist/ACC):dist/vm+vm/(2*ACC);return 0.9*sh.T+0.18-reactOf(i,sh)-tNeed}
+function reactOf(i,sh){if(sh.type!=='serve'&&!sh.serve)return 0;const sk=i===0?(M.S.speed+M.S.control)/2:M.os;
+  let r=0.33-sk*0.012;if(i===1&&sh.type==='serve'&&!sh.second)r+=(hasPerk('server',1)?0.04:0)+(hasPerk('server',3)?0.04:0);return r}
+function canReach(i,sh){return reachMargin(i,sh)>=0}
+/* pressure 0..1: little spare time, pace, heavy spin and depth all rush the receiver */
+function pressureOf(i,sh){const m=reachMargin(i,sh);const L=sh.land||{y:0.5},deep=i===1?L.y>0.86:L.y<0.14;
+  return clamp(clamp(1-m/0.7,0,1)*0.75+(sh.type==='serve'||sh.serve?clamp(((sh.speed||30)-34)/45,0,0.25):clamp(((sh.speed||20)-22)/30,0,0.45))+(Math.abs(sh.w||0)>260?0.08:0)+(deep?0.12:0),0,1)}
+function spotFor(i,sh,side){const hz=toW(0,sh.hy).z,off={fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[side]||0,zo=sh.smash?0.29:sh.volley?0.55:0.5;
+  return i===0?{x:sh.hx*HW-off,z:hz+zo}:{x:sh.hx*HW+off,z:hz-zo}}
+function contactPress(i,sh,side){const sp=spotFor(i,sh,side),st=M.mv[i];return clamp((Math.hypot(st.x-sp.x,st.z-sp.z)-0.35)/1.2,0,1)}
 function fallbackHit(i,sh){if((sh.volley||sh.smash)&&!canReach(i,sh)){const st=M.mv[i];chooseHit(sh,{x:st.x,z:st.z});if((sh.volley||sh.smash)&&!canReach(i,sh))chooseHit(sh,null)}}
-function setReach(sh){fallbackHit(0,sh);if(!canReach(0,sh))sh.unreach=true}
+function setReach(sh){fallbackHit(0,sh);if(!canReach(0,sh))sh.unreach=true;else M.mePress=pressureOf(0,sh)}
 const SMH=1.95; // racket-centre height at smash contact
 function sideFor(who,hx,volley,smash){if(smash)return'sm';const f=who===0?hx>-0.12:hx<0.12;return volley?(f?'fv':'bv'):(f?'fh':'bh')}
 function yoFor(side,hz){return(side==='fv'||side==='bv')?clamp(((hz||1.05)-1.05)/(0.01*PSCALE),-45,95):side==='sm'?clamp(((hz||SMH)-SMH)/(0.01*PSCALE),-40,40):0}
@@ -1478,27 +1528,32 @@ function oppServeLaunch(){
   let sh=null;for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),120+k*70,{who:'op',serve:true,recv:null});if(!sh.net&&sh.land.y>0.2&&sh.land.y<0.5)break}
   M.shot=sh;
   {const L=sh.land,inBox=!sh.net&&L.x>=lo-0.01&&L.x<=hi+0.01&&L.y>=0.228&&L.y<=0.5;if(!inBox){sh.err=true;M.t0=now();M.state='oppErr';setTimeout(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
-  if(Math.random()<0.03+s*0.012){M.shot.unreach=true;M.shot.ace=true}else setReach(M.shot);
+  setReach(M.shot);if(M.shot.unreach)M.shot.ace=true;
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);M.t0=now();M.state='op';P[0].hop=0.15;
 }
 function oppHit(from){
   P[0].hop=0.15;
   const s=M.os;let bx,by,err=false;
-  M.rally++;const ue=Math.max(0.02,0.10-s*0.01)+(hasPerk('counter',1)?0.03:0)+(hasPerk('counter',2)&&M.rally>=4?0.05:0);
+  M.rally++;const prev=M.shot||{},pr=clamp(Math.max(M.oppPress||0,contactPress(1,prev,M.opSide)),0,1);M.oppPress=0;
+  const ue=Math.max(0.01,0.05-s*0.004)+Math.pow(pr,1.6)*(0.55-s*0.03)+(prev.bonus||0)+(hasPerk('counter',1)?0.03:0)+(hasPerk('counter',2)&&M.rally>=4?0.05:0);
   let spd=19+s*1.6+rnd(0,3),w=170+s*12,kind='deep';const ovol=M.shot&&M.shot.volley,osm=M.shot&&M.shot.smash,meNet=M.me.y>0.2;if(ovol){spd=14+s*1.2;w=-70}if(osm){spd=(27+s*1.6+rnd(0,3))*(from.y>0.82?0.8:1);w=40;kind='smash'}
   if(Math.random()<ue){err=true;if(Math.random()<0.5){bx=(Math.random()-0.5)*1.2;by=-0.12}else{bx=(Math.random()<0.5?-1:1)*rnd(1.08,1.2);by=rnd(0.15,0.3)}}
-  else{const r=Math.random(),span=0.35+s*0.045;
+  else if(pr>0.72&&!ovol&&!osm&&Math.random()<0.65){// on the run: a defensive slice or a lob to buy time
+    if(meNet){kind='lob';bx=(Math.random()*2-1)*0.4;by=rnd(0.08,0.25);w=140;spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.08}
+    else{kind='defend';bx=(Math.random()*2-1)*0.4;by=rnd(0.12,0.4);spd=14+s*0.4;w=-120}}
+  else{const r=Math.random()*(1+pr),span=0.35+s*0.045;
     if(osm){bx=(Math.random()<0.5?-1:1)*rnd(0.3,0.8);by=rnd(0.12,0.36)}
     else if(meNet&&!ovol&&r<0.3+s*0.02){kind='lob';bx=(Math.random()*2-1)*0.55;by=rnd(0.05,0.2);w=140;spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.08}
     else if(r<0.05+s*0.008){kind='drop';bx=(Math.random()*2-1)*0.55;by=rnd(0.38,0.45);spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.3;w=-170}
     else if(r<0.2+s*0.015){kind='angle';bx=(Math.random()<0.5?-1:1)*rnd(0.62,0.9);by=rnd(0.28,0.38);spd=17+s*1.1;w=300}
-    else{bx=(Math.random()*2-1)*span;by=rnd(0.06,0.28)}}
+    else{bx=(Math.random()*2-1)*span;by=rnd(0.06,0.28)}
+    if(!osm&&kind!=='lob'){spd*=1-0.32*pr;by+=pr*rnd(0.04,0.16);bx*=1-0.45*pr}}  // rushed: slower, shorter, more central
   let sh=null;
   for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(kind==='lob'?0.95:0.88,k),w,{who:'op',err,kind,lob:kind==='lob',recv:recvPos(0)});
     if(err)break;const L=sh.land;if(!sh.net&&Math.abs(L.x)<=1&&L.y>=0&&L.y<0.5)break}
   {const L=sh.land;sh.err=sh.net||Math.abs(L.x)>1.012||L.y<-0.004||L.y>0.5}  // the physics decides in or out
-  M.shot=sh;sndHit(Math.min(1.2,sh.speed/38));
-  {const oy=from.y;M.home[1]=(oy<0.9&&Math.random()<0.45+s*0.04)||ovol||osm?{x:0,y:0.72}:{x:0,y:1.08};if(osm)say(M.cfg.opp.name+' smashes it!');else if(kind==='lob'&&!err)say(M.cfg.opp.name+' throws up a lob.');else if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
+  M.shot=sh;sh.kind=kind;sh.w=w;sndHit(Math.min(1.2,sh.speed/38));
+  {const oy=from.y;M.home[1]=(oy<0.9&&Math.random()<0.45+s*0.04)||ovol||osm?{x:0,y:0.72}:{x:0,y:1.08};if(osm)say(M.cfg.opp.name+' smashes it!');else if(kind==='defend'&&!err)say(M.cfg.opp.name+' is on the run and slices it back.');else if(pr>0.55&&!err&&kind==='deep')say('Weak reply. Go after it.');else if(kind==='lob'&&!err)say(M.cfg.opp.name+' throws up a lob.');else if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
   if(!sh.err)setReach(M.shot);
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);
   M.t0=now();M.state='op';M.land=null;M.aim=null;M.commit=null;
@@ -1506,9 +1561,10 @@ function oppHit(from){
 }
 function executeShot(){
   const sh=M.shot,S=M.S,c=M.commit;M.commit=null;
-  const bp=pos(sh,clamp((now()-M.t0)/1000/sh.T,0.9,1.0)),l=scatter(M.shot.smash?Object.assign({},c,{r:c.r*0.6}):c);let type=c.f<0.25?'drop':'drive';
+  const mp=clamp(Math.max(M.mePress||0,contactPress(0,sh,M.meSide)),0,1);M.mePress=0;
+  const bp=pos(sh,clamp((now()-M.t0)/1000/sh.T,0.9,1.0)),l=scatter(Object.assign({},c,{r:c.r*(sh.smash?0.6:1)*(1+1.6*mp)+0.05*mp}));let type=c.f<0.25?'drop':'drive';
   if(!P[0].swing)P[0].startSwing(M.meSide,SWINGS[M.meSide].dur*SWINGS[M.meSide].cf,yoFor(M.meSide,sh.hz));
-  const pw=Math.min(c.pw,1.2),vol=sh.volley,smh=sh.smash,opNet=M.op.y<0.85||M.home[1].y<0.9;
+  const pw=Math.min(c.pw,1.2-0.55*mp),vol=sh.volley,smh=sh.smash,opNet=M.op.y<0.85||M.home[1].y<0.9;
   if(smh)type='drive';else if(!vol&&type!=='drop'&&opNet&&c.pw<0.35&&c.f>=0.6)type='lob';
   const Dm=Math.hypot((l.x-bp.x)*HW,(l.y-bp.y)*CL),spd=smh?(24+16*pw+S.power*0.5)*(Math.abs(bp.y-0.5)>0.32?0.8:1):type==='lob'?Math.sqrt(9.81*Dm)*1.08:type==='drop'?Math.max((vol?6:9)+2.5*pw,Math.sqrt(9.81*Dm)*(vol?1.15:1.3)):vol?13+12*pw+S.power*0.3:14+18*pw+S.power*0.5,w=smh?40:type==='lob'?140:type==='drop'?-170:vol?-70:170+70*(1-Math.min(pw,1))+S.control*6;
   const shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type,lob:type==='lob',recv:recvPos(1)});sndHit(Math.min(1.2,spd/38));
@@ -1518,12 +1574,12 @@ function executeShot(){
     shot.err=true;M.shot=shot;M.t0=now();M.state='err';
     setTimeout(()=>pointTo(1,why,shot.net?'NET':'OUT'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
   if(c.pw>=0.85)M.stat.big++;
-  const tx=shot.land.x,ty=shot.land.y,r=Math.abs(tx-M.op.x),s=M.os;
-  const miss=clamp(0.02+Math.min(c.pw,1)*0.12+(r>0.9?0.2:r>0.6?0.08:0)+(ty>0.92?0.05:0)+(type==='drop'?0.1:0)+(smh?0.3:0)+(type==='lob'?(ty>0.85?0.32:0.12):0)+(S.power-3)*0.01-(s-3)*0.03+(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0),0.02,0.65);
+  const tx=shot.land.x,ty=shot.land.y;
+  shot.w=w;shot.bonus=(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0)+(smh?0.12:0);
   M.shot=shot;M.t0=now();M.state='me';P[1].hop=0.15;
-  fallbackHit(1,M.shot);M.returns=canReach(1,M.shot)&&Math.random()>miss;
+  fallbackHit(1,M.shot);M.returns=canReach(1,M.shot);M.oppPress=M.returns?pressureOf(1,M.shot):0;
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
-  say(smh?'Smash! '+Math.round(spd*3.6)+' km/h':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h');
+  say((mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*3.6)+' km/h':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h'));
 }
 function doServe(a){
   if(!M||M.state!=='serving')return;
@@ -1539,10 +1595,8 @@ function doServe(a){
     if(M.fault)setTimeout(()=>pointTo(1,'Double fault, '+why+'.','DOUBLE FAULT'),900);
     else{M.fault=true;callOut('FAULT');setTimeout(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null;say('Fault, '+why+'. Second serve: it gets extra topspin to drop in.')},1100)}
     return}
-  const tx=shot.land.x,edge=Math.min(Math.abs(tx-lo),Math.abs(hi-tx));
-  const ace=clamp(0.03+Math.min(a.pw,1)*0.14+S.serve*0.02+(edge<0.12?0.12:0)-M.os*0.025-(second?0.08:0)+(!second&&hasPerk('server',1)?0.06:0)+(!second&&hasPerk('server',3)?0.06:0),0.02,0.65);
   if(a.pw>=0.85)M.stat.big++;
-  M.shot=shot;fallbackHit(1,shot);M.returns=Math.random()>ace;M.t0=now();M.state='me';P[1].hop=0.15;
+  shot.second=second;shot.w=w;M.shot=shot;fallbackHit(1,shot);M.returns=canReach(1,shot);M.oppPress=M.returns?pressureOf(1,shot):0;M.t0=now();M.state='me';P[1].hop=0.15;
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
   say((a.pw>=0.85?'Big serve! ':'Serve is in. ')+Math.round(spd*3.6)+' km/h');
 }
@@ -1635,7 +1689,7 @@ function step(dt){
     let x0=mv[0].x,z0=mv[0].z,x1=mv[1].x,z1=mv[1].z,vm0=vmaxOf(0),vm1=vmaxOf(1);
     if(M.state==='op'&&sh){if(!sh.err){x0=sh.hx*HW+({fh:-0.75,bh:0.45,fv:-0.62,bv:0.55,sm:-0.31}[M.meSide]);z0=toW(0,sh.hy).z+(sh.smash?0.29:sh.volley?0.55:0.5)}x1=M.home[1].x*HW;z1=toW(0,M.home[1].y).z}
     else if(M.state==='me'&&sh){const hz=toW(0,sh.hy).z;
-      if(M.returns){x1=sh.hx*HW+({fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[M.opSide]);z1=hz-(sh.smash?0.29:sh.volley?0.55:0.5)}else{x1=mv[1].x+(sh.hx*HW-mv[1].x)*0.45;z1=mv[1].z+(hz-mv[1].z)*0.45;vm1*=0.6}
+      if(M.returns){x1=sh.hx*HW+({fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[M.opSide]);z1=hz-(sh.smash?0.29:sh.volley?0.55:0.5)}else{const sp=spotFor(1,sh,M.opSide);x1=sp.x;z1=sp.z}
       if(sh.type!=='serve'){x0=M.home[0].x*HW;z0=toW(0,M.home[0].y).z}}
     drive2(mv[0],x0,z0,vm0,dt);drive2(mv[1],x1,z1,vm1,dt);
   }else{mv[0].v=mv[0].vz=0;mv[1].v=mv[1].vz=0}
@@ -1668,7 +1722,7 @@ function step(dt){
   const pw=$('power');
   if(M.sw){pw.hidden=false;const v=M.preview?M.preview.pw:0;const bar=pw.querySelector('i');bar.style.width=Math.min(100,v/1.25*100)+'%';bar.style.background=v>=0.85?'#F5A524':'#D3E86B'}else pw.hidden=true;
   if(M.state==='serveMe')ht=M.sw?'Pace: swipe faster for more':'Swipe up into the box. Faster swipe = more power';
-  else if(M.state==='op'&&sh){if(sh.err){ht='Going out, let it go';warn=true}else if(sh.unreach){ht='Out of reach';warn=true}else if(M.sw)ht='Pace: swipe faster for more';else if(M.commit)ht='Locked in. Swipe again to change';else ht=sh.smash?'Overhead! Swipe to smash it':sh.volley?'Volley! Swipe to punch it':'Swipe to hit · tap your court to move'}
+  else if(M.state==='op'&&sh){if(sh.err){ht='Going out, let it go';warn=true}else if(sh.unreach){ht='Out of reach';warn=true}else if(M.sw)ht='Pace: swipe faster for more';else if(M.commit)ht='Locked in. Swipe again to change';else if((M.mePress||0)>0.6&&!sh.smash)ht='Stretched: a safer swipe will keep it in';else ht=sh.smash?'Overhead! Swipe to smash it':sh.volley?'Volley! Swipe to punch it':'Swipe to hit · tap your court to move'}
   hint.textContent=ht;hint.className=warn?'warn':'';
 }
 function camera(dt){
@@ -1679,7 +1733,7 @@ function camera(dt){
 }
 document.addEventListener('pointerdown',sndResume,{passive:true});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
 </script>
