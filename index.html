@@ -1087,7 +1087,7 @@ function step(dt){
   hint.textContent=ht;hint.className=warn?'warn':'';
 }
 function camera(dt){
-  const me=P[0].pos;const tp=new T.Vector3(me.x*0.8,6.2,me.z+8.5),tl=new T.Vector3(me.x*0.45,0,-4.5);
+  const me=P[0].pos;const tp=new T.Vector3(me.x*0.8,8.6,me.z+9.2),tl=new T.Vector3(me.x*0.45,0,0.5);
   const k=Math.min(1,dt*3);W3.camPos.lerp(tp,k);W3.camLook.lerp(tl,k);W3.cam.position.copy(W3.camPos);W3.cam.lookAt(W3.camLook);
   W3.sun.target.position.set(0,0,0);
 }
