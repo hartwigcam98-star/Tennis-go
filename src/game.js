@@ -88,6 +88,18 @@ const STYLES=[
   {id:'counter',name:'Counterpuncher',d:'Gets everything back and waits.',perks:['Opponents make more unforced errors','Long rallies wear opponents down','Reach almost anything']}
 ];
 const PERK_AT=[0,15,40];
+/* how each style plays when the computer controls it.
+   agg: how close to the lines it aims; risk: how much that aggression costs in errors; attack: chance to punish a short ball;
+   approach: chance to follow an attack to the net; lob/drop/angle/bh/wrong: shot choice weights; pace/spin: shot shape;
+   serve: extra serve speed (m/s); wide: share of serves out wide; sv: serve-and-volley chance; df: double-fault factor */
+const OSTYLE={
+  server:{name:'Big Server',tip:'Big first serves and quick points. Get the return deep and make them hit extra balls.',agg:0.65,risk:1.2,attack:0.8,approach:0.55,lob:0.15,drop:0.03,angle:0.12,bh:0.25,wrong:0.15,pace:2,spin:-20,serve:3,wide:0.5,sv:0.35,df:1.15,ue:0,reach:0},
+  baseliner:{name:'Baseliner',tip:'Heavy, deep topspin and a steady diet of backhands. Look for a short ball to attack.',agg:0.5,risk:1,attack:0.7,approach:0.2,lob:0.25,drop:0.04,angle:0.15,bh:0.42,wrong:0.2,pace:1,spin:80,serve:0,wide:0.35,sv:0.05,df:1,ue:0,reach:0},
+  allcourt:{name:'All-Court',tip:'Angles, drop shots and trips to the net. Stay balanced and be ready to come forward.',agg:0.55,risk:1,attack:0.65,approach:0.55,lob:0.3,drop:0.12,angle:0.28,bh:0.25,wrong:0.22,pace:0,spin:0,serve:0,wide:0.4,sv:0.15,df:1,ue:0,reach:0},
+  counter:{name:'Counterpuncher',tip:'Gets everything back and rarely misses. Be patient, then finish at the net.',agg:0.3,risk:0.6,attack:0.4,approach:0.05,lob:0.55,drop:0.04,angle:0.1,bh:0.3,wrong:0.15,pace:-1,spin:40,serve:-1,wide:0.3,sv:0,df:0.7,ue:-0.015,reach:0.25}};
+function styleOfChar(c){const t=c?c.st:{power:5,control:5,speed:5,serve:5,stamina:5};
+  const sc={server:t.serve*1.25+t.power*0.55,counter:t.speed*0.9+(t.stamina||5)*0.9,allcourt:t.control*1.15+t.speed*0.45,baseliner:t.power*0.7+t.control*0.55+(t.stamina||5)*0.45+1.2};
+  return Object.keys(sc).reduce((a,b)=>sc[b]>sc[a]?b:a)}
 const SPONSORS=[
   {id:'nil',name:'Hometown Pizza NIL deal',pay:5000,when:'Top 25 college ranking'},
   {id:'strings',name:'Northstar Strings',pay:50000,when:'First pro title'},
@@ -229,7 +241,7 @@ function renderHub(){
   if(E.how==='qual')note='<p class="note">Your ranking gets you into qualifying. Win '+E.qual+' qualifying matches to reach the main draw.</p>';
   let oppHtml='';
   if(save.cur&&save.cur.opp){const o=save.cur.opp,rv=o.rival!=null?save.rivals[o.rival]:null;
-    oppHtml='<div class="opp"><div class="row between"><div style="min-width:0"><p class="eyebrow">'+roundName(save.cur.round,total,save.cur.qual)+(rv?' · Rival · '+RIVAL_TYPES[rv.type].t:'')+'</p><p style="font-weight:600;font-size:18px">'+esc(o.name)+'</p></div><div style="width:110px"><p class="muted" style="font-size:12px">Rating '+o.skill.toFixed(1)+'</p><div class="bar"><i style="width:'+o.skill*10+'%;background:var(--loss)"></i></div></div></div>'+
+    oppHtml='<div class="opp"><div class="row between"><div style="min-width:0"><p class="eyebrow">'+roundName(save.cur.round,total,save.cur.qual)+(rv?' · Rival · '+RIVAL_TYPES[rv.type].t:'')+'</p><p style="font-weight:600;font-size:18px">'+esc(o.name)+'</p><p class="muted" style="font-size:13px">'+OSTYLE[styleOfChar(RBYID[o.id])].name+'</p></div><div style="width:110px"><p class="muted" style="font-size:12px">Rating '+o.skill.toFixed(1)+'</p><div class="bar"><i style="width:'+o.skill*10+'%;background:var(--loss)"></i></div></div></div>'+
       (rv?'<p class="quote">“'+esc(o.line)+'”</p><p class="muted" style="font-size:13px">Head-to-head '+rv.w+'–'+rv.l+(rv.last==='l'?' · Revenge match':'')+'</p>':'')+'</div>'}
   $('nextCard').innerHTML='<p class="eyebrow">Week '+(wk+1)+' of '+W.length+' · '+esc(ev.tier)+(save.cur?' · In progress':'')+'</p><h3 style="font-size:26px">'+esc(ev.n)+'</h3>'+
     '<div class="row"><span class="chip"><span class="dot s-'+ev.surf+'"></span>'+SURF[ev.surf].name+'</span><span class="chip num">'+total+(total===1?' match':' rounds')+'</span><span class="chip">'+(f.bo===3?'Best of 3 sets':'One set')+' to '+f.g+'</span>'+
@@ -841,12 +853,12 @@ function startMatch(cfg){
   loadChar(cfg.meId,D=>{got.me=D;done()});loadChar(cfg.opp.id,D=>{got.op=D;done()});
 }
 function beginMatch(cfg){
-  M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,ostam:clamp(Math.round(((RBYID[cfg.opp.id]&&RBYID[cfg.opp.id].st.stamina)||5)*0.5+cfg.opp.skill*0.5),1,10),sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
+  M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,ostyle:styleOfChar(RBYID[cfg.opp.id]),pat:[],readMe:false,readSaid:false,ostam:clamp(Math.round(((RBYID[cfg.opp.id]&&RBYID[cfg.opp.id].st.stamina)||5)*0.5+cfg.opp.skill*0.5),1,10),sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
     state:'between',shot:null,t0:0,me:{x:0.4,y:-0.05},op:{x:-0.4,y:1.08},fault:false,sw:null,preview:null,samples:[],land:null,aim:null,lock:false,commit:null,pending:null,
     stat:{aces:0,winners:0,big:0,perfect:0},en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
   $('quit').textContent='Retire';M.quitArm=false;
-  renderBoard();say(cfg.intro||(M.server===0?'You win the toss and serve first.':cfg.opp.name+' serves first.'));
+  renderBoard();{const O=OSTYLE[M.ostyle];say(cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))}
   W3.camPos.set(0,4,22);setTimeout(nextPoint,cfg.intro?2600:1100);
 }
 function ptLabel(i){const a=M.pts[i],b=M.pts[1-i];if(M.tb)return String(a);if(a>=3&&b>=3)return a===b?'40':a>b?'AD':'40';return['0','15','30','40'][Math.min(a,3)]}
@@ -893,7 +905,7 @@ $('quit').onclick=()=>{
   M.over=true;M.winner=1;M.lock=true;M.state='between';say('You retire from the match.');setTimeout(endMatch,600);
 };
 function recvPos(i){const st=M.mv[i],hm=M.home[i],hz=toW(0,hm.y).z;return{x:st.x,z:Math.abs(hz)<Math.abs(st.z)?hz:st.z}}
-function vmaxOf(i){return(i===0?4.4+M.S.speed*0.13+(hasPerk('baseliner',2)?0.35:0)+(hasPerk('counter',3)?0.45:0):4.2+M.os*0.13)*(0.8+0.2*(M.en?M.en[i]:1))}
+function vmaxOf(i){return(i===0?4.4+M.S.speed*0.13+(hasPerk('baseliner',2)?0.35:0)+(hasPerk('counter',3)?0.45:0):4.2+M.os*0.13+OSTYLE[M.ostyle].reach)*(0.8+0.2*(M.en?M.en[i]:1))}
 /* ---- stamina: running drains it (sprints cost more), hitting hard costs a little; it comes back between points,
    more at changeovers and set breaks, but a slow "deep fatigue" ceiling falls over a long match ---- */
 function staOf(i){return i===0?(M.S.stamina||5):(M.ostam||5)}
@@ -903,7 +915,7 @@ function renderEnergy(){for(let i=0;i<2;i++){const e=$('e'+i);if(!e)continue;con
 /* reach: time the player needs to get to the ball (accelerating, top speed, a lunge at the end) against the time the ball
    gives them, less a reaction delay (longer when returning serve). The spare time becomes the shot's pressure. */
 function reachMargin(i,sh){const st=M.mv[i],dx=sh.hx*HW-st.x,dz=toW(0,sh.hy).z-st.z,back=sh.smash?Math.max(0,i===0?dz:-dz):0;const dist=Math.max(0,Math.hypot(dx,dz)+back*0.7-(sh.smash?0.5:1.2)),vm=vmaxOf(i);
-  const tNeed=dist<=vm*vm/(2*ACC)?Math.sqrt(2*dist/ACC):dist/vm+vm/(2*ACC);return 0.9*sh.T+0.18-reactOf(i,sh)-tNeed}
+  const tNeed=dist<=vm*vm/(2*ACC)?Math.sqrt(2*dist/ACC):dist/vm+vm/(2*ACC);return 0.9*sh.T+0.18-reactOf(i,sh)-tNeed+(i===1&&M.readMe&&sh.type!=='serve'?0.12:0)}
 function reactOf(i,sh){if(sh.type!=='serve'&&!sh.serve)return 0;const sk=i===0?(M.S.speed+M.S.control)/2:M.os;
   let r=0.33-sk*0.012;if(i===1&&sh.type==='serve'&&!sh.second)r+=(hasPerk('server',1)?0.04:0)+(hasPerk('server',3)?0.04:0);return r}
 function canReach(i,sh){return reachMargin(i,sh)>=0}
@@ -926,42 +938,60 @@ function oppServeStart(){
 function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
   const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,C=P[1].tossC||P[1].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
-  const spd=(30+s*2.2+rnd(-2,2))*(0.92+0.08*M.en[1]);tire(1,0.006);sndHit(Math.min(1.2,spd/45));
-  if(Math.random()<0.06-s*0.004){
+  const O=OSTYLE[M.ostyle],spd=(30+s*2.2+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1]);tire(1,0.006);sndHit(Math.min(1.2,spd/45));
+  if(Math.random()<(0.06-s*0.004)*O.df){
     M.shot=makeShot(from,{x:(lo+hi)/2,y:0.5},spd,120,{who:'op',err:true});M.t0=now();M.state='oppErr';
     setTimeout(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}
-  const wide=Math.random()<0.3+s*0.04;
-  const bx=wide?(d?(Math.random()<0.5?0.1:0.88):(Math.random()<0.5?-0.1:-0.88)):lo+0.25+Math.random()*0.5;
+  // smarter servers mix the T and out wide, and go after the receiver's backhand
+  const tact=Math.random()<clamp(0.25+s*0.085,0.3,0.97),wide=Math.random()<O.wide+s*0.03;
+  const bx=wide?(d?(Math.random()<0.5?0.1:0.88):(Math.random()<0.5?-0.1:-0.88)):tact&&Math.random()<0.5?(d?0.12:-0.6):lo+0.25+Math.random()*0.5;
   const by=0.24+Math.random()*0.1;
   let sh=null;for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),120+k*70,{who:'op',serve:true,recv:null});if(!sh.net&&sh.land.y>0.2&&sh.land.y<0.5)break}
   M.shot=sh;
   {const L=sh.land,inBox=!sh.net&&L.x>=lo-0.01&&L.x<=hi+0.01&&L.y>=0.228&&L.y<=0.5;if(!inBox){sh.err=true;M.t0=now();M.state='oppErr';setTimeout(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
   setReach(M.shot);if(M.shot.unreach)M.shot.ace=true;
+  if(Math.random()<O.sv*(0.6+s*0.05)){M.home[1]={x:0,y:0.72};say(M.cfg.opp.name+' serves and volleys.')}else M.home[1]={x:0,y:1.08};
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);M.t0=now();M.state='op';P[0].hop=0.15;
 }
 function oppHit(from){
   P[0].hop=0.15;
   const s=M.os;let bx,by,err=false;
   M.rally++;const prev=M.shot||{},pr=clamp(Math.max(M.oppPress||0,contactPress(1,prev,M.opSide)),0,1);M.oppPress=0;
-  const ue=Math.max(0.01,0.05-s*0.004)+Math.pow(pr,1.6)*(0.55-s*0.03)+(prev.bonus||0)+0.08*(1-M.en[1])+(hasPerk('counter',1)?0.03:0)+(hasPerk('counter',2)&&M.rally>=4?0.05:0);
+  const O=OSTYLE[M.ostyle],ue=Math.max(0.01,0.05-s*0.004+O.ue)+Math.pow(pr,1.6)*(0.55-s*0.03)+(prev.bonus||0)+0.08*(1-M.en[1])+(hasPerk('counter',1)?0.03:0)+(hasPerk('counter',2)&&M.rally>=4?0.05:0);
   let spd=(19+s*1.6+rnd(0,3))*(0.93+0.07*M.en[1]),w=170+s*12,kind='deep';const ovol=M.shot&&M.shot.volley,osm=M.shot&&M.shot.smash,meNet=M.me.y>0.2;if(ovol){spd=14+s*1.2;w=-70}if(osm){spd=(27+s*1.6+rnd(0,3))*(from.y>0.82?0.8:1);w=40;kind='smash'}
   if(Math.random()<ue){err=true;if(Math.random()<0.5){bx=(Math.random()-0.5)*1.2;by=-0.12}else{bx=(Math.random()<0.5?-1:1)*rnd(1.08,1.2);by=rnd(0.15,0.3)}}
   else if(pr>0.72&&!ovol&&!osm&&Math.random()<0.65){// on the run: a defensive slice or a lob to buy time
     if(meNet){kind='lob';bx=(Math.random()*2-1)*0.4;by=rnd(0.08,0.25);w=140;spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.08}
     else{kind='defend';bx=(Math.random()*2-1)*0.4;by=rnd(0.12,0.4);spd=14+s*0.4;w=-120}}
-  else{const r=Math.random()*(1+pr),span=0.35+s*0.045;
-    if(osm){bx=(Math.random()<0.5?-1:1)*rnd(0.3,0.8);by=rnd(0.12,0.36)}
-    else if(meNet&&!ovol&&r<0.3+s*0.02){kind='lob';bx=(Math.random()*2-1)*0.55;by=rnd(0.05,0.2);w=140;spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.08}
-    else if(r<0.05+s*0.008){kind='drop';bx=(Math.random()*2-1)*0.55;by=rnd(0.38,0.45);spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.3;w=-170}
-    else if(r<0.2+s*0.015){kind='angle';bx=(Math.random()<0.5?-1:1)*rnd(0.62,0.9);by=rnd(0.28,0.38);spd=17+s*1.1;w=300}
+  else{const r=Math.random()*(1+pr),span=0.35+s*0.045,tact=Math.random()<clamp(0.25+s*0.085,0.3,0.97);
+    // read the court: where the receiver is, which way they are running, and whether our ball was short
+    const mx=M.mv[0].x/HW,my=0.5-M.mv[0].z/CL,mvx=M.mv[0].v,open=mx>0.08?-1:mx<-0.08?1:(Math.random()<0.5?-1:1),edge=a=>0.95-(1-a)*0.3;
+    const shortBall=prev.land&&prev.type!=='serve'&&prev.land.y<0.76;
+    spd+=O.pace;w+=O.spin;
+    if(osm){bx=open*rnd(0.45,0.85);by=rnd(0.12,0.36)}
+    else if(meNet&&!ovol){// passing shots: lob, dip at the feet, or rip it past
+      if(Math.random()<O.lob*(my>0.32?1.4:0.8)){kind='lob';bx=(tact?open*rnd(0.15,0.55):(Math.random()*2-1)*0.5);by=rnd(0.05,0.2);w=140;spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.08}
+      else if(Math.random()<0.3){kind='dip';bx=clamp(mx+rnd(-0.25,0.25),-0.8,0.8);by=rnd(0.36,0.44);spd=15+s*0.8;w=320}
+      else{kind='pass';bx=(tact?open:(Math.random()<0.5?-1:1))*edge(O.agg+0.15)*rnd(0.85,1);by=rnd(0.08,0.3);spd=23+s*1.5;w=260}}
+    else if(tact&&shortBall&&pr<0.45&&Math.random()<O.attack){kind='attack';bx=open*edge(O.agg)*rnd(0.8,1);by=rnd(0.08,0.25);spd=25+s*1.6+O.pace;w=200+O.spin*0.5}
+    else if(pr<0.4&&Math.random()<O.drop*(my<0.02?1.6:0.5)){kind='drop';bx=(tact?open*rnd(0.2,0.6):(Math.random()*2-1)*0.55);by=rnd(0.38,0.45);spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.3;w=-170}
+    else if(pr<0.5&&r<O.angle+s*0.01){kind='angle';bx=(tact?open:(Math.random()<0.5?-1:1))*rnd(0.65,0.9);by=rnd(0.28,0.38);spd=17+s*1.1;w=300}
+    else if(tact){const q=Math.random();
+      if(Math.abs(mvx)>2.2&&q<O.wrong){kind='wrongfoot';bx=clamp(mx-Math.sign(mvx)*0.6,-0.85,0.85);by=rnd(0.08,0.24)}  // behind the runner
+      else if(q<O.wrong+O.bh){kind='backhand';bx=clamp(mx-rnd(0.45,0.75),-edge(O.agg),0.6);by=rnd(0.06,0.22)}
+      else if(q<0.78){kind='open';bx=open*edge(O.agg)*rnd(0.6,0.95);by=rnd(0.06,0.24)}
+      else{bx=(from.x>0?-1:1)*rnd(0.3,0.7);by=rnd(0.05,0.2)}}  // deep cross-court rally ball
     else{bx=(Math.random()*2-1)*span;by=rnd(0.06,0.28)}
+    // going for the lines costs: a style's risk turns some aggressive shots into misses
+    {const rk=O.risk*(Math.max(0,Math.abs(bx)-0.75)*0.5+Math.max(0,0.09-by)*0.9+(kind==='attack'||kind==='pass'?0.04:0));
+      if(kind!=='lob'&&Math.random()<rk){err=true;if(Math.random()<0.6)bx=Math.sign(bx||1)*rnd(1.05,1.18);else by=-rnd(0.03,0.12)}}
     if(!osm&&kind!=='lob'){spd*=1-0.32*pr;by+=pr*rnd(0.04,0.16);bx*=1-0.45*pr}}  // rushed: slower, shorter, more central
   let sh=null;
   for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(kind==='lob'?0.95:0.88,k),w,{who:'op',err,kind,lob:kind==='lob',recv:recvPos(0)});
     if(err)break;const L=sh.land;if(!sh.net&&Math.abs(L.x)<=1&&L.y>=0&&L.y<0.5)break}
   {const L=sh.land;sh.err=sh.net||Math.abs(L.x)>1.012||L.y<-0.004||L.y>0.5}  // the physics decides in or out
   M.shot=sh;sh.kind=kind;sh.w=w;tire(1,0.004+0.004*clamp((sh.speed-18)/20,0,1));sndHit(Math.min(1.2,sh.speed/38));
-  {const oy=from.y;M.home[1]=(oy<0.9&&Math.random()<0.45+s*0.04)||ovol||osm?{x:0,y:0.72}:{x:0,y:1.08};if(osm)say(M.cfg.opp.name+' smashes it!');else if(kind==='defend'&&!err)say(M.cfg.opp.name+' is on the run and slices it back.');else if(pr>0.55&&!err&&kind==='deep')say('Weak reply. Go after it.');else if(kind==='lob'&&!err)say(M.cfg.opp.name+' throws up a lob.');else if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
+  {const oy=from.y,app=ovol||osm||(kind==='attack'&&Math.random()<O.approach)||(oy<0.82&&Math.random()<O.approach*0.5);M.home[1]=app?{x:0,y:0.72}:{x:0,y:1.08};if(osm)say(M.cfg.opp.name+' smashes it!');else if(kind==='defend'&&!err)say(M.cfg.opp.name+' is on the run and slices it back.');else if(pr>0.55&&!err&&kind==='deep')say('Weak reply. Go after it.');else if(kind==='lob'&&!err)say(M.cfg.opp.name+' throws up a lob.');else if(kind==='attack'&&!err)say(M.cfg.opp.name+' attacks the short ball'+(M.home[1].y<1?' and comes in.':'.'));else if(kind==='pass'&&!err)say('Passing shot from '+M.cfg.opp.name+'.');else if(kind==='wrongfoot'&&!err)say('Behind you: '+M.cfg.opp.name+' wrong-foots you.');else if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
   if(!sh.err)setReach(M.shot);
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);
   M.t0=now();M.state='op';M.land=null;M.aim=null;M.commit=null;
@@ -987,6 +1017,8 @@ function executeShot(){
     setTimeout(()=>pointTo(1,why,shot.net?'NET':'OUT'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
   if(c.pw>=0.85)M.stat.big++;
   const tx=shot.land.x,ty=shot.land.y;
+  {const sd=Math.sign(tx);M.pat.push(sd);if(M.pat.length>4)M.pat.shift();const same=M.pat.length===4&&M.pat.every(v=>v===sd);
+    if(same&&!M.readMe){M.readMe=true;if(!M.readSaid){M.readSaid=true;setTimeout(()=>{if(M&&M.state!=='between')say(M.cfg.opp.name+' is reading your pattern. Change direction.')},500)}}else if(!same)M.readMe=false}
   shot.w=w;shot.bonus=(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0)+(smh?0.12:0);
   M.shot=shot;M.t0=now();M.state='me';P[1].hop=0.15;
   fallbackHit(1,M.shot);M.returns=canReach(1,M.shot);M.oppPress=M.returns?pressureOf(1,M.shot):0;
