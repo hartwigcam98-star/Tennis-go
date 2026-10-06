@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id);
 const T=THREE;
 const CHAR_BASE=window.CHAR_BASE||'https://hartwigcam98-star.github.io/golf-go/';
-const SECTIONS=['title','learn','locker','draw','select','style','hub','recruit','season','match','result'];
+const SECTIONS=['title','learn','locker','draw','rank','select','style','hub','recruit','season','match','result'];
 function show(id){SECTIONS.forEach(s=>{$(s).hidden=s!==id});if(id!=='match')window.scrollTo(0,0);if(id==='match')onResize()}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rnd(a,b){return a+Math.random()*(b-a)}
@@ -122,8 +122,9 @@ function store(){try{localStorage.setItem(KEY_V,JSON.stringify(save))}catch(e){}
 save=load();
 if(save&&save.stats&&save.stats.stamina==null){const c=RBYID[save.char];save.stats.stamina=Math.max(1,Math.round(((c&&c.st.stamina)||5)*0.45));store()}
 const roll=k=>Math.round(save.pts[k].cur+0.5*save.pts[k].prev);
-function proRank(){return Math.max(1,Math.round(1500*Math.exp(-roll('pro')/500)))}
-function collegeRank(){return Math.max(1,Math.round(400*Math.exp(-roll('college')/300)))}
+function proRank(){return save?myRankIn('pro'):1500}
+function collegeRank(){return save?myRankIn('college'):400}
+function juniorRank(){return save?myRankIn('junior'):300}
 function program(){return PROGRAMS.find(p=>p.id===save.college)}
 function xpMult(){return save.stage==='college'&&program()?program().xp:1}
 function weeks(){return save.stage==='junior'?JUNIOR_WEEKS:save.stage==='college'?collegeWeeks(save.college):PRO_WEEKS}
@@ -233,7 +234,7 @@ $('styleGo').onclick=()=>{
 
 /* ================= hub ================= */
 function standing(){
-  if(save.stage==='junior')return['Junior points',roll('junior')];
+  if(save.stage==='junior')return['Junior rank','#'+juniorRank()];
   if(save.stage==='college')return['College rank','#'+collegeRank()];
   return['World rank','#'+proRank()];
 }
@@ -254,7 +255,7 @@ function renderHub(){
   if(E.how==='qual')note='<p class="note">Your ranking gets you into qualifying. Win '+E.qual+' qualifying matches to reach the main draw.</p>';
   let oppHtml='';
   if(save.cur&&save.cur.opp){const o=save.cur.opp,rv=o.rival!=null?save.rivals[o.rival]:null;
-    oppHtml='<div class="opp"><div class="row between"><div style="min-width:0"><p class="eyebrow">'+roundName(save.cur.round,total,save.cur.qual)+(rv?' · Rival · '+RIVAL_TYPES[rv.type].t:'')+'</p><p style="font-weight:600;font-size:18px">'+(o.seed?'<small class="seed">'+o.seed+'</small>':'')+esc(o.name)+(o.nat&&o.rival==null?' <small class="nat">'+o.nat+'</small>':'')+'</p><p class="muted" style="font-size:13px">'+OSTYLE[o.style||styleOfChar(RBYID[o.id])].name+'</p></div><div style="width:110px"><p class="muted" style="font-size:12px">Rating '+o.skill.toFixed(1)+'</p><div class="bar"><i style="width:'+o.skill*10+'%;background:var(--loss)"></i></div></div></div>'+
+    oppHtml='<div class="opp"><div class="row between"><div style="min-width:0"><p class="eyebrow">'+roundName(save.cur.round,total,save.cur.qual)+(rv?' · Rival · '+RIVAL_TYPES[rv.type].t:'')+'</p><p style="font-weight:600;font-size:18px">'+(o.seed?'<small class="seed">'+o.seed+'</small>':'')+esc(o.name)+(o.nat&&o.rival==null?' <small class="nat">'+o.nat+'</small>':'')+'</p>'+(o.rk?'<p class="muted num" style="font-size:13px">'+RANK_SCALE[save.stage].label+' #'+o.rk+' · You #'+myRankIn(save.stage)+'</p>':'')+'<p class="muted" style="font-size:13px">'+OSTYLE[o.style||styleOfChar(RBYID[o.id])].name+'</p></div><div style="width:110px"><p class="muted" style="font-size:12px">Rating '+o.skill.toFixed(1)+'</p><div class="bar"><i style="width:'+o.skill*10+'%;background:var(--loss)"></i></div></div></div>'+
       (rv?'<p class="quote">“'+esc(o.line)+'”</p><p class="muted" style="font-size:13px">Head-to-head '+rv.w+'–'+rv.l+(rv.last==='l'?' · Revenge match':'')+'</p>':'')+'</div>'}
   $('nextCard').innerHTML='<p class="eyebrow">Week '+(wk+1)+' of '+W.length+' · '+esc(ev.tier)+(save.cur?' · In progress':'')+'</p><h3 style="font-size:26px">'+esc(ev.n)+'</h3>'+
     '<div class="row"><span class="chip"><span class="dot s-'+ev.surf+'"></span>'+SURF[ev.surf].name+'</span><span class="chip num">'+total+(total===1?' match':' rounds')+'</span><span class="chip">'+(f.bo===3?'Best of 3 sets':'One set')+' to '+f.g+'</span>'+
@@ -264,7 +265,8 @@ function renderHub(){
   {const row=document.createElement('div');row.className='row';
     if(save.cur&&save.cur.draw)row.innerHTML+='<button class="ghost" id="btnDraw">View draw</button>';
     if(save.lastDraw)row.innerHTML+='<button class="ghost" id="btnLastDraw">Last event’s draw</button>';
-    if(row.innerHTML){$('nextCard').appendChild(row);if($('btnDraw'))$('btnDraw').onclick=()=>openDraw(save.cur.draw,save.cur.ev.n);if($('btnLastDraw'))$('btnLastDraw').onclick=()=>openDraw(save.lastDraw.D,save.lastDraw.t)}}
+    row.innerHTML+='<button class="ghost" id="btnRank">Rankings</button>';
+    if(row.innerHTML){$('nextCard').appendChild(row);if($('btnDraw'))$('btnDraw').onclick=()=>openDraw(save.cur.draw,save.cur.ev.n);if($('btnLastDraw'))$('btnLastDraw').onclick=()=>openDraw(save.lastDraw.D,save.lastDraw.t);$('btnRank').onclick=openRankings}}
   const pl=perkLevel();
   $('statsCard').innerHTML='<div class="row between"><h3>Training</h3><span class="chip num">'+save.xp+' training pts</span></div>'+
     STATS.map(([k,l,d])=>{const v=save.stats[k],c=trainCost(v);return'<div class="stat"><span title="'+d+'">'+l+(gearBonus(k)?' <small class="gearb">+'+gearBonus(k).toFixed(1)+'</small>':'')+'</span><div class="bar"><i style="width:'+v*10+'%"></i></div><button data-k="'+k+'" '+(v>=10||save.xp<c?'disabled':'')+'>'+(v>=10?'Max':'+1 · '+c)+'</button></div>'}).join('')+
@@ -293,7 +295,7 @@ function makeOpp(){
   const c=save.cur,ev=c.ev,r=c.round;
   if(c.draw){const p=r<=c.qual?c.qualOpp[r-1]:drawOpp(c.draw,r-1-c.qual);let line=null;
     if(p.rival!=null){const rv=save.rivals[p.rival];line=rv.last==='l'?'Back for more? I remember how the last one went.':pick(RIVAL_TYPES[rv.type].lines)}
-    c.opp=oppFrom(p,r,line);c.opp.seed=c.draw.seeds[p.id]||null;return}
+    c.opp=oppFrom(p,r,line);c.opp.seed=c.draw.seeds[p.id]||null;c.opp.rk=rankOf(p.id);return}
   let skill,rival=null,who,line=null;
   if(r<=c.qual)skill=ev.sk[0]-1.2+rnd(-0.3,0.3);
   else{const mr=r-c.qual,mt=c.total-c.qual;skill=ev.sk[0]+(ev.sk[1]-ev.sk[0])*(mt>1?(mr-1)/(mt-1):1)+rnd(-0.4,0.4)}
@@ -350,7 +352,7 @@ function careerResult(won,score,st){
   save.xp+=xp;lines.unshift(['Training pts','+'+xp]);
   if(done){
     if(save.stage==='pro'){const r=proRank();save.rec.best=Math.min(save.rec.best,r);if(r===1)save.rec.weeks1++}
-    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};save.week++;save.cur=null;
+    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});if(c.draw){if(!c.draw.res||c.draw.res.length<c.draw.R)drawSimAll(c.draw);awardDrawPoints(c.draw,ev)}if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};save.week++;save.cur=null;
     const before=perkLevel();checkSponsors(lines);
   }
   const pl=perkLevel(),S=STYLES.find(s=>s.id===save.style);
@@ -360,7 +362,7 @@ function careerResult(won,score,st){
 
 /* ================= season transitions ================= */
 function settle(amount){const k=save.stage+save.season;if(save.settled!==k){save.settled=k;if(amount){save.money+=amount;save.earnings+=amount}store()}}
-function newSeasonPts(k){save.pts[k].prev=save.pts[k].cur;save.pts[k].cur=0}
+function newSeasonPts(k){save.pts[k].prev=save.pts[k].cur;save.pts[k].cur=0;if(save.pool&&save.pool[k]){for(const p of save.pool[k]){p.prev=p.cur||0;p.cur=0}save.fieldV=(save.fieldV||0)+1}}
 function seasonScreen(eyebrow,title,text,buttons){
   $('seEyebrow').textContent=eyebrow;$('seTitle').textContent=title;$('seText').innerHTML=text;
   $('seBtns').innerHTML='';buttons.forEach(([label,cls,fn])=>{const b=document.createElement('button');b.textContent=label;if(cls)b.className=cls;b.onclick=fn;$('seBtns').appendChild(b)});

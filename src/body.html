@@ -9,7 +9,7 @@
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 23 · tournament draws and a real field</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 24 · rankings</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="learnCard">
@@ -90,8 +90,15 @@
 <section id="draw" class="wrap" hidden style="max-width:none">
   <div class="row between" style="max-width:560px;width:100%;margin:0 auto"><p class="eyebrow">Tournament draw</p><button class="ghost" id="drBack" style="padding:6px 12px;font-size:13px">Back</button></div>
   <h2 id="drTitle" style="max-width:560px;width:100%;margin:0 auto"></h2>
+  <p class="muted" id="drSub" style="max-width:560px;width:100%;margin:0 auto;font-size:14px"></p>
   <div id="drBody" style="display:flex;flex-direction:column;gap:12px"></div>
   <div class="sticky row" style="max-width:560px;width:100%;margin:0 auto"><button class="go" id="drPlay" style="flex:1">Play</button></div>
+</section>
+
+<section id="rank" class="wrap" hidden>
+  <div class="row between"><p class="eyebrow">Career</p><button class="ghost" id="rkBack" style="padding:6px 12px;font-size:13px">Back</button></div>
+  <div class="hero"><h2 id="rkTitle">Rankings</h2><p class="muted" id="rkSub" style="font-size:14px"></p></div>
+  <ol class="rk-list" id="rkList"></ol>
 </section>
 
 <section id="select" class="wrap" hidden>

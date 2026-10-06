@@ -10,6 +10,38 @@ const NATS=['USA','GBR','ESP','FRA','ITA','GER','AUS','ARG','CAN','JPN','BRA','S
 const FEMALE_BASE={granny:1,ch31:1};
 const FIELD_BASES=['ch08','ch31','ch01','ch12','remy','boss','ch09','ch06','ch23','ch24','ch28','ch42','brute','peasant','ty','ch43','ch17','vegas'];
 const STAGE_SKILL={junior:[0.8,5.9],college:[3,7.6],pro:[4.6,9.3]};
+/* ---- one ranking per stage: the field, your rivals and you on the same points scale ----
+   Field players carry points from their rating (results elsewhere) plus half of what they earn in the draws you play.
+   A rank comes from points the same way yours always has (rank = N * e^(-points / K)), kept in strict order. */
+const RANK_SCALE={junior:{N:300,K:250,label:'Junior'},college:{N:400,K:300,label:'College'},pro:{N:1500,K:500,label:'World'}};
+function skillPts(stage,skill){const [s0,s1]=STAGE_SKILL[stage],{N,K}=RANK_SCALE[stage];const r=Math.pow(N,clamp((s1+0.2-skill)/(s1-s0+0.4),0,1));return K*Math.log(N/Math.max(1,r))}
+function fieldPts(stage,p){return skillPts(stage,p.skill)+0.5*((p.cur||0)+0.5*(p.prev||0))}
+let RANK_CACHE={key:null,list:null};
+function rankingList(stage){stage=stage||save.stage;const my=roll(stage),key=stage+'|'+my+'|'+save.week+'|'+save.season+'|'+(save.fieldV||0)+'|'+save.char;
+  if(RANK_CACHE.key===key)return RANK_CACHE.list;
+  const {N,K}=RANK_SCALE[stage],[,s1]=STAGE_SKILL[stage];
+  const all=fieldFor(stage).map(p=>({id:p.id,name:p.name,nat:p.nat,style:p.style,pts:fieldPts(stage,p)}));
+  (save.rivals||[]).forEach((rv,i)=>{const C=RBYID[rv.id];all.push({id:'rv'+i,name:C.name,nat:'',style:styleOfChar(C),pts:skillPts(stage,s1-0.6+rv.edge*0.5),rival:i})});
+  all.push({id:'me',name:RBYID[save.char].name,me:true,pts:my});
+  all.sort((a,b)=>b.pts-a.pts||(a.me?-1:b.me?1:0));let prev=0;for(const e of all){e.rank=Math.max(1,Math.round(N*Math.exp(-e.pts/K)),prev+1);prev=e.rank}
+  RANK_CACHE={key,list:all};return all}
+function rankOf(id,stage){const e=rankingList(stage).find(x=>x.id===id);return e?e.rank:null}
+function myRankIn(stage){return rankOf('me',stage)}
+/* field players bank points from the draws you play in, like you do */
+function awardDrawPoints(D,ev){const pool=fieldFor(save.stage),byId={};for(const p of pool)byId[p.id]=p;
+  for(const id in D.players){const p=byId[id];if(!p)continue;let wins=0;for(const r of D.res)for(const m of r)if(m.w===id)wins++;
+    const pts=wins>=D.R?ev.pts:wins>0?Math.round(ev.pts*Math.pow(0.55,D.R-wins)):Math.round(ev.pts*0.03);p.cur=(p.cur||0)+pts}
+  save.fieldV=(save.fieldV||0)+1}
+/* ---- the rankings screen ---- */
+function openRankings(){const st=save.stage,L=rankingList(st),meI=L.findIndex(e=>e.me),lab=RANK_SCALE[st].label;
+  const show=new Set();L.slice(0,20).forEach((e,i)=>show.add(i));for(let i=meI-3;i<=meI+3;i++)if(i>=0&&i<L.length)show.add(i);L.forEach((e,i)=>{if(e.rival!=null)show.add(i)});
+  const idx=[...show].sort((a,b)=>a-b);let h='',last=-1;
+  for(const i of idx){if(i>last+1)h+='<li class="rk-gap">···</li>';const e=L[i];
+    h+='<li class="rk'+(e.me?' me':'')+(e.rival!=null?' rv':'')+'"><b class="num">'+e.rank+'</b><span>'+esc(e.name)+' <small class="nat">'+(e.me?'You':e.rival!=null?'Rival':e.nat)+'</small><small class="muted" style="display:block">'+(e.me?'':OSTYLE[e.style].name)+'</small></span><small class="num">'+Math.round(e.pts)+' pts</small></li>';last=i}
+  $('rkTitle').textContent=lab+' rankings';$('rkSub').textContent='You are #'+L[meI].rank+' with '+Math.round(L[meI].pts)+' points. Points from this season count in full, last season’s count half.';
+  $('rkList').innerHTML=h;show_('rank')}
+const show_=id=>show(id);
+$('rkBack').onclick=()=>renderHub();
 function rngFrom(seed){let h=seed>>>0||1;return()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return(h>>>0)/4294967296}}
 function fieldFor(stage){
   save.pool=save.pool||{};if(save.pool[stage])return save.pool[stage];
@@ -42,15 +74,13 @@ function makeDraw(c){
   if(R>=3){const ri=save.history.length%3,rv=save.rivals[ri],C=RBYID[rv.id];
     const weakest=Object.values(players).filter(p=>!p.me).sort((a,b)=>a.skill-b.skill)[0];delete players[weakest.id];
     rivalId='rv'+ri;players[rivalId]={id:rivalId,name:C.name,base:rv.id,v:null,nat:'RIV',style:styleOfChar(C),skill:Math.round((k1+rv.edge*0.5)*10)/10,rival:ri}}
-  // seed by rating; you slot in by ranking when it is good enough, otherwise as an unseeded player (or a qualifier)
-  const others=Object.values(players).filter(p=>!p.me).sort((a,b)=>b.skill-a.skill);
-  let myRank=size;if(stage==='pro'&&!c.qual){const r=proRank();myRank=r<=4?r:r<=16?Math.min(size,4+Math.ceil((r-4)/2)):size}
-  {const ns=size>=8?size/4:size>=4?2:0;if(myRank>ns)myRank=ns+1+Math.floor(Math.random()*(size-ns))}   // unseeded: a random unseeded spot, like a real draw
-  myRank=clamp(myRank,1,size);
-  const order=others.slice();order.splice(myRank-1,0,players.me);
+  // seeds go by ranking; unseeded players (and qualifiers) land in random unseeded spots, like a real draw
+  const RK={};for(const e of rankingList(stage))RK[e.id]=e.rank;
+  const order=Object.values(players).sort((a,b)=>(RK[a.id]||9999)-(RK[b.id]||9999));
+  {const ns=size>=8?size/4:size>=4?2:0,mi=order.findIndex(p=>p.me);if(c.qual||mi>=ns){order.splice(mi,1);order.splice(ns+Math.floor(Math.random()*(size-ns)),0,players.me)}}
   const sl=seedOrder(size),slots=new Array(size);sl.forEach((k,pos)=>{slots[pos]=order[k-1].id});
   // seeds are the highest-rated entrants (you only carry a seed on the pro tour)
-  const nSeeds=size>=8?size/4:size>=4?2:0,seeds={};order.slice(0,nSeeds).forEach((p,i)=>{if(!p.me||stage==='pro')seeds[p.id]=i+1});
+  const nSeeds=size>=8?size/4:size>=4?2:0,seeds={};order.slice(0,nSeeds).forEach((p,i)=>{seeds[p.id]=i+1});
   // keep the rival away from you: opposite half (final) or the other quarter of your half at a major (semifinal)
   if(rivalId){const myPos=slots.indexOf('me'),rp=slots.indexOf(rivalId),half=ev.major?size>>2:size>>1;
     const same=(a,b)=>Math.floor(a/half)===Math.floor(b/half);
@@ -82,8 +112,10 @@ let drawBack=null;
 function openDraw(D,title,back){drawBack=back||(()=>renderHub());renderDraw(D,title);show('draw')}
 function renderDraw(D,title){
   $('drTitle').textContent=title||D.ev;const cur=save&&save.cur,live=cur&&cur.draw===D;
+  const RKD={};if(save)for(const e of rankingList(save.stage))RKD[e.id]=e.rank;
+  $('drSub').textContent=save?'Seeds go by ranking. You are '+RANK_SCALE[save.stage].label.toLowerCase()+' #'+RKD.me+'.':'';
   const rn=k=>{const left=D.R-1-k;return left===0?'Final':left===1?'Semis':left===2?'Quarters':'Round of '+(D.size>>k)};
-  const nm=id=>{const p=D.players[id];if(!p)return'<span class="muted">TBD</span>';const s=D.seeds[id];return(s?'<small class="seed">'+s+'</small>':'')+esc(p.name)+' <small class="nat">'+(p.me?'':p.rival!=null?'Rival':p.nat)+'</small>'};
+  const nm=id=>{const p=D.players[id];if(!p)return'<span class="muted">TBD</span>';const s=D.seeds[id],rk=RKD[id];return(s?'<small class="seed">'+s+'</small>':'')+esc(p.name)+' <small class="nat">'+(p.me?'You':p.rival!=null?'Rival':p.nat)+(rk?' · #'+rk:'')+'</small>'};
   let q='';if(live&&cur.qualOpp){q='<div class="card" style="gap:6px"><p class="eyebrow">Your qualifying</p>'+cur.qualOpp.map((p,i)=>'<p>Q'+(i+1)+': '+esc(p.name)+' <small class="nat">'+p.nat+'</small>'+(cur.round>i+1?' <b class="res w">Won</b>':cur.round===i+1?' <b class="res next">Next</b>':'')+'</p>').join('')+'</div>'}
   let cols='';
   for(let k=0;k<D.R;k++){const E=k===0?D.slots:D.res[k-1]?D.res[k-1].map(m=>m.w):Array(D.size>>k).fill(null),R=D.res[k];let ms='';
