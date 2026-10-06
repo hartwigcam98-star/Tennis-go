@@ -22,7 +22,7 @@ async def main():
     async def tap(wx,wz):
       await pg.evaluate(f"(()=>{{const v=new THREE.Vector3({wx},0,{wz}).project(__TG.W3.cam);const x=(v.x+1)/2*innerWidth,y=(1-v.y)/2*innerHeight,c=document.getElementById('gl');const ev=t=>c.dispatchEvent(new PointerEvent(t,{{clientX:x,clientY:y,pointerId:1,bubbles:true,isPrimary:true}}));ev('pointerdown');ev('pointerup')}})()")
     k=300/360
-    for li in range(8):
+    for li in range(9):
       t0=time.time();lid=None;swipes=0;tapped=False
       while time.time()-t0<900:
         s=await pg.evaluate("()=>{const M=__TG.M;if(!M)return {gone:1};const D=M.drill;return{id:D&&D.L.id,cnt:D&&D.count,done:!document.getElementById('dDone').hidden,st:M.state,c:!!M.commit,tc:M.shot?(M.t0+0.9*M.shot.T*1000-__TG.dbg.GT)/1000:9,z:D&&D.zone,msg:document.getElementById('msg').textContent}}")
@@ -32,6 +32,8 @@ async def main():
         if lid=='net' and s['st'] in('between','op') and not tapped:
           await tap(0,3.2);tapped=True
         if s['st']=='serveMe':
+          need=await pg.evaluate("()=>{const t=(__TG.M.drill.types)||{};return ['flat','slice','kick'].find(x=>!t[x])||'kick'}")
+          await pg.evaluate(f"document.querySelector('#svType button[data-t=\"{need}\"]').click()")
           await swipe(-8*k,-90*k);swipes+=1;await pg.wait_for_timeout(600);continue
         if s['st']=='op' and not s['c']:
           tc=s['tc']
@@ -42,13 +44,21 @@ async def main():
           if tc<1.2*SL+0.5:
             if lid=='aim':dx=-55 if s['z']=='left' else 55;await swipe(dx*k,-100*k)
             elif lid=='depth':await swipe(random.uniform(-10,10)*k,-150*k)
+            elif lid=='slice':
+              x0,y0=150,470
+              pts=[(x0+28*k,y0-35*k),(x0+38*k,y0-70*k),(x0+22*k,y0-105*k),(x0,y0-130*k)]
+              await pg.evaluate(f"document.getElementById('gl').dispatchEvent(new PointerEvent('pointerdown',{{clientX:{x0},clientY:{y0},pointerId:1,bubbles:true,isPrimary:true}}))")
+              for j,(px,py) in enumerate(pts):
+                await pg.wait_for_timeout(130)
+                t='pointermove' if j<len(pts)-1 else 'pointerup'
+                await pg.evaluate(f"document.getElementById('gl').dispatchEvent(new PointerEvent('{t}',{{clientX:{px},clientY:{py},pointerId:1,bubbles:true,isPrimary:true}}))")
             elif lid=='pace':await swipe(random.uniform(-6,6)*k,-75*k,2,130)
             else:await swipe(random.uniform(-15,15)*k,-95*k)
             swipes+=1
         await pg.wait_for_timeout(60)
       print(f'lesson {li+1} {lid}: done={s.get("done")} swipes={swipes} time={time.time()-t0:.0f}s last="{s.get("msg","")[:60]}"')
       if not s.get('done'):break
-      if li==7:
+      if li==8:
         await pg.screenshot(path='/tmp/claude-0/-home-claude/c059be0d-034d-5550-9882-6f1de26df84e/scratchpad/learn_done.png')
         break
       await pg.evaluate("document.getElementById('dNext').click()");await pg.wait_for_timeout(2500)

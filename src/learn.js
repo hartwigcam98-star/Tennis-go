@@ -16,15 +16,19 @@ const LESSONS=[
     judge:e=>!e.in?['no',e.why+' Power costs accuracy; flick fast but not too long.']:e.kmh>=100?['ok','Big hit: '+e.kmh+' km/h!']:['no',e.kmh+' km/h. Flick faster.']},
   {id:'timing',t:'Timing',d:'Watch the ball: it glows green just before it reaches you. Swipe while it glows for a perfect hit, tighter and a little harder. Get 2 perfect hits.',need:2,feed:'mix',
     judge:e=>e.tim==='perfect'&&e.in?['ok','Perfect timing!']:e.tim==='perfect'?['no','Perfect timing, but it missed. Keep the swipe in the court.']:['no',e.tim==='early'?'Too early. Wait for the glow.':e.tim==='late'?'Too late. Swipe as soon as it glows.':'Close. Wait a beat longer, until the ball glows.']},
+  {id:'slice',t:'Slice',d:'Curve your swipe like an arc, like drawing a C, to hit a slice: backspin that stays low and skids. It is slower but safer when you are stretched. Hit 2 slices in.',need:2,feed:'mix',
+    judge:e=>!e.in?['no',e.why]:e.slice?['ok','Slice!']:['no','That was topspin. Curve the swipe more, like an arc.']},
   {id:'net',t:'Come to the net',d:'Tap your court near the net to move there, then volley 2 balls before they bounce. A blue ring marks where you are heading.',need:2,feed:'net',
     judge:e=>!e.in?['no',e.why]:e.volley?['ok','Volley!']:['no','That one bounced first. Tap close to the net, then swipe.']},
   {id:'smash',t:'The smash',d:'At the net, a ball over your head becomes an overhead. Your player backs up under it; swipe to smash it in.',need:1,feed:'lob',
     judge:e=>!e.in?['no',e.why]:e.smash?['ok','Smash!']:['no','Stay near the net so the lob comes over your head.']},
-  {id:'serve',t:'Serve',d:'Swipe up into the glowing service box. Faster swipes serve harder but stray more. Land 3 serves in.',need:3,serve:true,
-    judge:e=>e.in?['ok','Serve is in, '+e.kmh+' km/h.']:['no','Fault, '+e.why+'. Aim for the middle of the box.']}
+  {id:'serve',t:'Serve',d:'Pick a serve with the buttons, then swipe up into the glowing box. Flat is fastest, Slice curves away, Kick is safest. Land one of each.',need:3,serve:true,
+    judge:e=>{const D=M.drill;D.types=D.types||{};if(D.practice&&e.in)return['ok',SVT[e.ty].name+' serve in, '+e.kmh+' km/h.'];if(!e.in)return['no','Fault, '+e.why+'. '+(e.ty==='flat'?'Flat serves need a calmer swipe.':'Aim for the middle of the box.')];
+      if(D.types[e.ty])return['no',SVT[e.ty].name+' is done. Pick a different serve with the buttons.'];D.types[e.ty]=1;return['ok',SVT[e.ty].name+' serve in, '+e.kmh+' km/h.']}}
 ];
 const TIPS=[['Stamina','Running drains the bar under your name; you get some back between points. Tired players move slower and spray shots, so make your opponent run.'],
   ['Pressure','Balls you have to stretch for are harder to control. When the hint says Stretched, swipe safer.'],
+  ['Slice','Curve your swipe like an arc for a low, skidding slice. Great when you are stretched, and nasty on grass.'],
   ['Touch','A short, slow swipe plays a drop shot. When they come to the net, a long, slow swipe floats a lob over them.'],
   ['Reading you','Hit to the same side over and over and opponents start reading it. Mix it up.']];
 

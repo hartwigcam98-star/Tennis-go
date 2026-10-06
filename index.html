@@ -114,6 +114,7 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 .brow .pt{min-width:44px;text-align:center;background:var(--ball);color:var(--ball-ink);border-radius:6px;padding:0 6px}
 .srv{width:9px;height:9px;border-radius:50%;background:var(--ball);visibility:hidden}
 .srv.on{visibility:visible}
+#svType{display:flex;gap:6px;pointer-events:auto}#svType[hidden]{display:none}#svType button{padding:6px 14px;font-size:14px;background:rgba(5,12,20,.82);font-family:var(--display);letter-spacing:.06em;text-transform:uppercase}#svType button[aria-pressed=true]{background:var(--ball);color:var(--ball-ink);border-color:var(--ball)}
 #hint{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--chalk);text-shadow:0 1px 3px rgba(0,0,0,.8);text-align:center}
 #hint.warn{color:var(--loss)}
 #power{width:min(260px,70vw);height:12px;border-radius:6px;background:rgba(5,12,20,.8);border:1px solid var(--line);overflow:hidden;position:relative}
@@ -151,7 +152,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 19 · lessons and practice</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 20 · slice and serve types</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="learnCard">
@@ -263,6 +264,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div id="replay" hidden><i></i>Replay<small>Tap to skip</small></div>
   <div class="hud bot">
     <div id="power" hidden><b></b><i></i></div>
+    <div id="svType" hidden role="group" aria-label="Serve type"><button data-t="flat">Flat</button><button data-t="slice">Slice</button><button data-t="kick">Kick</button></div>
     <p id="hint"></p>
     <div class="msgbar"><p id="msg">Get ready</p><span class="row" style="gap:6px;flex-wrap:nowrap"><button class="ghost" id="snd">Sound on</button><button class="ghost" id="quit">Retire</button></span></div>
   </div>
@@ -490,11 +492,12 @@ const PERK_AT=[0,15,40];
    agg: how close to the lines it aims; risk: how much that aggression costs in errors; attack: chance to punish a short ball;
    approach: chance to follow an attack to the net; lob/drop/angle/bh/wrong: shot choice weights; pace/spin: shot shape;
    serve: extra serve speed (m/s); wide: share of serves out wide; sv: serve-and-volley chance; df: double-fault factor */
+const OSERVE={server:[0.65,0.35,0],baseliner:[0.5,0.3,0.2],allcourt:[0.35,0.45,0.2],counter:[0.25,0.25,0.5]};
 const OSTYLE={
-  server:{name:'Big Server',tip:'Big first serves and quick points. Get the return deep and make them hit extra balls.',agg:0.65,risk:1.2,attack:0.8,approach:0.55,lob:0.15,drop:0.03,angle:0.12,bh:0.25,wrong:0.15,pace:2,spin:-20,serve:3,wide:0.5,sv:0.35,df:1.15,ue:0,reach:0},
-  baseliner:{name:'Baseliner',tip:'Heavy, deep topspin and a steady diet of backhands. Look for a short ball to attack.',agg:0.5,risk:1,attack:0.7,approach:0.2,lob:0.25,drop:0.04,angle:0.15,bh:0.42,wrong:0.2,pace:1,spin:80,serve:0,wide:0.35,sv:0.05,df:1,ue:0,reach:0},
-  allcourt:{name:'All-Court',tip:'Angles, drop shots and trips to the net. Stay balanced and be ready to come forward.',agg:0.55,risk:1,attack:0.65,approach:0.55,lob:0.3,drop:0.12,angle:0.28,bh:0.25,wrong:0.22,pace:0,spin:0,serve:0,wide:0.4,sv:0.15,df:1,ue:0,reach:0},
-  counter:{name:'Counterpuncher',tip:'Gets everything back and rarely misses. Be patient, then finish at the net.',agg:0.3,risk:0.6,attack:0.4,approach:0.05,lob:0.55,drop:0.04,angle:0.1,bh:0.3,wrong:0.15,pace:-1,spin:40,serve:-1,wide:0.3,sv:0,df:0.7,ue:-0.015,reach:0.25}};
+  server:{name:'Big Server',tip:'Big first serves and quick points. Get the return deep and make them hit extra balls.',agg:0.65,risk:1.2,attack:0.8,approach:0.55,lob:0.15,drop:0.03,angle:0.12,bh:0.25,wrong:0.15,pace:2,spin:-20,serve:3,slice:0.08,wide:0.5,sv:0.35,df:1.15,ue:0,reach:0},
+  baseliner:{name:'Baseliner',tip:'Heavy, deep topspin and a steady diet of backhands. Look for a short ball to attack.',agg:0.5,risk:1,attack:0.7,approach:0.2,lob:0.25,drop:0.04,angle:0.15,bh:0.42,wrong:0.2,pace:1,spin:80,serve:0,slice:0.12,wide:0.35,sv:0.05,df:1,ue:0,reach:0},
+  allcourt:{name:'All-Court',tip:'Angles, drop shots and trips to the net. Stay balanced and be ready to come forward.',agg:0.55,risk:1,attack:0.65,approach:0.55,lob:0.3,drop:0.12,angle:0.28,bh:0.25,wrong:0.22,pace:0,spin:0,serve:0,slice:0.28,wide:0.4,sv:0.15,df:1,ue:0,reach:0},
+  counter:{name:'Counterpuncher',tip:'Gets everything back and rarely misses. Be patient, then finish at the net.',agg:0.3,risk:0.6,attack:0.4,approach:0.05,lob:0.55,drop:0.04,angle:0.1,bh:0.3,wrong:0.15,pace:-1,spin:40,serve:-1,slice:0.22,wide:0.3,sv:0,df:0.7,ue:-0.015,reach:0.25}};
 function styleOfChar(c){const t=c?c.st:{power:5,control:5,speed:5,serve:5,stamina:5};
   const sc={server:t.serve*1.25+t.power*0.55,counter:t.speed*0.9+(t.stamina||5)*0.9,allcourt:t.control*1.15+t.speed*0.45,baseliner:t.power*0.7+t.control*0.55+(t.stamina||5)*0.45+1.2};
   return Object.keys(sc).reduce((a,b)=>sc[b]>sc[a]?b:a)}
@@ -1489,6 +1492,8 @@ const BALL={m:0.057,r:0.0335,A:Math.PI*0.0335*0.0335,rho:1.21,alpha:0.55,g:9.81}
 const KAIR=0.5*BALL.rho*BALL.A/BALL.m;
 const PDT=1/240,SAMPLE=2;
 function netH(x){const a=Math.min(Math.abs(x)/6.4,1);return 0.914+(1.07-0.914)*a*a}
+/* sidespin (rad/s about the vertical axis, + = a right-hander's slice) bends the ball sideways; set by makeShot for the shot being built */
+let SS=0;
 function simulate(p0,v0,w,sf,maxT,firstBounceOnly){
   let px=p0.x,py=p0.y,pz=p0.z,vx=v0.x,vy=v0.y,vz=v0.z,t=0,i=0;
   const r=BALL.r,out={S:[],bounces:[],net:null,crossT:null};
@@ -1499,6 +1504,7 @@ function simulate(p0,v0,w,sf,maxT,firstBounceOnly){
     if(w!==0){// lift acts perpendicular to the flight path in its vertical plane: down for topspin, up for backspin
       const ux=vx/s,uy=vy/s,uz=vz/s;let nx=-uy*ux,ny=1-uy*uy,nz=-uy*uz;const nl=Math.hypot(nx,ny,nz)||1;nx/=nl;ny/=nl;nz/=nl;
       const f=-Math.sign(w)*KAIR*CL*s*s;ax+=f*nx;ay+=f*ny;az+=f*nz}
+    if(SS!==0){const h=Math.hypot(vx,vz)||1e-6,S2=Math.min(r*Math.abs(SS)/s,1),C2=1/(2+1/S2),f=Math.sign(SS)*KAIR*C2*s*s;ax+=f*vz/h;az+=-f*vx/h}
     vx+=ax*PDT;vy+=ay*PDT;vz+=az*PDT;
     const ozPrev=pz;px+=vx*PDT;py+=vy*PDT;pz+=vz*PDT;t+=PDT;i++;
     if(out.crossT==null&&Math.sign(ozPrev)!==Math.sign(pz)&&ozPrev!==0){const f=ozPrev/(ozPrev-pz),hy=py-vy*PDT*(1-f),hx=px-vx*PDT*(1-f);
@@ -1526,7 +1532,7 @@ function launch(st,tgt,speed,w,sf,lob){
     let L=4,H=45;if(rng(H)<D)return{x:ux*H*c,y:H*sn,z:uz*H*c,ok:false,short:false};for(let k=0;k<20;k++){const m=(L+H)/2;if(rng(m)<D)L=m;else H=m}const v=(L+H)/2;
     return{x:ux*v*c,y:v*sn,z:uz*v*c,ok:true,short:false}}
   let lo=-32*deg,rlo=range(lo),th=null;
-  for(let a=-29;a<=58;a+=3){const hi=a*deg,rhi=range(hi);if(rlo<=D&&rhi>=D){let L=lo,H=hi;for(let k=0;k<16;k++){const m=(L+H)/2;if(range(m)<D)L=m;else H=m}th=(L+H)/2;break}lo=hi;rlo=rhi}
+  for(let a=-29;a<=58;a+=3){const hi=a*deg,rhi=range(hi);if(rlo<=D&&rhi>=D){let L=lo,H=hi;for(let k=0;k<16;k++){const m=(L+H)/2;if(range(m)<D)L=m;else H=m}th=H;break}lo=hi;rlo=rhi}
   const ok=th!=null;if(th==null)th=rlo<D?40*deg:-32*deg;
   const c=Math.cos(th),s=Math.sin(th);return{x:ux*speed*c,y:speed*s,z:uz*speed*c,ok,short:!ok&&rlo<D};
 }
@@ -1535,9 +1541,11 @@ function makeShot(from,tgt,speed,w,o){
   o=o||{};const sf=M.surf;
   const st={x:from.x*HW,y:Math.max(0.25,(from.z!=null?from.z:0.5)*ZS),z:(0.5-from.y)*CL};
   const tw={x:tgt.x*HW,z:(0.5-tgt.y)*CL};
-  let v=launch(st,tw,speed,w,sf,o.lob);
-  for(let k=0;k<5&&v.short;k++){speed*=1.15;v=launch(st,tw,speed,w,sf,o.lob)}  // too slow to get there: the player swings a bit harder
-  const r=simulate(st,v,w,sf,5,false);
+  SS=o.ss||0;
+  let aim={x:tw.x,z:tw.z},v=launch(st,aim,speed,w,sf,o.lob);
+  for(let k=0;k<5&&v.short;k++){speed*=1.15;v=launch(st,aim,speed,w,sf,o.lob)}  // too slow to get there: the player swings a bit harder
+  if(SS)for(let k=0;k<3;k++){const q=simulate(st,v,w,sf,4,true).bounces[0];if(!q)break;aim.x+=tw.x-q.x;aim.z+=tw.z-q.z;v=launch(st,aim,speed,w,sf,o.lob)}  // aim off so the curve lands on target
+  const r=simulate(st,v,w,sf,5,false);SS=0;
   const toMe=tw.z>0,b=r.bounces[0];
   const sh=Object.assign({S:r.S,n:r.S.length/3,dt:PDT*SAMPLE,who:o.who,net:!!r.net,speed},o);
   if(b){sh.land={x:b.x/HW,y:0.5-b.z/CL};sh.tb=b.t}else{sh.land={x:tgt.x,y:tgt.y};sh.tb=r.T}
@@ -1591,7 +1599,7 @@ function startMatch(cfg){
 function beginMatch(cfg){
   M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,ostyle:styleOfChar(RBYID[cfg.opp.id]),pat:[],readMe:false,readSaid:false,ostam:clamp(Math.round(((RBYID[cfg.opp.id]&&RBYID[cfg.opp.id].st.stamina)||5)*0.5+cfg.opp.skill*0.5),1,10),sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
     state:'between',shot:null,t0:0,me:{x:0.4,y:-0.05},op:{x:-0.4,y:1.08},fault:false,sw:null,preview:null,samples:[],land:null,aim:null,lock:false,commit:null,pending:null,
-    stat:{aces:0,winners:0,big:0,perfect:0},en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
+    stat:{aces:0,winners:0,big:0,perfect:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
   $('quit').textContent='Retire';M.quitArm=false;
   renderBoard();{const O=OSTYLE[M.ostyle];say(cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))}
@@ -1665,7 +1673,7 @@ function reactOf(i,sh){if(sh.type!=='serve'&&!sh.serve)return 0;const sk=i===0?(
 function canReach(i,sh){return reachMargin(i,sh)>=0}
 /* pressure 0..1: little spare time, pace, heavy spin and depth all rush the receiver */
 function pressureOf(i,sh){const m=reachMargin(i,sh);const L=sh.land||{y:0.5},deep=i===1?L.y>0.86:L.y<0.14;
-  return clamp(clamp(1-m/0.7,0,1)*0.75+(sh.type==='serve'||sh.serve?clamp(((sh.speed||30)-34)/45,0,0.25):clamp(((sh.speed||20)-22)/30,0,0.45))+(Math.abs(sh.w||0)>260?0.08:0)+(deep?0.12:0),0,1)}
+  return clamp(clamp(1-m/0.7,0,1)*0.75+(sh.type==='serve'||sh.serve?clamp(((sh.speed||30)-34)/45,0,0.25):clamp(((sh.speed||20)-22)/30,0,0.45))+(Math.abs(sh.w||0)>260?0.08:0)+(deep?0.12:0)+((sh.hz||1)<0.62?0.1*({grass:1.3,hard:1,clay:0.6}[M.surf===SURF.grass?'grass':M.surf===SURF.clay?'clay':'hard']):0)+(sh.svType==='kick'?0.08:0),0,1)}
 function spotFor(i,sh,side){const hz=toW(0,sh.hy).z,off={fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[side]||0,zo=sh.smash?0.29:sh.volley?0.55:0.5;
   return i===0?{x:sh.hx*HW-off,z:hz+zo}:{x:sh.hx*HW+off,z:hz-zo}}
 function contactPress(i,sh,side){const sp=spotFor(i,sh,side),st=M.mv[i];return clamp((Math.hypot(st.x-sp.x,st.z-sp.z)-0.35)/1.2,0,1)}
@@ -1682,7 +1690,7 @@ function oppServeStart(){
 function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
   const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,C=P[1].tossC||P[1].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
-  const O=OSTYLE[M.ostyle],spd=(30+s*2.2+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1]);tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndHit(Math.min(1.2,spd/45));
+  const O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(30+s*2.2+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd;tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndHit(Math.min(1.2,spd/45));
   if(Math.random()<(0.06-s*0.004)*O.df){
     M.shot=makeShot(from,{x:(lo+hi)/2,y:0.5},spd,120,{who:'op',err:true});M.t0=now();M.state='oppErr';
     setTimeout(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}
@@ -1690,7 +1698,7 @@ function oppServeLaunch(){
   const tact=Math.random()<clamp(0.25+s*0.085,0.3,0.97),wide=Math.random()<O.wide+s*0.03;
   const bx=wide?(d?(Math.random()<0.5?0.1:0.88):(Math.random()<0.5?-0.1:-0.88)):tact&&Math.random()<0.5?(d?0.12:-0.6):lo+0.25+Math.random()*0.5;
   const by=0.24+Math.random()*0.1;
-  let sh=null;for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),120+k*70,{who:'op',serve:true,recv:null});if(!sh.net&&sh.land.y>0.2&&sh.land.y<0.5)break}
+  let sh=null;for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),OV.w+k*70,{who:'op',serve:true,recv:null,ss:OV.ss});sh.svType=oty;if(!sh.net&&sh.land.y>0.2&&sh.land.y<0.5)break}
   M.shot=sh;
   {const L=sh.land,inBox=!sh.net&&L.x>=lo-0.01&&L.x<=hi+0.01&&L.y>=0.228&&L.y<=0.5;if(!inBox){sh.err=true;M.t0=now();M.state='oppErr';setTimeout(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
   setReach(M.shot);if(M.shot.unreach)M.shot.ace=true;
@@ -1726,6 +1734,7 @@ function oppHit(from){
       else if(q<0.78){kind='open';bx=open*edge(O.agg)*rnd(0.6,0.95);by=rnd(0.06,0.24)}
       else{bx=(from.x>0?-1:1)*rnd(0.3,0.7);by=rnd(0.05,0.2)}}  // deep cross-court rally ball
     else{bx=(Math.random()*2-1)*span;by=rnd(0.06,0.28)}
+    if(['deep','backhand','open','wrongfoot','attack'].includes(kind)&&Math.random()<O.slice*(kind==='attack'?1.4:1)){w=-150;spd*=0.82;M.oSlice=true}else M.oSlice=false
     // going for the lines costs: a style's risk turns some aggressive shots into misses
     {const rk=O.risk*(Math.max(0,Math.abs(bx)-0.75)*0.5+Math.max(0,0.09-by)*0.9+(kind==='attack'||kind==='pass'?0.04:0));
       if(kind!=='lob'&&Math.random()<rk){err=true;if(Math.random()<0.6)bx=Math.sign(bx||1)*rnd(1.05,1.18);else by=-rnd(0.03,0.12)}}
@@ -1734,7 +1743,7 @@ function oppHit(from){
   for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(kind==='lob'?0.95:0.88,k),w,{who:'op',err,kind,lob:kind==='lob',recv:recvPos(0)});
     if(err)break;const L=sh.land;if(!sh.net&&Math.abs(L.x)<=1&&L.y>=0&&L.y<0.5)break}
   {const L=sh.land;sh.err=sh.net||Math.abs(L.x)>1.012||L.y<-0.004||L.y>0.5}  // the physics decides in or out
-  M.shot=sh;sh.kind=kind;sh.w=w;onContact('op',toW(from.x,from.y,from.z),sh.speed,false);tire(1,0.004+0.004*clamp((sh.speed-18)/20,0,1));sndHit(Math.min(1.2,sh.speed/38));
+  M.shot=sh;sh.kind=kind;sh.w=w;sh.slice=!!M.oSlice;M.oSlice=false;onContact('op',toW(from.x,from.y,from.z),sh.speed,false);tire(1,0.004+0.004*clamp((sh.speed-18)/20,0,1));sndHit(Math.min(1.2,sh.speed/38));
   {const oy=from.y,app=ovol||osm||(kind==='attack'&&Math.random()<O.approach)||(oy<0.82&&Math.random()<O.approach*0.5);M.home[1]=app?{x:0,y:0.72}:{x:0,y:1.08};if(osm)say(M.cfg.opp.name+' smashes it!');else if(kind==='defend'&&!err)say(M.cfg.opp.name+' is on the run and slices it back.');else if(pr>0.55&&!err&&kind==='deep')say('Weak reply. Go after it.');else if(kind==='lob'&&!err)say(M.cfg.opp.name+' throws up a lob.');else if(kind==='attack'&&!err)say(M.cfg.opp.name+' attacks the short ball'+(M.home[1].y<1?' and comes in.':'.'));else if(kind==='pass'&&!err)say('Passing shot from '+M.cfg.opp.name+'.');else if(kind==='wrongfoot'&&!err)say('Behind you: '+M.cfg.opp.name+' wrong-foots you.');else if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
   if(!sh.err){setReach(M.shot);if(M.shot.unreach&&pointWins(1)===2)slowMo(true)}
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);
@@ -1748,16 +1757,17 @@ function executeShot(){
   const tc=M.t0+0.9*sh.T*1000,dts=((tc-(c.tSw||now()))/1000),tim=dts<0?'late':dts<=PERFECT[1]&&dts>=PERFECT[0]?'perfect':dts>0.8?'early':'ok';
   if(tim==='perfect')M.stat.perfect++;
   const tf=tim==='perfect'?0.68:tim==='late'?1.35:tim==='early'?1.12:1,E=M.en[0];
-  const bp=pos(sh,clamp((now()-M.t0)/1000/sh.T,0.9,1.0)),l=scatter(Object.assign({},c,{r:c.r*(sh.smash?0.6:1)*(1+1.6*mp)*tf*(1+0.55*(1-E))+0.05*mp}));let type=c.f<0.25?'drop':'drive';
+  const bp=pos(sh,clamp((now()-M.t0)/1000/sh.T,0.9,1.0)),l=scatter(Object.assign({},c,{r:c.r*(sh.smash?0.6:1)*(c.slice?0.85:1)*(1+1.6*mp*(c.slice?0.55:1))*tf*(1+0.55*(1-E))+0.05*mp}));let type=c.f<0.25?'drop':'drive';
   if(!P[0].swing)P[0].startSwing(M.meSide,SWINGS[M.meSide].dur*SWINGS[M.meSide].cf,yoFor(M.meSide,sh.hz));
   const pw=Math.min(c.pw,1.2-0.55*mp-0.3*(1-E))*(tim==='perfect'?1.06:tim==='late'?0.88:1),vol=sh.volley,smh=sh.smash,opNet=M.op.y<0.85||M.home[1].y<0.9;
   if(smh)type='drive';else if(!vol&&type!=='drop'&&opNet&&c.pw<0.35&&c.f>=0.6)type='lob';
-  const Dm=Math.hypot((l.x-bp.x)*HW,(l.y-bp.y)*CL),spd=smh?(24+16*pw+S.power*0.5)*(Math.abs(bp.y-0.5)>0.32?0.8:1):type==='lob'?Math.sqrt(9.81*Dm)*1.08:type==='drop'?Math.max((vol?6:9)+2.5*pw,Math.sqrt(9.81*Dm)*(vol?1.15:1.3)):vol?13+12*pw+S.power*0.3:14+18*pw+S.power*0.5,w=smh?40:type==='lob'?140:type==='drop'?-170:vol?-70:170+70*(1-Math.min(pw,1))+S.control*6;
-  const shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type,lob:type==='lob',recv:recvPos(1)});sndHit(Math.min(1.2,spd/38));tire(0,0.004+0.004*Math.min(pw,1));if(tim==='perfect')perfectFlash();onContact('me',toW(bp.x,bp.y,bp.z),spd,tim==='perfect');
+  let Dm=Math.hypot((l.x-bp.x)*HW,(l.y-bp.y)*CL),spd=smh?(24+16*pw+S.power*0.5)*(Math.abs(bp.y-0.5)>0.32?0.8:1):type==='lob'?Math.sqrt(9.81*Dm)*1.08:type==='drop'?Math.max((vol?6:9)+2.5*pw,Math.sqrt(9.81*Dm)*(vol?1.15:1.3)):vol?13+12*pw+S.power*0.3:14+18*pw+S.power*0.5,w=smh?40:type==='lob'?140:type==='drop'?-170:vol?-70:170+70*(1-Math.min(pw,1))+S.control*6;
+  const slc=!!c.slice&&type==='drive'&&!vol&&!smh;if(slc){spd*=0.82;w=-(150+50*Math.min(pw,1))}
+  const shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type,lob:type==='lob',slice:slc,recv:recvPos(1)});sndHit(Math.min(1.2,spd/38));tire(0,0.004+0.004*Math.min(pw,1));if(tim==='perfect')perfectFlash();onContact('me',toW(bp.x,bp.y,bp.z),spd,tim==='perfect');
   M.aim={x:c.x,y:c.y};M.land=shot.land;
   if(!landIn(shot,false)){
     const L=shot.land,why=shot.net?'Into the net. Swipe slower or a little longer.':Math.abs(L.x)>1?'Just wide.':'Long. Swipe a little shorter or slower.';
-    shot.err=true;M.shot=shot;M.t0=now();M.state='err';drillEvent({k:'hit',in:false,why,tim});
+    shot.err=true;M.shot=shot;M.t0=now();M.state='err';drillEvent({k:'hit',in:false,why,tim,slice:!!c.slice});
     setTimeout(()=>pointTo(1,why,shot.net?'NET':'OUT'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
   if(c.pw>=0.85)M.stat.big++;
   const tx=shot.land.x,ty=shot.land.y;
@@ -1766,34 +1776,42 @@ function executeShot(){
   shot.w=w;shot.bonus=(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0)+(smh?0.12:0);
   M.shot=shot;M.t0=now();M.state='me';P[1].hop=0.15;
   fallbackHit(1,M.shot);M.returns=canReach(1,M.shot);M.oppPress=M.returns?pressureOf(1,M.shot):0;if(!M.returns&&(pointWins(0)===2||M.rally>=8))slowMo(true);
-  if(M.drill){M.returns=false;M.oppPress=0;drillEvent({k:'hit',in:true,land:shot.land,kmh:Math.round(spd*3.6),tim,volley:vol,smash:smh})}
+  if(M.drill){M.returns=false;M.oppPress=0;drillEvent({k:'hit',in:true,land:shot.land,kmh:Math.round(spd*3.6),tim,volley:vol,smash:smh,slice:slc})}
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
-  if(!M.drill)say((tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*3.6)+' km/h':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h'));
+  if(!M.drill)say((slc?'Slice. ':'')+(tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*3.6)+' km/h':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h'));
 }
 function doServe(a){
   if(!M||M.state!=='serving')return;
-  const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(a),C=P[0].tossC||P[0].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
-  const pw=Math.min(a.pw,1.1),second=M.fault;
-  let spd=(24+20*pw+S.serve*0.9+(hasPerk('server',3)?2.5:0))*(0.92+0.08*M.en[0]),w=110;tire(0,0.006);
-  if(second){spd*=0.8;w=330}
-  const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve'});onContact('me',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndHit(Math.min(1.2,spd/45));
+  const second=M.fault,ty=M.svType[second?1:0],SV=SVT[ty];
+  const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(Object.assign({},a,{r:a.r*SV.r})),C=P[0].tossC||P[0].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
+  const pw=Math.min(a.pw,1.1);
+  let spd=(24+20*pw+S.serve*0.9+(hasPerk('server',3)?2.5:0))*(0.92+0.08*M.en[0])*SV.spd,w=SV.w;tire(0,0.006);
+  const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss});shot.svType=ty;onContact('me',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndHit(Math.min(1.2,spd/45));
   M.aim={x:a.x,y:a.y};M.land=shot.land;
   if(!landIn(shot,true)){
     const L=shot.land,why=shot.net?'into the net':L.y>0.772?'long':'wide';
     shot.err=true;M.shot=shot;M.t0=now();M.state='err';
-    if(M.drill){drillEvent({k:'serve',in:false,why});setTimeout(drillNext,1300);return}
+    if(M.drill){drillEvent({k:'serve',in:false,why,ty});setTimeout(drillNext,1300);return}
     if(M.fault)setTimeout(()=>pointTo(1,'Double fault, '+why+'.','DOUBLE FAULT'),900);
-    else{M.fault=true;callOut('FAULT');setTimeout(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null;say('Fault, '+why+'. Second serve: it gets extra topspin to drop in.')},1100)}
+    else{M.fault=true;callOut('FAULT');setTimeout(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null;say('Fault, '+why+'. Second serve: kick is the safe choice.')},1100)}
     return}
   if(a.pw>=0.85)M.stat.big++;
-  shot.second=second;shot.w=w;M.shot=shot;fallbackHit(1,shot);M.returns=canReach(1,shot);if(M.drill){M.returns=false;drillEvent({k:'serve',in:true,kmh:Math.round(spd*3.6)})}M.oppPress=M.returns?pressureOf(1,shot):0;M.t0=now();M.state='me';P[1].hop=0.15;
+  shot.second=second;shot.w=w;M.shot=shot;fallbackHit(1,shot);M.returns=canReach(1,shot);if(M.drill){M.returns=false;drillEvent({k:'serve',in:true,kmh:Math.round(spd*3.6),ty})}M.oppPress=M.returns?pressureOf(1,shot):0;M.t0=now();M.state='me';P[1].hop=0.15;
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
-  if(!M.drill)say((a.pw>=0.85?'Big serve! ':'Serve is in. ')+Math.round(spd*3.6)+' km/h');
+  if(!M.drill)say((a.pw>=0.85?'Big '+SV.name.toLowerCase()+' serve! ':SV.name+' serve in. ')+Math.round(spd*3.6)+' km/h');
 }
 
 const PERFECT=[0.1,0.42]; // seconds before contact
 function perfectFlash(){const b=W3.ball;b.scale.setScalar(1.8);setTimeout(()=>b.scale.setScalar(1),140);callOut('PERFECT')}
 const MAXL=190;
+/* serve types: speed factor, topspin, sidespin (+ curves a right-hander's slice away to their left), and stray factor */
+const SVT={flat:{name:'Flat',spd:1.04,w:50,ss:0,r:1.15},slice:{name:'Slice',spd:0.92,w:20,ss:360,r:1},kick:{name:'Kick',spd:0.8,w:430,ss:-70,r:0.7}};
+function renderSvType(){const i=M.fault?1:0;document.querySelectorAll('#svType button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===M.svType[i])))}
+document.querySelectorAll('#svType button').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!M)return;M.svType[M.fault?1:0]=b.dataset.t;renderSvType()});
+/* how curved the swipe path is: the furthest the path strays from the straight line start-to-end, as a share of its length */
+function swipeCurve(){const sm=M.samples;if(!sm||sm.length<3)return 0;const a=sm[0],b=sm[sm.length-1],L=Math.hypot(b.x-a.x,b.y-a.y);if(L<45)return 0;let mx=0;
+  for(const p of sm)mx=Math.max(mx,Math.abs((b.x-a.x)*(a.y-p.y)-(a.x-p.x)*(b.y-a.y))/L);return mx/L}
+const SLICE_CURVE=0.17;
 function aimFromSwipe(dx,dy,serve,spd){
   const L0=Math.hypot(dx,dy);if(L0<20)return null;const fwd=Math.max(-dy,20);
   const f=clamp(L0/MAXL,0,1.25),pw=clamp(spd/1.4,0,1.2),S=M.S;
@@ -1804,7 +1822,7 @@ function aimFromSwipe(dx,dy,serve,spd){
   if(serve&&M.fault&&hasPerk('server',2))r*=0.6;
   if(!serve&&ty>0.85&&hasPerk('baseliner',1))r*=0.75;
   if(hasPerk('allcourt',3))r*=0.9;
-  return{x:clamp(tx,-1.4,1.4),y:ty,f,pw,r};
+  return{x:clamp(tx,-1.4,1.4),y:ty,f,pw,r,slice:!serve&&swipeCurve()>=SLICE_CURVE};
 }
 function swipeSpeed(){const sm=M.samples;if(!sm||sm.length<2)return 0;const last=sm[sm.length-1];let first=last;for(let i=sm.length-1;i>=0;i--){if(last.t-sm[i].t>90)break;first=sm[i]}const dt=last.t-first.t;return dt>0?Math.hypot(last.x-first.x,last.y-first.y)/dt:0}
 function inPlay(a,serve){if(serve){const d=side()==='deuce',lo=d?-1:0,hi=d?0:1;return a.x>=lo&&a.x<=hi&&a.y>=0.52&&a.y<=0.77}return Math.abs(a.x)<=1&&a.y>=0.52&&a.y<=1}
@@ -1923,8 +1941,9 @@ function step(dt){
   if(M.land&&sh&&sh.who==='me'&&(M.state==='me'||M.state==='err'||M.state==='between')){const w=toW(M.land.x,M.land.y);W3.landMark.visible=true;W3.landMark.position.set(w.x,0.012,w.z);W3.landMark.scale.set(0.45,1,0.45);W3.landMark.material.color.setHex(M.state==='err'||sh.err?0xF28A78:0x9BE15D)}else W3.landMark.visible=false;
   const pw=$('power');
   if(M.sw){pw.hidden=false;const v=M.preview?M.preview.pw:0;const bar=pw.querySelector('i');bar.style.width=Math.min(100,v/1.25*100)+'%';bar.style.background=v>=0.85?'#F5A524':'#D3E86B'}else pw.hidden=true;
-  if(M.state==='serveMe')ht=M.sw?'Pace: swipe faster for more':'Swipe up into the box. Faster swipe = more power';
-  else if(M.state==='op'&&sh){if(sh.err){ht='Going out, let it go';warn=true}else if(sh.unreach){ht='Out of reach';warn=true}else if(M.sw)ht='Pace: swipe faster for more';else if(M.commit)ht='Locked in. Swipe again to change';else if((M.mePress||0)>0.6&&!sh.smash)ht='Stretched: a safer swipe will keep it in';else ht=sh.smash?'Overhead! Swipe to smash it':sh.volley?'Volley! Swipe to punch it':M.en[0]<0.35?'Tired: keep the points short':'Swipe to hit · tap your court to move'}
+  {const sv=M.state==='serveMe';$('svType').hidden=!sv;if(sv)renderSvType()}
+  if(M.state==='serveMe')ht=(M.sw?'Pace: swipe faster for more':'Swipe up into the box')+' · '+SVT[M.svType[M.fault?1:0]].name+' serve';
+  else if(M.state==='op'&&sh){if(sh.err){ht='Going out, let it go';warn=true}else if(sh.unreach){ht='Out of reach';warn=true}else if(M.sw)ht=(M.preview&&M.preview.slice?'Slice · ':'Topspin · ')+'swipe faster for more pace';else if(M.commit)ht='Locked in. Swipe again to change';else if((M.mePress||0)>0.6&&!sh.smash)ht='Stretched: a safer swipe will keep it in';else ht=sh.smash?'Overhead! Swipe to smash it':sh.volley?'Volley! Swipe to punch it':M.en[0]<0.35?'Tired: keep the points short':'Swipe to hit · tap your court to move'}
   hint.textContent=ht;hint.className=warn?'warn':'';
 }
 function camera(dt){
@@ -1951,15 +1970,19 @@ const LESSONS=[
     judge:e=>!e.in?['no',e.why+' Power costs accuracy; flick fast but not too long.']:e.kmh>=100?['ok','Big hit: '+e.kmh+' km/h!']:['no',e.kmh+' km/h. Flick faster.']},
   {id:'timing',t:'Timing',d:'Watch the ball: it glows green just before it reaches you. Swipe while it glows for a perfect hit, tighter and a little harder. Get 2 perfect hits.',need:2,feed:'mix',
     judge:e=>e.tim==='perfect'&&e.in?['ok','Perfect timing!']:e.tim==='perfect'?['no','Perfect timing, but it missed. Keep the swipe in the court.']:['no',e.tim==='early'?'Too early. Wait for the glow.':e.tim==='late'?'Too late. Swipe as soon as it glows.':'Close. Wait a beat longer, until the ball glows.']},
+  {id:'slice',t:'Slice',d:'Curve your swipe like an arc, like drawing a C, to hit a slice: backspin that stays low and skids. It is slower but safer when you are stretched. Hit 2 slices in.',need:2,feed:'mix',
+    judge:e=>!e.in?['no',e.why]:e.slice?['ok','Slice!']:['no','That was topspin. Curve the swipe more, like an arc.']},
   {id:'net',t:'Come to the net',d:'Tap your court near the net to move there, then volley 2 balls before they bounce. A blue ring marks where you are heading.',need:2,feed:'net',
     judge:e=>!e.in?['no',e.why]:e.volley?['ok','Volley!']:['no','That one bounced first. Tap close to the net, then swipe.']},
   {id:'smash',t:'The smash',d:'At the net, a ball over your head becomes an overhead. Your player backs up under it; swipe to smash it in.',need:1,feed:'lob',
     judge:e=>!e.in?['no',e.why]:e.smash?['ok','Smash!']:['no','Stay near the net so the lob comes over your head.']},
-  {id:'serve',t:'Serve',d:'Swipe up into the glowing service box. Faster swipes serve harder but stray more. Land 3 serves in.',need:3,serve:true,
-    judge:e=>e.in?['ok','Serve is in, '+e.kmh+' km/h.']:['no','Fault, '+e.why+'. Aim for the middle of the box.']}
+  {id:'serve',t:'Serve',d:'Pick a serve with the buttons, then swipe up into the glowing box. Flat is fastest, Slice curves away, Kick is safest. Land one of each.',need:3,serve:true,
+    judge:e=>{const D=M.drill;D.types=D.types||{};if(D.practice&&e.in)return['ok',SVT[e.ty].name+' serve in, '+e.kmh+' km/h.'];if(!e.in)return['no','Fault, '+e.why+'. '+(e.ty==='flat'?'Flat serves need a calmer swipe.':'Aim for the middle of the box.')];
+      if(D.types[e.ty])return['no',SVT[e.ty].name+' is done. Pick a different serve with the buttons.'];D.types[e.ty]=1;return['ok',SVT[e.ty].name+' serve in, '+e.kmh+' km/h.']}}
 ];
 const TIPS=[['Stamina','Running drains the bar under your name; you get some back between points. Tired players move slower and spray shots, so make your opponent run.'],
   ['Pressure','Balls you have to stretch for are harder to control. When the hint says Stretched, swipe safer.'],
+  ['Slice','Curve your swipe like an arc for a low, skidding slice. Great when you are stretched, and nasty on grass.'],
   ['Touch','A short, slow swipe plays a drop shot. When they come to the net, a long, slow swipe floats a lob over them.'],
   ['Reading you','Hit to the same side over and over and opponents start reading it. Mix it up.']];
 
