@@ -124,6 +124,15 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 #quit,#snd{padding:6px 12px;font-size:13px;flex:none}
 #call{position:absolute;left:0;right:0;top:38%;text-align:center;font-family:var(--display);font-weight:800;font-size:56px;letter-spacing:.04em;color:var(--chalk);text-shadow:0 2px 12px rgba(0,0,0,.6);pointer-events:none;opacity:0;transition:opacity .25s}
 #call.on{opacity:1}
+.drillp{max-width:480px;margin:0 auto;background:rgba(5,12,20,.88);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.35}
+.drillp .eyebrow{color:var(--ball)}
+.dots{display:flex;gap:6px;flex-wrap:wrap}.dots i{width:22px;height:8px;border-radius:4px;background:var(--panel-2);border:1px solid var(--line)}.dots i.on{background:var(--ball);border-color:var(--ball)}
+#dDone{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,12,20,.45)}
+#dDone .card{max-width:380px;width:100%;pointer-events:auto}
+.lesson{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.lesson strong{font-family:var(--display);font-size:20px;text-transform:uppercase}
+.lesson.done{border-color:#2f5a3d}
+.tip{font-size:15px}.tip b{display:block;font-family:var(--display);font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--ball)}.lesson.done .eyebrow{color:var(--win)}
 #replay{position:absolute;left:12px;top:calc(env(safe-area-inset-top,0px) + 96px);display:flex;align-items:center;gap:8px;background:rgba(5,12,20,.86);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:.12em;text-transform:uppercase;pointer-events:none}
 #replay i{width:10px;height:10px;border-radius:50%;background:#F28A78;animation:blink 1s steps(2) infinite}
 #replay small{font-family:var(--body);font-weight:500;font-size:12px;letter-spacing:0;text-transform:none;color:var(--muted)}
@@ -142,10 +151,15 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 18 · hit feel and replays</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 19 · lessons and practice</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
-  <div class="card">
+  <div class="card" id="learnCard">
+    <h3>Learn to play</h3>
+    <p class="muted" id="learnSub" style="font-size:14px"></p>
+    <div class="row"><button id="btnLearn">Start the lessons</button></div>
+  </div>
+  <div class="card" id="careerCard">
     <div class="row between"><h3>Career</h3><span class="chip" id="careerChip">No save yet</span></div>
     <div class="row">
       <button class="go" id="btnContinue" hidden>Continue career</button>
@@ -196,6 +210,12 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   </div>
 </section>
 
+<section id="learn" class="wrap" hidden>
+  <div class="row between"><p class="eyebrow">Tennis Go</p><button class="ghost" id="learnBack" style="padding:6px 12px;font-size:13px">Menu</button></div>
+  <div class="hero"><h2>Learn to play</h2><p class="muted" id="learnIntro"></p></div>
+  <div id="lessons" style="display:flex;flex-direction:column;gap:10px"></div>
+</section>
+
 <section id="select" class="wrap" hidden>
   <div class="hero"><p class="eyebrow" id="selEyebrow">New career</p><h2>Choose your player</h2><p class="muted" id="selIntro"></p></div>
   <div class="roster" id="roster"></div>
@@ -231,6 +251,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
 <section id="match" hidden>
   <canvas id="gl" aria-label="Tennis court. Swipe up to hit."></canvas>
   <div class="hud top">
+    <div class="drillp" id="drillP" hidden><p class="eyebrow" id="dStep"></p><p id="dText"></p><div class="dots" id="dDots"></div><h3 id="dTitle" hidden></h3></div>
     <div class="board" id="board">
       <div class="lab"><span id="bLabel">Match</span><span id="bSurf">Hard</span></div>
       <div class="brow"><i class="srv" id="srv0"></i><span class="nm" id="n0">You</span><span class="sets num" id="s0"></span><span class="pt num" id="p0">0</span><b class="en" aria-hidden="true"><i id="e0"></i></b></div>
@@ -238,6 +259,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
     </div>
   </div>
   <div id="call"></div>
+  <div id="dDone" hidden><div class="card"><p class="banner w" id="dDoneT">Lesson complete</p><p id="dDoneP"></p><div class="row"><button class="go" id="dNext">Next lesson</button><button class="ghost" id="dMenu">All lessons</button></div></div></div>
   <div id="replay" hidden><i></i>Replay<small>Tap to skip</small></div>
   <div class="hud bot">
     <div id="power" hidden><b></b><i></i></div>
@@ -274,7 +296,7 @@ window.MCLIPS={"ready":{"fps":30,"t0":0,"n":120,"anim":[0,1,2,3,4,5,6,7,8,9,10,1
 const $=id=>document.getElementById(id);
 const T=THREE;
 const CHAR_BASE=window.CHAR_BASE||'https://hartwigcam98-star.github.io/golf-go/';
-const SECTIONS=['title','select','style','hub','recruit','season','match','result'];
+const SECTIONS=['title','learn','select','style','hub','recruit','season','match','result'];
 function show(id){SECTIONS.forEach(s=>{$(s).hidden=s!==id});if(id!=='match')window.scrollTo(0,0);if(id==='match')onResize()}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rnd(a,b){return a+Math.random()*(b-a)}
@@ -525,7 +547,7 @@ function stageName(){return{junior:'Juniors',college:'College',pro:'Pro tour'}[s
 function renderTitle(){
   const has=!!save;$('btnContinue').hidden=!has;$('btnNewConfirm').hidden=true;$('btnNew').hidden=false;
   $('careerChip').textContent=has?(RBYID[save.char].name+' · '+stageName()+' season '+save.season):'No save yet';
-  $('btnNew').className=has?'':'go';renderSaveCard();show('title');
+  $('btnNew').className=has?'':'go';renderSaveCard();learnCardState();show('title');
 }
 $('btnContinue').onclick=()=>renderHub();
 /* ---- keeping the career safe: home-screen install, persistent storage, backup codes ---- */
@@ -1573,7 +1595,9 @@ function beginMatch(cfg){
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
   $('quit').textContent='Retire';M.quitArm=false;
   renderBoard();{const O=OSTYLE[M.ostyle];say(cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))}
-  REP.setsN=1;REP.lastPt=-9;REP.buf=[];W3.camPos.set(0,4,22);setTimeout(nextPoint,cfg.intro?2600:1100);
+  REP.setsN=1;REP.lastPt=-9;REP.buf=[];W3.camPos.set(0,4,22);
+  if(cfg.drill){drillBegin(cfg);return}
+  setTimeout(nextPoint,cfg.intro?2600:1100);
 }
 function ptLabel(i){const a=M.pts[i],b=M.pts[1-i];if(M.tb)return String(a);if(a>=3&&b>=3)return a===b?'40':a>b?'AD':'40';return['0','15','30','40'][Math.min(a,3)]}
 function renderBoard(){for(let i=0;i<2;i++){$('s'+i).innerHTML=M.sets.map((g,k)=>'<span class="'+(k===M.sets.length-1?'cur':'')+'">'+g[i]+'</span>').join('');$('p'+i).textContent=ptLabel(i);$('srv'+i).classList.toggle('on',M.server===i)}}
@@ -1586,6 +1610,7 @@ function nextPoint(){
   M.mv[0]={x:M.me.x*HW,v:0,z:toW(0,-0.05).z,vz:0};M.mv[1]={x:M.op.x*HW,v:0,z:toW(0,1.08).z,vz:0};M.me.y=-0.05;M.op.y=1.08;P[0].pos.x=M.mv[0].x;P[1].pos.x=M.mv[1].x;P[0].runW=P[1].runW=0;
 }
 function pointTo(w,text,call){
+  if(M&&M.drill){drillPoint(w,text,call);return}
   if(!M||M.lock)return;M.lock=true;M.state='between';slowMo(false);REP.endT=GT;if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
   {const rl=M.rally||0,big=call==='ACE'||call==='WINNER';
     if(big){crowdCheer(1,2.6,rl>=6||Math.random()<0.25?2.2:0);sndApplause(1);if(rl>=6)sndCrowdVoice('cheer',0.9)}
@@ -1614,9 +1639,10 @@ function gameWon(w){
     M.sets.push([0,0]);setTimeout(()=>say(w===0?'You take the set!':M.cfg.opp.name+' takes the set.'),900)}
   else if(g[0]===G&&g[1]===G){M.tb=true;M.tbFirst=M.server}
 }
-function endMatch(){if(!M)return;if(REP.on){REP.done=null;endReplay()}slowMo(false);const won=M.winner===0,score=M.sets.map(g=>g[0]+'–'+g[1]).join(', '),st=M.stat,cb=M.cfg.onEnd;M=null;cb(won,score,st)}
+function endMatch(){if(!M)return;drillCleanup();if(REP.on){REP.done=null;endReplay()}slowMo(false);const won=M.winner===0,score=M.sets.map(g=>g[0]+'–'+g[1]).join(', '),st=M.stat,cb=M.cfg.onEnd;M=null;cb(won,score,st)}
 $('quit').onclick=()=>{
   if(!M)return;
+  if(M.drill){M.over=true;M.winner=0;M.lock=true;endMatch();return}
   if(!M.quitArm){M.quitArm=true;$('quit').textContent='Tap to confirm';setTimeout(()=>{if(M){M.quitArm=false;$('quit').textContent='Retire'}},2500);return}
   M.over=true;M.winner=1;M.lock=true;M.state='between';say('You retire from the match.');setTimeout(endMatch,600);
 };
@@ -1731,7 +1757,7 @@ function executeShot(){
   M.aim={x:c.x,y:c.y};M.land=shot.land;
   if(!landIn(shot,false)){
     const L=shot.land,why=shot.net?'Into the net. Swipe slower or a little longer.':Math.abs(L.x)>1?'Just wide.':'Long. Swipe a little shorter or slower.';
-    shot.err=true;M.shot=shot;M.t0=now();M.state='err';
+    shot.err=true;M.shot=shot;M.t0=now();M.state='err';drillEvent({k:'hit',in:false,why,tim});
     setTimeout(()=>pointTo(1,why,shot.net?'NET':'OUT'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
   if(c.pw>=0.85)M.stat.big++;
   const tx=shot.land.x,ty=shot.land.y;
@@ -1740,8 +1766,9 @@ function executeShot(){
   shot.w=w;shot.bonus=(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0)+(smh?0.12:0);
   M.shot=shot;M.t0=now();M.state='me';P[1].hop=0.15;
   fallbackHit(1,M.shot);M.returns=canReach(1,M.shot);M.oppPress=M.returns?pressureOf(1,M.shot):0;if(!M.returns&&(pointWins(0)===2||M.rally>=8))slowMo(true);
+  if(M.drill){M.returns=false;M.oppPress=0;drillEvent({k:'hit',in:true,land:shot.land,kmh:Math.round(spd*3.6),tim,volley:vol,smash:smh})}
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
-  say((tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*3.6)+' km/h':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h'));
+  if(!M.drill)say((tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*3.6)+' km/h':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h'));
 }
 function doServe(a){
   if(!M||M.state!=='serving')return;
@@ -1754,13 +1781,14 @@ function doServe(a){
   if(!landIn(shot,true)){
     const L=shot.land,why=shot.net?'into the net':L.y>0.772?'long':'wide';
     shot.err=true;M.shot=shot;M.t0=now();M.state='err';
+    if(M.drill){drillEvent({k:'serve',in:false,why});setTimeout(drillNext,1300);return}
     if(M.fault)setTimeout(()=>pointTo(1,'Double fault, '+why+'.','DOUBLE FAULT'),900);
     else{M.fault=true;callOut('FAULT');setTimeout(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null;say('Fault, '+why+'. Second serve: it gets extra topspin to drop in.')},1100)}
     return}
   if(a.pw>=0.85)M.stat.big++;
-  shot.second=second;shot.w=w;M.shot=shot;fallbackHit(1,shot);M.returns=canReach(1,shot);M.oppPress=M.returns?pressureOf(1,shot):0;M.t0=now();M.state='me';P[1].hop=0.15;
+  shot.second=second;shot.w=w;M.shot=shot;fallbackHit(1,shot);M.returns=canReach(1,shot);if(M.drill){M.returns=false;drillEvent({k:'serve',in:true,kmh:Math.round(spd*3.6)})}M.oppPress=M.returns?pressureOf(1,shot):0;M.t0=now();M.state='me';P[1].hop=0.15;
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
-  say((a.pw>=0.85?'Big serve! ':'Serve is in. ')+Math.round(spd*3.6)+' km/h');
+  if(!M.drill)say((a.pw>=0.85?'Big serve! ':'Serve is in. ')+Math.round(spd*3.6)+' km/h');
 }
 
 const PERFECT=[0.1,0.42]; // seconds before contact
@@ -1858,7 +1886,7 @@ function step(dt){
     let x0=mv[0].x,z0=mv[0].z,x1=mv[1].x,z1=mv[1].z,vm0=vmaxOf(0),vm1=vmaxOf(1);
     if(M.state==='op'&&sh){if(!sh.err){x0=sh.hx*HW+({fh:-0.75,bh:0.45,fv:-0.62,bv:0.55,sm:-0.31}[M.meSide]);z0=toW(0,sh.hy).z+(sh.smash?0.29:sh.volley?0.55:0.5)}x1=M.home[1].x*HW;z1=toW(0,M.home[1].y).z}
     else if(M.state==='me'&&sh){const hz=toW(0,sh.hy).z;
-      if(M.returns){x1=sh.hx*HW+({fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[M.opSide]);z1=hz-(sh.smash?0.29:sh.volley?0.55:0.5)}else{const sp=spotFor(1,sh,M.opSide);x1=sp.x;z1=sp.z}
+      if(M.returns){x1=sh.hx*HW+({fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[M.opSide]);z1=hz-(sh.smash?0.29:sh.volley?0.55:0.5)}else if(M.drill){x1=M.home[1].x*HW;z1=toW(0,M.home[1].y).z}else{const sp=spotFor(1,sh,M.opSide);x1=sp.x;z1=sp.z}
       if(sh.type!=='serve'){x0=M.home[0].x*HW;z0=toW(0,M.home[0].y).z}}
     drive2(mv[0],x0,z0,vm0,dt);drive2(mv[1],x1,z1,vm1,dt);
     for(let i=0;i<2;i++){const sp=Math.hypot(mv[i].v,mv[i].vz),d=sp*dt;M.run[i]+=d;tire(i,d*0.0022*(0.55+0.45*Math.min(1,sp/(i?vm1:vm0))))}
@@ -1905,9 +1933,116 @@ function camera(dt){
   const k=Math.min(1,dt*3);W3.camPos.lerp(tp,k);W3.camLook.lerp(tl,k);W3.cam.position.copy(W3.camPos);const sk=shakeOffset();if(sk)W3.cam.position.add(sk);W3.cam.lookAt(W3.camLook);
   W3.sun.target.position.set(0,0,0);
 }
+/* ================= learn to play: guided lessons with Coach Dot feeding balls, and an endless practice court =================
+   Lessons run on the real match engine. Coach Dot never plays the ball back: every ball you hit is judged, then she feeds the next. */
+const KEY_LEARN='tennis-go-learn';
+let LEARN={done:{}};try{const v=JSON.parse(localStorage.getItem(KEY_LEARN)||'null');if(v&&v.done)LEARN=v}catch(e){}
+function storeLearn(){try{localStorage.setItem(KEY_LEARN,JSON.stringify(LEARN))}catch(e){}}
+const ZONE={left:{x0:-1,x1:-0.2,y0:0.6,y1:1,label:'left'},right:{x0:0.2,x1:1,y0:0.6,y1:1,label:'right'},deep:{x0:-1,x1:1,y0:0.77,y1:1,label:'deep'}};
+const inZone=(z,l)=>l&&l.x>=z.x0&&l.x<=z.x1&&l.y>=z.y0&&l.y<=z.y1;
+const LESSONS=[
+  {id:'swipe',t:'Swipe to hit',d:'When Coach Dot feeds you a ball, swipe up anywhere on the screen. Your player runs to the ball and swings for you. Land 3 balls in the court.',need:3,feed:'fh',
+    judge:e=>e.in?['ok','In!']:['no',e.why]},
+  {id:'aim',t:'Aim with the angle',d:'The angle of your swipe sets the direction. Tilt it toward the glowing target: 2 to the left, then 2 to the right.',need:4,feed:'mix',zones:['left','left','right','right'],
+    judge:(e,z)=>!e.in?['no',e.why]:inZone(ZONE[z],e.land)?['ok','On target!']:['no','In, but missed the target. Tilt your swipe more to the '+ZONE[z].label+'.']},
+  {id:'depth',t:'Depth',d:'The length of your swipe sets how deep it goes. Land 2 balls in the deep zone past the service line. Too long sails it out.',need:2,feed:'mix',zones:['deep','deep'],
+    judge:(e,z)=>!e.in?['no',e.why]:inZone(ZONE.deep,e.land)?['ok','Deep!']:['no','A little short. Make your swipe longer.']},
+  {id:'pace',t:'Pace',d:'The speed of your swipe is your power. Flick it fast to hit one over 100 km/h and keep it in. Harder hits stray more.',need:1,feed:'mix',
+    judge:e=>!e.in?['no',e.why+' Power costs accuracy; flick fast but not too long.']:e.kmh>=100?['ok','Big hit: '+e.kmh+' km/h!']:['no',e.kmh+' km/h. Flick faster.']},
+  {id:'timing',t:'Timing',d:'Watch the ball: it glows green just before it reaches you. Swipe while it glows for a perfect hit, tighter and a little harder. Get 2 perfect hits.',need:2,feed:'mix',
+    judge:e=>e.tim==='perfect'&&e.in?['ok','Perfect timing!']:e.tim==='perfect'?['no','Perfect timing, but it missed. Keep the swipe in the court.']:['no',e.tim==='early'?'Too early. Wait for the glow.':e.tim==='late'?'Too late. Swipe as soon as it glows.':'Close. Wait a beat longer, until the ball glows.']},
+  {id:'net',t:'Come to the net',d:'Tap your court near the net to move there, then volley 2 balls before they bounce. A blue ring marks where you are heading.',need:2,feed:'net',
+    judge:e=>!e.in?['no',e.why]:e.volley?['ok','Volley!']:['no','That one bounced first. Tap close to the net, then swipe.']},
+  {id:'smash',t:'The smash',d:'At the net, a ball over your head becomes an overhead. Your player backs up under it; swipe to smash it in.',need:1,feed:'lob',
+    judge:e=>!e.in?['no',e.why]:e.smash?['ok','Smash!']:['no','Stay near the net so the lob comes over your head.']},
+  {id:'serve',t:'Serve',d:'Swipe up into the glowing service box. Faster swipes serve harder but stray more. Land 3 serves in.',need:3,serve:true,
+    judge:e=>e.in?['ok','Serve is in, '+e.kmh+' km/h.']:['no','Fault, '+e.why+'. Aim for the middle of the box.']}
+];
+const TIPS=[['Stamina','Running drains the bar under your name; you get some back between points. Tired players move slower and spray shots, so make your opponent run.'],
+  ['Pressure','Balls you have to stretch for are harder to control. When the hint says Stretched, swipe safer.'],
+  ['Touch','A short, slow swipe plays a drop shot. When they come to the net, a long, slow swipe floats a lob over them.'],
+  ['Reading you','Hit to the same side over and over and opponents start reading it. Mix it up.']];
+
+/* ---- the learn screen ---- */
+function openLearn(){
+  const done=LESSONS.filter(l=>LEARN.done[l.id]).length,all=done===LESSONS.length;
+  $('learnIntro').textContent=all?'All lessons done. Replay any of them, or practise one as long as you like.':'Eight short lessons with Coach Dot, about five minutes in all. Each one teaches one thing; the next unlocks when you finish.';
+  $('lessons').innerHTML=LESSONS.map((l,i)=>{const ok=LEARN.done[l.id],open=i===0||LEARN.done[LESSONS[i-1].id]||ok;
+    return'<div class="lesson'+(ok?' done':'')+'"><div style="min-width:0"><p class="eyebrow">Lesson '+(i+1)+(ok?' · Done':'')+'</p><strong>'+esc(l.t)+'</strong></div>'+
+      '<div class="row" style="flex-wrap:nowrap"><button '+(open?'':'disabled ')+'data-l="'+i+'" class="'+(open&&!ok?'go':'')+'">'+(ok?'Replay':'Start')+'</button>'+(ok?'<button class="ghost" data-p="'+i+'">Practise</button>':'')+'</div></div>'}).join('')+
+    '<div class="card" style="gap:10px"><h3>Good to know</h3>'+TIPS.map(([a,b])=>'<p class="tip"><b>'+a+'</b>'+b+'</p>').join('')+'</div>';
+  $('lessons').querySelectorAll('button[data-l]').forEach(b=>b.onclick=()=>startLesson(+b.dataset.l,false));
+  $('lessons').querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>startLesson(+b.dataset.p,true));
+  show('learn')}
+$('btnLearn').onclick=openLearn;$('learnBack').onclick=()=>renderTitle();
+function learnCardState(){const done=LESSONS.filter(l=>LEARN.done[l.id]).length;
+  $('learnSub').textContent=done===0?'New here? Learn the swipe, aiming, timing, net play and serving with Coach Dot in about five minutes.':done<LESSONS.length?done+' of '+LESSONS.length+' lessons done. Pick up where you left off.':'All lessons done. Practise any shot on the practice court.';
+  $('btnLearn').textContent=done===0?'Start the lessons':done<LESSONS.length?'Continue lessons':'Practice court';
+  $('btnLearn').className=done===0&&!save?'go':'';
+  // new players see the lessons first
+  const t=$('title'),lc=$('learnCard'),cc=$('careerCard');if(done===0&&!save)t.insertBefore(lc,cc);else t.insertBefore(lc,$('saveCard'))}
+
+/* ---- running a lesson ---- */
+function startLesson(i,practice){
+  const coach=RBYID.granny||ROSTER[0],me=RBYID[save&&save.char]||RBYID.ch08||ROSTER[0],stats={};for(const [k] of STATS)stats[k]=save?clamp(save.stats[k]+2,3,8):5;
+  startMatch({surf:'hard',bo:1,g:6,stats,meId:me.id,me:me.name,opp:{id:coach.id,name:'Coach Dot',skill:4},label:'Lesson',style:null,perks:0,venue:'club',drill:{i,practice},
+    onEnd:()=>openLearn()})}
+function drillBegin(cfg){
+  const L=LESSONS[cfg.drill.i];M.drill={i:cfg.drill.i,L,practice:cfg.drill.practice,count:0,tries:0,rep:0,stats:{in:0,hits:0,perfect:0,best:0},finished:false};
+  document.querySelector('.hud.top .board').hidden=true;$('drillP').hidden=false;$('dDone').hidden=true;
+  $('dStep').textContent=(cfg.drill.practice?'Practice · ':'Lesson '+(cfg.drill.i+1)+' of '+LESSONS.length+' · ')+L.t;$('dTitle').textContent=L.t;$('dText').textContent=L.d;
+  $('quit').textContent='Leave';drillProgress();say(cfg.drill.practice?'Practise as long as you like. Leave when you are done.':'Coach Dot: “'+L.d.split('. ')[0]+'.”');
+  {const hy=L.id==='smash'?0.33:-0.05;M.home=[{x:0,y:hy},{x:0,y:1.08}];M.me={x:0,y:hy};M.op={x:0,y:1.08};
+    M.mv[0]={x:0,v:0,z:toW(0,hy).z,vz:0};M.mv[1]={x:0,v:0,z:toW(0,1.08).z,vz:0};P[0].pos.set(0,0,M.mv[0].z);P[1].pos.set(0,0,M.mv[1].z)}
+  setTimeout(drillNext,1800)}
+function drillProgress(){const D=M.drill,L=D.L;
+  if(D.practice){const s=D.stats;$('dDots').innerHTML='<span class="chip num">'+s.in+' of '+s.hits+' in</span>'+(L.serve?'':'<span class="chip num">'+s.perfect+' perfect</span>')+'<span class="chip num">Best '+s.best+' km/h</span>';return}
+  $('dDots').innerHTML=Array.from({length:L.need},(_,k)=>'<i class="'+(k<D.count?'on':'')+'"></i>').join('')}
+function drillZone(){const D=M.drill,z=D.L.zones&&D.L.zones[Math.min(D.count,D.L.zones.length-1)],mz=W3.zone||(W3.zone=(()=>{const g=new T.PlaneGeometry(1,1);g.rotateX(-Math.PI/2);
+    const m=new T.Mesh(g,new T.MeshBasicMaterial({color:0x9BE15D,transparent:true,opacity:0.28,depthWrite:false}));m.renderOrder=2;W3.scene.add(m);return m})());
+  if(!z||!M.drill){mz.visible=false;return null}const Z=ZONE[z],a=toW(Z.x0,Z.y1),b=toW(Z.x1,Z.y0);mz.visible=true;mz.position.set((a.x+b.x)/2,0.009,(a.z+b.z)/2);mz.scale.set(Math.abs(b.x-a.x),1,Math.abs(b.z-a.z));return z}
+function drillNext(){
+  if(!M||!M.drill)return;const D=M.drill,L=D.L;M.lock=false;M.en=[1,1];M.cap=[1,1];M.shot=null;M.land=null;M.aim=null;M.commit=null;M.pending=null;M.fault=false;M.rally=0;
+  if(!D.practice&&D.count>=L.need){drillComplete();return}
+  D.zone=drillZone();
+  if(L.serve){M.pts=[0,0];M.server=0;M.me={x:0.4,y:-0.05};M.mv[0]={x:0.4*HW,v:0,z:toW(0,-0.05).z,vz:0};M.mv[1]={x:-0.45*HW,v:0,z:toW(0,1.08).z,vz:0};M.home=[{x:0.4,y:-0.05},{x:-0.45,y:1.08}];M.state='serveMe';return}
+  M.state='between';M.home[1]={x:0,y:1.08};
+  // Coach Dot swings and feeds
+  P[1].startSwing('fh');setTimeout(()=>{if(!M||!M.drill)return;const st=M.mv[1];drillFeed({x:st.x/HW,y:0.5-st.z/CL,z:0.55})},SWINGS.fh.dur*SWINGS.fh.cf*1000)}
+function drillFeed(from){
+  const D=M.drill,f=D.L.feed;D.rep++;let bx,by,spd=17,w=150,lob=false;
+  if(f==='lob'){bx=rnd(-0.25,0.25);by=0.18;lob=true;w=140;spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.08}
+  else if(f==='net'){bx=(D.rep%2?0.32:-0.32);by=0.3;spd=15;w=60}
+  else{const side=f==='fh'?1:(D.rep%2?1:-1);bx=side*rnd(0.28,0.42);by=rnd(0.14,0.22)}
+  const sh=makeShot(from,{x:bx,y:by},spd,w,{who:'op',kind:'feed',lob,recv:recvPos(0)});sh.w=w;sh.kind='feed';
+  M.shot=sh;onContact('op',toW(from.x,from.y,from.z),sh.speed,false);sndHit(0.5);
+  setReach(M.shot);M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);M.t0=now();M.state='op';P[0].hop=0.15}
+/* judged events from the engine: every rally shot and serve you hit, and balls you never reached */
+function drillEvent(e){
+  const D=M&&M.drill;if(!D||D.finished)return;const L=D.L;
+  if(e.k==='hit'||e.k==='serve'){D.stats.hits++;if(e.in)D.stats.in++;if(e.tim==='perfect'&&e.in)D.stats.perfect++;if(e.in)D.stats.best=Math.max(D.stats.best,e.kmh||0)}
+  if(!!L.serve!==(e.k==='serve')&&e.k!=='none')return;
+  const [v,msg]=e.k==='none'?['no',e.why]:L.judge(e,D.zone);
+  if(D.practice){say(msg);drillProgress();return}
+  if(v==='ok'){D.count++;drillProgress();say(msg+(D.count<L.need?' '+(L.need-D.count)+' to go.':''));haptic(16)}else say(msg)}
+function drillPoint(w,text,call){
+  if(!M||M.lock)return;M.lock=true;M.state='between';slowMo(false);
+  if(w===1&&!call&&text&&M.shot&&M.shot.who==='op')drillEvent({k:'none',why:/swipe in time/.test(text)?'Swipe before the ball reaches you.':'Out of reach. Swipe as soon as the ball is fed.'});
+  setTimeout(drillNext,1100)}
+function drillComplete(){
+  const D=M.drill,L=D.L,i=D.i;D.finished=true;LEARN.done[L.id]=true;storeLearn();M.state='between';drillZone();
+  crowdCheer(0.8,2);sndApplause(0.6);callOut('NICE!');
+  const last=i===LESSONS.length-1;$('dDone').hidden=false;
+  $('dDoneT').textContent=last?'You’re ready':'Lesson complete';
+  $('dDoneP').textContent=last?'That’s everything. Coach Dot says: make them run, mix it up, and watch the glow. Your career is waiting.':'Nice work. Next up: '+LESSONS[i+1].t+'.';
+  $('dNext').textContent=last?(save?'Back to the menu':'Start a career'):'Next lesson';
+  $('dNext').onclick=()=>{const m=M;if(m){m.over=true;m.winner=0;m.cfg.onEnd=last?(()=>{renderTitle();if(!save)openSelect('career')}):(()=>startLesson(i+1,false))}endMatch()};
+  $('dMenu').onclick=()=>{if(M){M.over=true;M.winner=0}endMatch()}}
+function drillCleanup(){document.querySelector('.hud.top .board').hidden=false;$('drillP').hidden=true;$('dDone').hidden=true;if(W3.zone)W3.zone.visible=false}
+
 document.addEventListener('pointerdown',sndResume,{passive:true});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{get GT(){return GT},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
 </script>

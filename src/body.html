@@ -2,10 +2,15 @@
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 18 · hit feel and replays</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 19 · lessons and practice</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
-  <div class="card">
+  <div class="card" id="learnCard">
+    <h3>Learn to play</h3>
+    <p class="muted" id="learnSub" style="font-size:14px"></p>
+    <div class="row"><button id="btnLearn">Start the lessons</button></div>
+  </div>
+  <div class="card" id="careerCard">
     <div class="row between"><h3>Career</h3><span class="chip" id="careerChip">No save yet</span></div>
     <div class="row">
       <button class="go" id="btnContinue" hidden>Continue career</button>
@@ -56,6 +61,12 @@
   </div>
 </section>
 
+<section id="learn" class="wrap" hidden>
+  <div class="row between"><p class="eyebrow">Tennis Go</p><button class="ghost" id="learnBack" style="padding:6px 12px;font-size:13px">Menu</button></div>
+  <div class="hero"><h2>Learn to play</h2><p class="muted" id="learnIntro"></p></div>
+  <div id="lessons" style="display:flex;flex-direction:column;gap:10px"></div>
+</section>
+
 <section id="select" class="wrap" hidden>
   <div class="hero"><p class="eyebrow" id="selEyebrow">New career</p><h2>Choose your player</h2><p class="muted" id="selIntro"></p></div>
   <div class="roster" id="roster"></div>
@@ -91,6 +102,7 @@
 <section id="match" hidden>
   <canvas id="gl" aria-label="Tennis court. Swipe up to hit."></canvas>
   <div class="hud top">
+    <div class="drillp" id="drillP" hidden><p class="eyebrow" id="dStep"></p><p id="dText"></p><div class="dots" id="dDots"></div><h3 id="dTitle" hidden></h3></div>
     <div class="board" id="board">
       <div class="lab"><span id="bLabel">Match</span><span id="bSurf">Hard</span></div>
       <div class="brow"><i class="srv" id="srv0"></i><span class="nm" id="n0">You</span><span class="sets num" id="s0"></span><span class="pt num" id="p0">0</span><b class="en" aria-hidden="true"><i id="e0"></i></b></div>
@@ -98,6 +110,7 @@
     </div>
   </div>
   <div id="call"></div>
+  <div id="dDone" hidden><div class="card"><p class="banner w" id="dDoneT">Lesson complete</p><p id="dDoneP"></p><div class="row"><button class="go" id="dNext">Next lesson</button><button class="ghost" id="dMenu">All lessons</button></div></div></div>
   <div id="replay" hidden><i></i>Replay<small>Tap to skip</small></div>
   <div class="hud bot">
     <div id="power" hidden><b></b><i></i></div>
