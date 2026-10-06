@@ -60,10 +60,10 @@ function drillBegin(cfg){
   const L=LESSONS[cfg.drill.i];M.drill={i:cfg.drill.i,L,practice:cfg.drill.practice,count:0,tries:0,rep:0,stats:{in:0,hits:0,perfect:0,best:0},finished:false};
   document.querySelector('.hud.top .board').hidden=true;$('drillP').hidden=false;$('dDone').hidden=true;
   $('dStep').textContent=(cfg.drill.practice?'Practice · ':'Lesson '+(cfg.drill.i+1)+' of '+LESSONS.length+' · ')+L.t;$('dTitle').textContent=L.t;$('dText').textContent=L.d;
-  $('quit').textContent='Leave';drillProgress();say(cfg.drill.practice?'Practise as long as you like. Leave when you are done.':'Coach Dot: “'+L.d.split('. ')[0]+'.”');
+  $('quit').textContent='Pause';drillProgress();say(cfg.drill.practice?'Practise as long as you like. Leave when you are done.':'Coach Dot: “'+L.d.split('. ')[0]+'.”');
   {const hy=L.id==='smash'?0.33:-0.05;M.home=[{x:0,y:hy},{x:0,y:1.08}];M.me={x:0,y:hy};M.op={x:0,y:1.08};
     M.mv[0]={x:0,v:0,z:toW(0,hy).z,vz:0};M.mv[1]={x:0,v:0,z:toW(0,1.08).z,vz:0};P[0].pos.set(0,0,M.mv[0].z);P[1].pos.set(0,0,M.mv[1].z)}
-  setTimeout(drillNext,1800)}
+  after(drillNext,1800)}
 function drillProgress(){const D=M.drill,L=D.L;
   if(D.practice){const s=D.stats;$('dDots').innerHTML='<span class="chip num">'+s.in+' of '+s.hits+' in</span>'+(L.serve?'':'<span class="chip num">'+s.perfect+' perfect</span>')+'<span class="chip num">Best '+s.best+' mph</span>';return}
   $('dDots').innerHTML=Array.from({length:L.need},(_,k)=>'<i class="'+(k<D.count?'on':'')+'"></i>').join('')}
@@ -77,7 +77,7 @@ function drillNext(){
   if(L.serve){M.pts=[0,0];M.server=0;M.me={x:0.4,y:-0.05};M.mv[0]={x:0.4*HW,v:0,z:toW(0,-0.05).z,vz:0};M.mv[1]={x:-0.45*HW,v:0,z:toW(0,1.08).z,vz:0};M.home=[{x:0.4,y:-0.05},{x:-0.45,y:1.08}];M.state='serveMe';return}
   M.state='between';M.home[1]={x:0,y:1.08};
   // Coach Dot swings and feeds
-  P[1].startSwing('fh');setTimeout(()=>{if(!M||!M.drill)return;const st=M.mv[1];drillFeed({x:st.x/HW,y:0.5-st.z/CL,z:0.55})},SWINGS.fh.dur*SWINGS.fh.cf*1000)}
+  P[1].startSwing('fh');after(()=>{if(!M||!M.drill)return;const st=M.mv[1];drillFeed({x:st.x/HW,y:0.5-st.z/CL,z:0.55})},SWINGS.fh.dur*SWINGS.fh.cf*1000)}
 function drillFeed(from){
   const D=M.drill,f=D.L.feed;D.rep++;let bx,by,spd=17,w=150,lob=false;
   if(f==='lob'){bx=rnd(-0.25,0.25);by=0.18;lob=true;w=140;spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.08}
@@ -97,7 +97,7 @@ function drillEvent(e){
 function drillPoint(w,text,call){
   if(!M||M.lock)return;M.lock=true;M.state='between';slowMo(false);
   if(w===1&&!call&&text&&M.shot&&M.shot.who==='op')drillEvent({k:'none',why:/swipe in time/.test(text)?'Swipe before the ball reaches you.':'Out of reach. Swipe as soon as the ball is fed.'});
-  setTimeout(drillNext,1100)}
+  after(drillNext,1100)}
 function drillComplete(){
   const D=M.drill,L=D.L,i=D.i;D.finished=true;const first=!LEARN.done[L.id];LEARN.done[L.id]=true;storeLearn();const rw=first?lessonReward():null;M.state='between';drillZone();
   crowdCheer(0.8,2);sndApplause(0.6);callOut('NICE!');

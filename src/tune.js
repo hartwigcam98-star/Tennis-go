@@ -39,8 +39,8 @@ const TROWS=[
   {k:'drain',l:'Stamina drain',d:'How fast running tires players',min:0.5,max:1.5,step:0.05,f:v=>'×'+v.toFixed(2)},
   {k:'gear',l:'Gear bonus',d:'Stat gain per gear upgrade',min:0.05,max:0.25,step:0.01,f:v=>'+'+v.toFixed(2)+' (max +'+(v*10).toFixed(1)+')'}];
 let tuneTimer=0;
-function openTune(){const p=$('tunePanel');p.hidden=false;CLK.paused=true;renderTune();clearInterval(tuneTimer);tuneTimer=setInterval(()=>{const e=$('tFps');if(e)e.textContent=Math.round(PERF.fps)+' fps · quality '+QLV[qLevel()].name+(TUNE.quality==='auto'?' (auto)':'')},400)}
-function closeTune(){$('tunePanel').hidden=true;CLK.paused=false;clearInterval(tuneTimer)}
+function openTune(){const p=$('tunePanel');p.hidden=false;PAUSE.tune=true;syncPause();renderTune();clearInterval(tuneTimer);tuneTimer=setInterval(()=>{const e=$('tFps');if(e)e.textContent=Math.round(PERF.fps)+' fps · quality '+QLV[qLevel()].name+(TUNE.quality==='auto'?' (auto)':'')},400)}
+function closeTune(){$('tunePanel').hidden=true;PAUSE.tune=false;syncPause();clearInterval(tuneTimer)}
 function renderTune(){
   $('tBody').innerHTML='<p class="num" id="tFps" style="font-family:var(--display);font-size:20px"></p>'+
     '<label>Quality<select id="tQ"><option value="auto">Auto</option>'+QLV.map((q,i)=>'<option value="'+i+'">'+q.name+'</option>').join('')+'</select></label>'+

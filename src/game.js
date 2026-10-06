@@ -152,7 +152,7 @@ function stageName(){return{junior:'Juniors',college:'College',pro:'Pro tour'}[s
 function renderTitle(){
   const has=!!save;$('btnContinue').hidden=!has;$('btnNewConfirm').hidden=true;$('btnNew').hidden=false;
   $('careerChip').textContent=has?(RBYID[save.char].name+' · '+stageName()+' season '+save.season):'No save yet';
-  $('btnNew').className=has?'':'go';renderSaveCard();learnCardState();lockerCardState();show('title');
+  $('btnNew').className=has?'':'go';renderSaveCard();learnCardState();lockerCardState();liveCardState();show('title');
 }
 $('btnContinue').onclick=()=>renderHub();
 $('hubLocker').onclick=()=>openLocker(()=>renderHub());
@@ -209,8 +209,8 @@ $('selGo').onclick=()=>{
   if(selMode==='career'){openStyle();return}
   const lvl=+$('qmLevel').value,me=RBYID[selId],stats={};for(const [k] of STATS)stats[k]=clamp(me.st[k],1,10);
   const o=pick(ROSTER.filter(r=>r.id!==selId));
-  startMatch({surf:$('qmSurf').value,bo:1,g:6,stats,meId:selId,me:me.name,opp:{id:o.id,name:o.name,skill:lvl},label:'Quick match',style:null,perks:0,venue:$('qmVenue').value,
-    onEnd:(won,score,st)=>showResult(won,score,st,won?'Nice set. Try a tougher opponent next.':'Shake it off and run it back.',[],'Back to menu',()=>renderTitle())});
+  startMatch({surf:$('qmSurf').value,bo:1,g:6,stats,meId:selId,me:me.name,opp:{id:o.id,name:o.name,skill:lvl},label:'Quick match',style:null,perks:0,venue:$('qmVenue').value,mode:'quick',
+    onEnd:quickEnd});
 };
 function openStyle(){
   styleId=null;
@@ -261,6 +261,7 @@ function renderHub(){
     '<div class="row"><span class="chip"><span class="dot s-'+ev.surf+'"></span>'+SURF[ev.surf].name+'</span><span class="chip num">'+total+(total===1?' match':' rounds')+'</span><span class="chip">'+(f.bo===3?'Best of 3 sets':'One set')+' to '+f.g+'</span>'+
     '<span class="chip num">'+(save.stage==='pro'?money(PRIZE[ev.tier]||0)+' · ':'')+ev.pts+' pts</span></div>'+note+oppHtml+
     '<button class="go" id="btnPlay">'+(save.cur?'Play '+roundName(save.cur.round,total,save.cur.qual).toLowerCase():'Enter '+(E.how==='qual'?'qualifying':'tournament'))+'</button>';
+  {const L=liveFor('career');if(L)$('btnPlay').textContent='Resume match · '+liveScore(L)}
   $('btnPlay').onclick=playNext;
   {const row=document.createElement('div');row.className='row';
     if(save.cur&&save.cur.draw)row.innerHTML+='<button class="ghost" id="btnDraw">View draw</button>';
@@ -309,9 +310,10 @@ function makeOpp(){
 function playNext(){
   if(!save.cur){const E=entry(save.week);save.cur={ev:E.ev,how:E.how,qual:E.qual,missed:E.missed||null,why:E.why||null,round:1,total:E.ev.rounds+E.qual,opp:null,prize:0};
     save.cur.draw=makeDraw(save.cur);makeOpp();store();openDraw(save.cur.draw,save.cur.ev.n);return}
+  {const L=liveFor('career');if(L&&save.cur.opp){resumeLive(L);return}}
   if(!save.cur.opp)makeOpp();store();
   const c=save.cur,f=fmt(save.stage,c.ev);
-  startMatch({ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:save.stats,meId:save.char,me:RBYID[save.char].name,opp:c.opp,style:save.style,perks:perkLevel(),
+  startMatch({mode:'career',ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:save.stats,meId:save.char,me:RBYID[save.char].name,opp:c.opp,style:save.style,perks:perkLevel(),
     label:c.ev.n+' · '+roundName(c.round,c.total,c.qual),intro:c.opp.line?c.opp.name+': “'+c.opp.line+'”':null,onEnd:careerResult});
 }
 const SHORT={Semifinal:'SF',Quarterfinal:'QF','Round of 16':'R16','Round of 32':'R32','Round of 64':'R64'};
@@ -874,7 +876,7 @@ function landIn(sh,serve){if(sh.net)return false;const l=sh.land;if(serve){const
 
 function startMatch(cfg){
   if(window.__SIM){setTimeout(()=>cfg.onEnd(window.__SIM(cfg),'6–4',{aces:0,winners:0,big:0}),0);return}
-  if(!cfg.drill)cfg.stats=withGear(cfg.stats);
+  clearTimers();cfg.baseStats=cfg.baseStats||cfg.stats;if(!cfg.drill)cfg.stats=withGear(cfg.baseStats);
   initGL();show('match');$('loading').hidden=false;$('loadingSub').textContent=cfg.me+' vs '+cfg.opp.name;
   if(cfg.venue&&cfg.venue.startsWith('major:'))cfg.surf=MAJOR_LOOK[cfg.venue.slice(6)].surf;buildCourt(cfg.surf,cfg);
   let got={};const done=()=>{if(!('me' in got&&'op' in got))return;
@@ -889,11 +891,12 @@ function beginMatch(cfg){
     state:'between',shot:null,t0:0,me:{x:0.4,y:-0.05},op:{x:-0.4,y:1.08},fault:false,sw:null,preview:null,samples:[],land:null,aim:null,lock:false,commit:null,pending:null,
     stat:{aces:0,winners:0,big:0,perfect:0,smashes:0,volleys:0,slices:0,rallyMax:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
-  $('quit').textContent='Retire';M.quitArm=false;applyCosmetics();
+  $('quit').textContent='Pause';M.quitArm=false;applyCosmetics();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
+  if(cfg.resume){applyResume(cfg.resume);cfg.intro='Match resumed at '+scoreText(M.sets,M.pts,M.tb)+'.'}
   renderBoard();{const O=OSTYLE[M.ostyle];say(cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))}
   REP.setsN=1;REP.lastPt=-9;REP.buf=[];perfReset();W3.camPos.set(0,4,22);
   if(cfg.drill){drillBegin(cfg);return}
-  setTimeout(nextPoint,cfg.intro?2600:1100);
+  after(nextPoint,cfg.intro?2600:1100);
 }
 function ptLabel(i){const a=M.pts[i],b=M.pts[1-i];if(M.tb)return String(a);if(a>=3&&b>=3)return a===b?'40':a>b?'AD':'40';return['0','15','30','40'][Math.min(a,3)]}
 function renderBoard(){for(let i=0;i<2;i++){$('s'+i).innerHTML=M.sets.map((g,k)=>'<span class="'+(k===M.sets.length-1?'cur':'')+'">'+g[i]+'</span>').join('');$('p'+i).textContent=ptLabel(i);$('srv'+i).classList.toggle('on',M.server===i)}}
@@ -902,15 +905,15 @@ function nextPoint(){
   M.lock=false;M.fault=false;M.shot=null;M.land=null;M.aim=null;M.commit=null;M.pending=null;M.rally=0;M.home=[{x:0,y:-0.05},{x:0,y:1.08}];W3.homeMark&&(W3.homeMark.visible=false);
   const d=side()==='deuce';
   if(M.server===0){M.me={x:d?0.4:-0.4,y:-0.05};M.op={x:d?-0.45:0.45,y:1.08};M.state='serveMe';say((M.tb?'Tiebreak. ':'')+'Your serve. Swipe up into the box.')}
-  else{M.op={x:d?-0.4:0.4,y:1.08};M.me={x:d?0.45:-0.45,y:-0.05};M.state='oppServe';say(M.cfg.opp.name+' to serve.');setTimeout(oppServeStart,900)}
-  M.mv[0]={x:M.me.x*HW,v:0,z:toW(0,-0.05).z,vz:0};M.mv[1]={x:M.op.x*HW,v:0,z:toW(0,1.08).z,vz:0};M.me.y=-0.05;M.op.y=1.08;P[0].pos.x=M.mv[0].x;P[1].pos.x=M.mv[1].x;P[0].runW=P[1].runW=0;
+  else{M.op={x:d?-0.4:0.4,y:1.08};M.me={x:d?0.45:-0.45,y:-0.05};M.state='oppServe';say(M.cfg.opp.name+' to serve.');after(oppServeStart,900)}
+  M.mv[0]={x:M.me.x*HW,v:0,z:toW(0,-0.05).z,vz:0};M.mv[1]={x:M.op.x*HW,v:0,z:toW(0,1.08).z,vz:0};M.me.y=-0.05;M.op.y=1.08;P[0].pos.x=M.mv[0].x;P[1].pos.x=M.mv[1].x;P[0].runW=P[1].runW=0;saveLive();
 }
 function pointTo(w,text,call){
   if(M&&M.drill){drillPoint(w,text,call);return}
   if(!M||M.lock)return;M.lock=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
   {const rl=M.rally||0,big=call==='ACE'||call==='WINNER';
     if(big){crowdCheer(1,2.6,rl>=6||Math.random()<0.25?2.2:0);sndApplause(1);if(rl>=6)sndCrowdVoice('cheer',0.9)}
-    else if(call==='NET'||call==='DOUBLE FAULT'){crowdCheer(0.35,1.4);sndCrowdVoice('ooh',0.7);setTimeout(()=>sndApplause(0.3),600)}
+    else if(call==='NET'||call==='DOUBLE FAULT'){crowdCheer(0.35,1.4);sndCrowdVoice('ooh',0.7);after(()=>sndApplause(0.3),600)}
     else{if(call==='OUT'&&rl>=4)sndCrowdVoice('ooh',0.6);crowdCheer(0.55,1.8);sndApplause(0.55)}}
   const pg=M.sets.reduce((a,x)=>a+x[0]+x[1],0),ps=M.sets.length;
   for(let i=0;i<2;i++)recover(i,0.03);
@@ -920,33 +923,28 @@ function pointTo(w,text,call){
   if(M.tb){M.pts[w]++;if(M.pts[w]>=7&&M.pts[w]-M.pts[o]>=2)gameWon(w);else if((M.pts[0]+M.pts[1])%2===1)M.server=1-M.server}
   else{M.pts[w]++;if(M.pts[w]>=4&&M.pts[w]-M.pts[o]>=2)gameWon(w)}
   {const g2=M.sets.reduce((a,x)=>a+x[0]+x[1],0);if(M.sets.length!==ps)for(let i=0;i<2;i++)M.en[i]=Math.min(M.cap[i],M.en[i]+0.2);else if(g2!==pg&&g2%2===1)for(let i=0;i<2;i++)recover(i,0.07);}
-  renderEnergy();renderBoard();setTimeout(()=>umpireScore(pg,ps),1000);
+  renderEnergy();renderBoard();after(()=>umpireScore(pg,ps),1000);
   const rp=wantReplay(w,call);
-  if(M.over){crowdCheer(1,6,6);sndApplause(1.2);sndCrowdVoice('cheer',1.2);P[M.winner].startReact(M.winner===0?myDance():pick(['samba','uprock','robot']));P[1-M.winner].startReact('slump');if(rp)setTimeout(()=>{if(M)startReplay(3,()=>setTimeout(endMatch,1800))},1600);else setTimeout(endMatch,3200)}
-  else if(rp)setTimeout(()=>{if(M)startReplay(2.8,()=>setTimeout(nextPoint,500))},900);else setTimeout(nextPoint,1700);
+  if(M.over){crowdCheer(1,6,6);sndApplause(1.2);sndCrowdVoice('cheer',1.2);P[M.winner].startReact(M.winner===0?myDance():pick(['samba','uprock','robot']));P[1-M.winner].startReact('slump');if(rp)after(()=>{if(M)startReplay(3,()=>after(endMatch,1800))},1600);else after(endMatch,3200)}
+  else if(rp)after(()=>{if(M)startReplay(2.8,()=>after(nextPoint,500))},900);else after(nextPoint,1700);
 }
 function gameWon(w){
   const o=1-w,g=M.sets[M.sets.length-1],G=M.cfg.g,wasTb=M.tb;M.lastGame=w;
   g[w]++;M.pts=[0,0];M.tb=false;
   if(wasTb)M.server=1-M.tbFirst;else M.server=1-M.server;
   const setOver=wasTb||(g[w]>=G&&g[w]-g[o]>=2);
-  if(setOver){M.setsWon[w]++;crowdCheer(1,4,3.5);setTimeout(()=>sndCrowdVoice('cheer',1),200);
-    if(M.setsWon[w]>M.cfg.bo/2){M.over=true;M.winner=w;setTimeout(()=>say(w===0?'Game, set and match!':'Game, set and match, '+M.cfg.opp.name+'.'),900);return}
-    M.sets.push([0,0]);setTimeout(()=>say(w===0?'You take the set!':M.cfg.opp.name+' takes the set.'),900)}
+  if(setOver){M.setsWon[w]++;crowdCheer(1,4,3.5);after(()=>sndCrowdVoice('cheer',1),200);
+    if(M.setsWon[w]>M.cfg.bo/2){M.over=true;M.winner=w;after(()=>say(w===0?'Game, set and match!':'Game, set and match, '+M.cfg.opp.name+'.'),900);return}
+    M.sets.push([0,0]);after(()=>say(w===0?'You take the set!':M.cfg.opp.name+' takes the set.'),900)}
   else if(g[0]===G&&g[1]===G){M.tb=true;M.tbFirst=M.server}
 }
-function endMatch(){if(!M)return;drillCleanup();
+function endMatch(){if(!M)return;drillCleanup();clearLive();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
   if(!M.drill&&!M.retired&&M.over){const sets=M.sets,games=sets.reduce((a,g)=>a+g[0],0),V=W3.venue||{};
     matchRewards({won:M.winner===0,games,lostFirst:sets.length>1&&sets[0][0]<sets[0][1],bagels:sets.filter(g=>g[0]===6&&g[1]===0).length,
       surf:M.cfg.surf,venue:V.kind==='major'?'major:'+V.major:V.kind==='tour'&&V.rows>=16?'masters':V.kind||'tour',style:M.ostyle,skill:M.os,
       career:!!M.cfg.ev,major:!!(M.cfg.ev&&M.cfg.ev.major),meId:M.cfg.meId,stat:M.stat})}
   else if(M.retired){PROF.life.streak=0;storeProf();LAST_REWARDS=null}if(REP.on){REP.done=null;endReplay()}slowMo(false);const won=M.winner===0,score=M.sets.map(g=>g[0]+'–'+g[1]).join(', '),st=M.stat,cb=M.cfg.onEnd;M=null;cb(won,score,st)}
-$('quit').onclick=()=>{
-  if(!M)return;
-  if(M.drill){M.over=true;M.winner=0;M.lock=true;endMatch();return}
-  if(!M.quitArm){M.quitArm=true;$('quit').textContent='Tap to confirm';setTimeout(()=>{if(M){M.quitArm=false;$('quit').textContent='Retire'}},2500);return}
-  M.over=true;M.winner=1;M.lock=true;M.retired=true;M.state='between';say('You retire from the match.');setTimeout(endMatch,600);
-};
+$('quit').onclick=()=>{if(M&&!M.over)openPause()};
 function recvPos(i){const st=M.mv[i],hm=M.home[i],hz=toW(0,hm.y).z;return{x:st.x,z:Math.abs(hz)<Math.abs(st.z)?hz:st.z}}
 function pointWins(w){const o=1-w,p=M.pts.slice();p[w]++;const game=M.tb?(p[w]>=7&&p[w]-p[o]>=2):(p[w]>=4&&p[w]-p[o]>=2);if(!game)return 0;if(M.tb)return 2;
   const g=M.sets[M.sets.length-1].slice();g[w]++;return g[w]>=M.cfg.g&&g[w]-g[1-w]>=2?2:1}
@@ -978,7 +976,7 @@ function yoFor(side,hz){return(side==='fv'||side==='bv')?clamp(((hz||1.05)-1.05)
 function oppServeStart(){
   if(!M||M.state!=='oppServe')return;
   M.state='oppServing';P[1].startSwing('sv');M.serveT0=now();M.server_who=1;
-  setTimeout(oppServeLaunch,SWINGS.sv.dur*SWINGS.sv.cf*1000);
+  after(oppServeLaunch,SWINGS.sv.dur*SWINGS.sv.cf*1000);
 }
 function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
@@ -986,14 +984,14 @@ function oppServeLaunch(){
   const O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd;tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndHit(Math.min(1.2,spd/45));
   if(Math.random()<(0.06-s*0.004)*O.df){
     M.shot=makeShot(from,{x:(lo+hi)/2,y:0.5},spd,120,{who:'op',err:true});M.t0=now();M.state='oppErr';
-    setTimeout(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}
+    after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}
   // smarter servers mix the T and out wide, and go after the receiver's backhand
   const tact=Math.random()<clamp(0.25+s*0.085,0.3,0.97),wide=Math.random()<O.wide+s*0.03;
   const bx=wide?(d?(Math.random()<0.5?0.1:0.88):(Math.random()<0.5?-0.1:-0.88)):tact&&Math.random()<0.5?(d?0.12:-0.6):lo+0.25+Math.random()*0.5;
   const by=0.24+Math.random()*0.1;
   let sh=null;for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),OV.w+k*70,{who:'op',serve:true,recv:null,ss:OV.ss});sh.svType=oty;if(!sh.net&&sh.land.y>0.2&&sh.land.y<0.5)break}
   M.shot=sh;
-  {const L=sh.land,inBox=!sh.net&&L.x>=lo-0.01&&L.x<=hi+0.01&&L.y>=0.228&&L.y<=0.5;if(!inBox){sh.err=true;M.t0=now();M.state='oppErr';setTimeout(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
+  {const L=sh.land,inBox=!sh.net&&L.x>=lo-0.01&&L.x<=hi+0.01&&L.y>=0.228&&L.y<=0.5;if(!inBox){sh.err=true;M.t0=now();M.state='oppErr';after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
   setReach(M.shot);if(M.shot.unreach)M.shot.ace=true;
   if(Math.random()<O.sv*(0.6+s*0.05)){M.home[1]={x:0,y:0.72};say(M.cfg.opp.name+' serves and volleys.')}else M.home[1]={x:0,y:1.08};
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);M.t0=now();M.state='op';P[0].hop=0.15;
@@ -1061,11 +1059,11 @@ function executeShot(){
   if(!landIn(shot,false)){
     const L=shot.land,why=shot.net?'Into the net. Swipe slower or a little longer.':Math.abs(L.x)>1?'Just wide.':'Long. Swipe a little shorter or slower.';
     shot.err=true;M.shot=shot;M.t0=now();M.state='err';drillEvent({k:'hit',in:false,why,tim,slice:!!c.slice});
-    setTimeout(()=>pointTo(1,why,shot.net?'NET':'OUT'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
+    after(()=>pointTo(1,why,shot.net?'NET':'OUT'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
   if(c.pw>=0.85)M.stat.big++;
   const tx=shot.land.x,ty=shot.land.y;
   {const sd=Math.sign(tx);M.pat.push(sd);if(M.pat.length>4)M.pat.shift();const same=M.pat.length===4&&M.pat.every(v=>v===sd);
-    if(same&&!M.readMe){M.readMe=true;if(!M.readSaid){M.readSaid=true;setTimeout(()=>{if(M&&M.state!=='between')say(M.cfg.opp.name+' is reading your pattern. Change direction.')},500)}}else if(!same)M.readMe=false}
+    if(same&&!M.readMe){M.readMe=true;if(!M.readSaid){M.readSaid=true;after(()=>{if(M&&M.state!=='between')say(M.cfg.opp.name+' is reading your pattern. Change direction.')},500)}}else if(!same)M.readMe=false}
   shot.w=w;shot.bonus=(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0)+(smh?0.12:0);
   M.shot=shot;M.t0=now();M.state='me';P[1].hop=0.15;
   fallbackHit(1,M.shot);M.returns=canReach(1,M.shot);M.oppPress=M.returns?pressureOf(1,M.shot):0;if(!M.returns&&(pointWins(0)===2||M.rally>=8))slowMo(true);
@@ -1085,9 +1083,9 @@ function doServe(a){
   if(!landIn(shot,true)){
     const L=shot.land,why=shot.net?'into the net':L.y>0.772?'long':'wide';
     shot.err=true;M.shot=shot;M.t0=now();M.state='err';
-    if(M.drill){drillEvent({k:'serve',in:false,why,ty});setTimeout(drillNext,1300);return}
-    if(M.fault)setTimeout(()=>pointTo(1,'Double fault, '+why+'.','DOUBLE FAULT'),900);
-    else{M.fault=true;callOut('FAULT');setTimeout(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null;say('Fault, '+why+'. Second serve: kick is the safe choice.')},1100)}
+    if(M.drill){drillEvent({k:'serve',in:false,why,ty});after(drillNext,1300);return}
+    if(M.fault)after(()=>pointTo(1,'Double fault, '+why+'.','DOUBLE FAULT'),900);
+    else{M.fault=true;callOut('FAULT');after(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null;say('Fault, '+why+'. Second serve: kick is the safe choice.')},1100)}
     return}
   if(a.pw>=0.85)M.stat.big++;
   shot.second=second;shot.w=w;M.shot=shot;fallbackHit(1,shot);M.returns=canReach(1,shot);if(M.drill){M.returns=false;drillEvent({k:'serve',in:true,mph:Math.round(spd*2.237),ty})}M.oppPress=M.returns?pressureOf(1,shot):0;M.t0=now();M.state='me';P[1].hop=0.15;
@@ -1135,6 +1133,7 @@ function moveTap(e){
 const cv=$('gl');
 function lp(e){const k=360/window.innerWidth;return{x:e.clientX*k,y:e.clientY*k}}
 cv.addEventListener('pointerdown',e=>{
+  if(CLK.paused)return;
   if(REP.on){e.preventDefault();endReplay();return}
   if(!M||(M.state!=='op'&&M.state!=='serveMe'&&M.state!=='me'))return;e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}
   M.sw=lp(e);M.preview=null;M.samples=[{x:M.sw.x,y:M.sw.y,t:now()}];
@@ -1144,7 +1143,7 @@ cv.addEventListener('pointerup',e=>{
   if(!M||!M.sw)return;const q=lp(e);M.samples.push({x:q.x,y:q.y,t:now()});const dragLen=Math.hypot(q.x-M.sw.x,q.y-M.sw.y),dur=now()-M.samples[0].t;const a=aimFromSwipe(q.x-M.sw.x,q.y-M.sw.y,M.state==='serveMe',swipeSpeed());M.sw=null;M.preview=null;
   if(!a){if(dragLen<20&&dur<350&&M.state!=='serveMe'){moveTap(e);return}say('Swipe a little longer toward their court.');return}
   hapticTap();
-  if(M.state==='serveMe'){M.state='serving';M.aim={x:a.x,y:a.y};P[0].startSwing('sv');M.serveT0=now();setTimeout(()=>doServe(a),SWINGS.sv.dur*SWINGS.sv.cf*1000);return}
+  if(M.state==='serveMe'){M.state='serving';M.aim={x:a.x,y:a.y};P[0].startSwing('sv');M.serveT0=now();after(()=>doServe(a),SWINGS.sv.dur*SWINGS.sv.cf*1000);return}
   a.tSw=now();
   if(M.state==='me'&&M.shot&&M.shot.type!=='serve'&&M.returns){M.pending=a;M.aim={x:a.x,y:a.y};say('Shot locked in early.');return}
   if(M.state!=='op')return;
@@ -1158,7 +1157,7 @@ cv.addEventListener('pointercancel',()=>{if(M){M.sw=null;M.preview=null}});
 let lastT=0;
 function loop(t){
   requestAnimationFrame(loop);
-  const rawMs=t-lastT,dtr=Math.min(0.05,rawMs/1000||0.016);lastT=t;clockTick();
+  const rawMs=t-lastT,dtr=Math.min(0.05,rawMs/1000||0.016);lastT=t;clockTick();runTimers();
   if(rawMs>0&&rawMs<1000)perfFrame(rawMs,!!M&&!$('match').hidden&&!REP.on&&!CLK.paused);
   if($('match').hidden||!P[0])return;
   if(REP.on){replayTick(dtr);crowdTick(dtr);fxTick(dtr*0.55);W3.r.render(W3.scene,W3.cam);return}
@@ -1251,6 +1250,7 @@ function camera(dt){
 /*@PROGRESS*/
 /*@TUNE*/
 /*@DRAW*/
+/*@SESSION*/
 document.addEventListener('pointerdown',sndResume,{passive:true});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
 window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};

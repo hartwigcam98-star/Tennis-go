@@ -18,6 +18,7 @@ Play it at https://hartwigcam98-star.github.io/Tennis-go/
 | `src/progress.js` | Profile levels, coins, gear, mastery, cosmetics, achievements, daily challenges, locker room. Inserted at `/*@PROGRESS*/` |
 | `src/tune.js` | Automatic quality scaling and the Game settings panel (long-press the scoreboard). Inserted at `/*@TUNE*/` |
 | `src/draw.js` | The career's field of fictional players, tournament draws, bracket screen, appearance variants. Inserted at `/*@DRAW*/` |
+| `src/session.js` | Pause menu, game-clock timers (`after`), saving and resuming a match in progress. Inserted at `/*@SESSION*/` |
 | `src/audio.js` | Synthesised sound and officials' calls. Inserted at `/*@AUDIO*/` in game.js |
 | `src/vendor/three.js` | three.js r170 |
 | `src/assets/boss.js` | Fallback character (R3BOSS) |

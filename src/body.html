@@ -5,12 +5,25 @@
   <div class="row"><button id="tCopy">Copy settings</button><button class="ghost" id="tReset">Reset defaults</button></div>
   <p class="note" id="tMsg" style="word-break:break-all"></p>
 </div></div>
+<div id="pauseMenu" hidden role="dialog" aria-label="Paused"><div class="card">
+  <p class="banner">Paused</p>
+  <p class="muted num" id="pmScore"></p>
+  <button class="go" id="pmResume">Resume</button>
+  <div class="row"><button id="pmSnd" style="flex:1">Sound: on</button><button id="pmSettings" style="flex:1">Game settings</button></div>
+  <button class="ghost" id="pmRetire">Retire from the match</button>
+  <p class="muted" style="font-size:13px">If you leave the game, this match picks up from the start of the current point.</p>
+</div></div>
 <section id="title" class="wrap">
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 26 · speeds that grow with your career</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 27 · pause and resume</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
+  </div>
+  <div class="card" id="liveCard" hidden>
+    <h3>Match in progress</h3>
+    <p class="muted num" id="liveSub" style="font-size:14px"></p>
+    <div class="row"><button class="go" id="btnLiveGo">Resume match</button><button class="ghost" id="btnLiveDrop">Abandon it</button></div>
   </div>
   <div class="card" id="learnCard">
     <h3>Learn to play</h3>
@@ -150,7 +163,7 @@
     <div id="power" hidden><b></b><i></i></div>
     <div id="svType" hidden role="group" aria-label="Serve type"><button data-t="flat">Flat</button><button data-t="slice">Slice</button><button data-t="kick">Kick</button></div>
     <p id="hint"></p>
-    <div class="msgbar"><p id="msg">Get ready</p><span class="row" style="gap:6px;flex-wrap:nowrap"><button class="ghost" id="snd">Sound on</button><button class="ghost" id="quit">Retire</button></span></div>
+    <div class="msgbar"><p id="msg">Get ready</p><span class="row" style="gap:6px;flex-wrap:nowrap"><button class="ghost" id="snd">Sound on</button><button class="ghost" id="quit">Pause</button></span></div>
   </div>
   <div id="loading" hidden><span>Loading players</span><small class="muted" id="loadingSub" style="font-family:var(--body);text-transform:none;letter-spacing:0;font-size:14px"></small></div>
 </section>
