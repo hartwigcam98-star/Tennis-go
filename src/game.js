@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id);
 const T=THREE;
 const CHAR_BASE=window.CHAR_BASE||'https://hartwigcam98-star.github.io/golf-go/';
-const SECTIONS=['title','learn','locker','select','style','hub','recruit','season','match','result'];
+const SECTIONS=['title','learn','locker','draw','select','style','hub','recruit','season','match','result'];
 function show(id){SECTIONS.forEach(s=>{$(s).hidden=s!==id});if(id!=='match')window.scrollTo(0,0);if(id==='match')onResize()}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rnd(a,b){return a+Math.random()*(b-a)}
@@ -254,13 +254,17 @@ function renderHub(){
   if(E.how==='qual')note='<p class="note">Your ranking gets you into qualifying. Win '+E.qual+' qualifying matches to reach the main draw.</p>';
   let oppHtml='';
   if(save.cur&&save.cur.opp){const o=save.cur.opp,rv=o.rival!=null?save.rivals[o.rival]:null;
-    oppHtml='<div class="opp"><div class="row between"><div style="min-width:0"><p class="eyebrow">'+roundName(save.cur.round,total,save.cur.qual)+(rv?' · Rival · '+RIVAL_TYPES[rv.type].t:'')+'</p><p style="font-weight:600;font-size:18px">'+esc(o.name)+'</p><p class="muted" style="font-size:13px">'+OSTYLE[styleOfChar(RBYID[o.id])].name+'</p></div><div style="width:110px"><p class="muted" style="font-size:12px">Rating '+o.skill.toFixed(1)+'</p><div class="bar"><i style="width:'+o.skill*10+'%;background:var(--loss)"></i></div></div></div>'+
+    oppHtml='<div class="opp"><div class="row between"><div style="min-width:0"><p class="eyebrow">'+roundName(save.cur.round,total,save.cur.qual)+(rv?' · Rival · '+RIVAL_TYPES[rv.type].t:'')+'</p><p style="font-weight:600;font-size:18px">'+(o.seed?'<small class="seed">'+o.seed+'</small>':'')+esc(o.name)+(o.nat&&o.rival==null?' <small class="nat">'+o.nat+'</small>':'')+'</p><p class="muted" style="font-size:13px">'+OSTYLE[o.style||styleOfChar(RBYID[o.id])].name+'</p></div><div style="width:110px"><p class="muted" style="font-size:12px">Rating '+o.skill.toFixed(1)+'</p><div class="bar"><i style="width:'+o.skill*10+'%;background:var(--loss)"></i></div></div></div>'+
       (rv?'<p class="quote">“'+esc(o.line)+'”</p><p class="muted" style="font-size:13px">Head-to-head '+rv.w+'–'+rv.l+(rv.last==='l'?' · Revenge match':'')+'</p>':'')+'</div>'}
   $('nextCard').innerHTML='<p class="eyebrow">Week '+(wk+1)+' of '+W.length+' · '+esc(ev.tier)+(save.cur?' · In progress':'')+'</p><h3 style="font-size:26px">'+esc(ev.n)+'</h3>'+
     '<div class="row"><span class="chip"><span class="dot s-'+ev.surf+'"></span>'+SURF[ev.surf].name+'</span><span class="chip num">'+total+(total===1?' match':' rounds')+'</span><span class="chip">'+(f.bo===3?'Best of 3 sets':'One set')+' to '+f.g+'</span>'+
     '<span class="chip num">'+(save.stage==='pro'?money(PRIZE[ev.tier]||0)+' · ':'')+ev.pts+' pts</span></div>'+note+oppHtml+
     '<button class="go" id="btnPlay">'+(save.cur?'Play '+roundName(save.cur.round,total,save.cur.qual).toLowerCase():'Enter '+(E.how==='qual'?'qualifying':'tournament'))+'</button>';
   $('btnPlay').onclick=playNext;
+  {const row=document.createElement('div');row.className='row';
+    if(save.cur&&save.cur.draw)row.innerHTML+='<button class="ghost" id="btnDraw">View draw</button>';
+    if(save.lastDraw)row.innerHTML+='<button class="ghost" id="btnLastDraw">Last event’s draw</button>';
+    if(row.innerHTML){$('nextCard').appendChild(row);if($('btnDraw'))$('btnDraw').onclick=()=>openDraw(save.cur.draw,save.cur.ev.n);if($('btnLastDraw'))$('btnLastDraw').onclick=()=>openDraw(save.lastDraw.D,save.lastDraw.t)}}
   const pl=perkLevel();
   $('statsCard').innerHTML='<div class="row between"><h3>Training</h3><span class="chip num">'+save.xp+' training pts</span></div>'+
     STATS.map(([k,l,d])=>{const v=save.stats[k],c=trainCost(v);return'<div class="stat"><span title="'+d+'">'+l+(gearBonus(k)?' <small class="gearb">+'+gearBonus(k).toFixed(1)+'</small>':'')+'</span><div class="bar"><i style="width:'+v*10+'%"></i></div><button data-k="'+k+'" '+(v>=10||save.xp<c?'disabled':'')+'>'+(v>=10?'Max':'+1 · '+c)+'</button></div>'}).join('')+
@@ -287,6 +291,9 @@ function renderHub(){
 $('hubMenu').onclick=()=>renderTitle();
 function makeOpp(){
   const c=save.cur,ev=c.ev,r=c.round;
+  if(c.draw){const p=r<=c.qual?c.qualOpp[r-1]:drawOpp(c.draw,r-1-c.qual);let line=null;
+    if(p.rival!=null){const rv=save.rivals[p.rival];line=rv.last==='l'?'Back for more? I remember how the last one went.':pick(RIVAL_TYPES[rv.type].lines)}
+    c.opp=oppFrom(p,r,line);c.opp.seed=c.draw.seeds[p.id]||null;return}
   let skill,rival=null,who,line=null;
   if(r<=c.qual)skill=ev.sk[0]-1.2+rnd(-0.3,0.3);
   else{const mr=r-c.qual,mt=c.total-c.qual;skill=ev.sk[0]+(ev.sk[1]-ev.sk[0])*(mt>1?(mr-1)/(mt-1):1)+rnd(-0.4,0.4)}
@@ -298,7 +305,8 @@ function makeOpp(){
   c.opp={id:who.id,name:who.name,skill:Math.round(clamp(skill,1,10)*10)/10,rival,line};
 }
 function playNext(){
-  if(!save.cur){const E=entry(save.week);save.cur={ev:E.ev,how:E.how,qual:E.qual,missed:E.missed||null,why:E.why||null,round:1,total:E.ev.rounds+E.qual,opp:null,prize:0}}
+  if(!save.cur){const E=entry(save.week);save.cur={ev:E.ev,how:E.how,qual:E.qual,missed:E.missed||null,why:E.why||null,round:1,total:E.ev.rounds+E.qual,opp:null,prize:0};
+    save.cur.draw=makeDraw(save.cur);makeOpp();store();openDraw(save.cur.draw,save.cur.ev.n);return}
   if(!save.cur.opp)makeOpp();store();
   const c=save.cur,f=fmt(save.stage,c.ev);
   startMatch({ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:save.stats,meId:save.char,me:RBYID[save.char].name,opp:c.opp,style:save.style,perks:perkLevel(),
@@ -313,6 +321,8 @@ function checkSponsors(lines){
 }
 function careerResult(won,score,st){
   const c=save.cur,ev=c.ev,o=c.opp,lines=[],stageKey=save.stage;
+  if(c.draw){if(c.round>c.qual)drawRecord(c.draw,c.round-1-c.qual,won,score);
+    else if(!won){const p=c.qualOpp[c.round-1],D=c.draw;D.players[p.id]=Object.assign({},p);D.slots[D.slots.indexOf('me')]=p.id;drawSimAll(D)}}
   let xp=Math.round((won?25+Math.round(ev.pts/40):10)*xpMult());
   if(won)save.careerW++;else save.careerL++;
   if(o.rival!=null){const rv=save.rivals[o.rival];if(won)rv.w++;else rv.l++;rv.last=won?'w':'l'}
@@ -340,7 +350,7 @@ function careerResult(won,score,st){
   save.xp+=xp;lines.unshift(['Training pts','+'+xp]);
   if(done){
     if(save.stage==='pro'){const r=proRank();save.rec.best=Math.min(save.rec.best,r);if(r===1)save.rec.weeks1++}
-    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});save.week++;save.cur=null;
+    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};save.week++;save.cur=null;
     const before=perkLevel();checkSponsors(lines);
   }
   const pl=perkLevel(),S=STYLES.find(s=>s.id===save.style);
@@ -543,7 +553,7 @@ function makeRacket(){
 }
 
 class Player{
-  constructor(D,isBoss,scene){
+  constructor(D,isBoss,scene,variant){
     this.D=D;const nb=this.nb=D.names.length;
     const lt=b64(D.lt,Float32Array),inv=b64(D.inv,Float32Array);
     const bones=this.bones=[];for(let k=0;k<nb;k++){const b=new T.Bone();b.name=D.names[k];b.position.set(lt[k*3],lt[k*3+1],lt[k*3+2]);bones.push(b);if(D.parent[k]>=0)bones[D.parent[k]].add(b)}
@@ -557,7 +567,7 @@ class Player{
     g.setAttribute('skinWeight',new T.BufferAttribute(b64(M.sw,Uint8Array),4,true));
     g.setIndex(new T.BufferAttribute(M.i32?b64(M.idx,Uint32Array):b64(M.idx,Uint16Array),1));g.computeBoundingSphere();g.boundingSphere.radius=1e6;
     if(!D._map){const im=new Image(),t=new T.Texture(im);t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;im.onload=()=>{t.needsUpdate=true};im.src=D.tex.d;D._map=t}
-    const mo={map:D._map,roughness:.75,metalness:0};if(D.alpha){mo.alphaTest=.5;mo.side=T.DoubleSide}
+    const mo={map:variant?variantTexture(D,variant):D._map,roughness:.75,metalness:0};if(D.alpha){mo.alphaTest=.5;mo.side=T.DoubleSide}
     this.mat=new T.MeshStandardMaterial(mo);
     const mesh=this.mesh=new T.SkinnedMesh(g,this.mat);mesh.frustumCulled=false;mesh.castShadow=true;
     mesh.bind(new T.Skeleton(bones,invs),new T.Matrix4());scene.add(mesh);
@@ -867,13 +877,13 @@ function startMatch(cfg){
   if(cfg.venue&&cfg.venue.startsWith('major:'))cfg.surf=MAJOR_LOOK[cfg.venue.slice(6)].surf;buildCourt(cfg.surf,cfg);
   let got={};const done=()=>{if(!('me' in got&&'op' in got))return;
     for(const p of P)if(p)p.dispose(W3.scene);
-    const mk2=(D,id)=>{try{return new Player(D||R3BOSS,!D||id==='boss',W3.scene)}catch(e){console.error(e);return new Player(R3BOSS,true,W3.scene)}};
-    P=[mk2(got.me,cfg.meId),mk2(got.op,cfg.opp.id)];
+    const mk2=(D,id,v)=>{try{return new Player(D||R3BOSS,!D||id==='boss',W3.scene,v)}catch(e){console.error(e);return new Player(R3BOSS,true,W3.scene)}};
+    P=[mk2(got.me,cfg.meId,cfg.meV),mk2(got.op,cfg.opp.id,cfg.opp.v)];
     $('loading').hidden=true;beginMatch(cfg)};
   loadChar(cfg.meId,D=>{got.me=D;done()});loadChar(cfg.opp.id,D=>{got.op=D;done()});
 }
 function beginMatch(cfg){
-  M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,ostyle:styleOfChar(RBYID[cfg.opp.id]),pat:[],readMe:false,readSaid:false,ostam:clamp(Math.round(((RBYID[cfg.opp.id]&&RBYID[cfg.opp.id].st.stamina)||5)*0.5+cfg.opp.skill*0.5),1,10),sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
+  M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,ostyle:cfg.opp.style||styleOfChar(RBYID[cfg.opp.id]),pat:[],readMe:false,readSaid:false,ostam:clamp(Math.round(((RBYID[cfg.opp.id]&&RBYID[cfg.opp.id].st.stamina)||5)*0.5+cfg.opp.skill*0.5),1,10),sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
     state:'between',shot:null,t0:0,me:{x:0.4,y:-0.05},op:{x:-0.4,y:1.08},fault:false,sw:null,preview:null,samples:[],land:null,aim:null,lock:false,commit:null,pending:null,
     stat:{aces:0,winners:0,big:0,perfect:0,smashes:0,volleys:0,slices:0,rallyMax:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
@@ -1238,8 +1248,9 @@ function camera(dt){
 /*@LEARN*/
 /*@PROGRESS*/
 /*@TUNE*/
+/*@DRAW*/
 document.addEventListener('pointerdown',sndResume,{passive:true});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();

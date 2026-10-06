@@ -9,7 +9,7 @@
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 22 · smoother on every phone</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 23 · tournament draws and a real field</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="learnCard">
@@ -85,6 +85,13 @@
   <div class="card" id="lkHead"></div>
   <div class="tabs" id="lkTabs" role="tablist"><button data-t="daily">Daily</button><button data-t="gear">Gear</button><button data-t="players">Players</button><button data-t="style">Style</button><button data-t="trophies">Trophies</button></div>
   <div id="lkBody" style="display:flex;flex-direction:column;gap:10px"></div>
+</section>
+
+<section id="draw" class="wrap" hidden style="max-width:none">
+  <div class="row between" style="max-width:560px;width:100%;margin:0 auto"><p class="eyebrow">Tournament draw</p><button class="ghost" id="drBack" style="padding:6px 12px;font-size:13px">Back</button></div>
+  <h2 id="drTitle" style="max-width:560px;width:100%;margin:0 auto"></h2>
+  <div id="drBody" style="display:flex;flex-direction:column;gap:12px"></div>
+  <div class="sticky row" style="max-width:560px;width:100%;margin:0 auto"><button class="go" id="drPlay" style="flex:1">Play</button></div>
 </section>
 
 <section id="select" class="wrap" hidden>

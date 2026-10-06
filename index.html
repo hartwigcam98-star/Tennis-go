@@ -134,6 +134,21 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 .lesson strong{font-family:var(--display);font-size:20px;text-transform:uppercase}
 .lesson.done{border-color:#2f5a3d}
 .tip{font-size:15px}
+.seed{display:inline-block;min-width:18px;margin-right:5px;padding:0 4px;border-radius:4px;background:var(--panel-2);border:1px solid var(--line);font-size:11px;text-align:center;color:var(--ball);font-weight:700}
+.nat{font-size:11px;color:var(--muted);letter-spacing:.06em}
+.dr-scroll{overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+.dr-grid{display:flex;gap:12px;min-width:max-content;padding:0 4px}
+.dr-col{display:flex;flex-direction:column;width:178px;flex:none}
+.dr-col .eyebrow{margin-bottom:6px}
+.dr-ms{display:flex;flex-direction:column;justify-content:space-around;flex:1;gap:8px;min-height:calc(var(--n) * 66px)}
+.dr-m{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.dr-m.mine{border-color:var(--ball);box-shadow:0 0 0 1px var(--ball) inset}
+.dr-m.champ{border-color:#6b5a1c}
+.dr-p{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 8px;font-size:13px;min-height:27px}
+.dr-p+.dr-p{border-top:1px solid var(--line)}
+.dr-p span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.dr-p.w{font-weight:700}.dr-p.l{color:var(--muted)}.dr-p.me span{color:var(--ball)}
+.dr-p small.num{color:var(--muted);font-size:11px;flex:none}
 .board{pointer-events:auto;-webkit-touch-callout:none;user-select:none}
 #tunePanel{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,12,20,.6)}
 #tunePanel[hidden]{display:none}
@@ -185,7 +200,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 22 · smoother on every phone</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 23 · tournament draws and a real field</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="learnCard">
@@ -261,6 +276,13 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="card" id="lkHead"></div>
   <div class="tabs" id="lkTabs" role="tablist"><button data-t="daily">Daily</button><button data-t="gear">Gear</button><button data-t="players">Players</button><button data-t="style">Style</button><button data-t="trophies">Trophies</button></div>
   <div id="lkBody" style="display:flex;flex-direction:column;gap:10px"></div>
+</section>
+
+<section id="draw" class="wrap" hidden style="max-width:none">
+  <div class="row between" style="max-width:560px;width:100%;margin:0 auto"><p class="eyebrow">Tournament draw</p><button class="ghost" id="drBack" style="padding:6px 12px;font-size:13px">Back</button></div>
+  <h2 id="drTitle" style="max-width:560px;width:100%;margin:0 auto"></h2>
+  <div id="drBody" style="display:flex;flex-direction:column;gap:12px"></div>
+  <div class="sticky row" style="max-width:560px;width:100%;margin:0 auto"><button class="go" id="drPlay" style="flex:1">Play</button></div>
 </section>
 
 <section id="select" class="wrap" hidden>
@@ -345,7 +367,7 @@ window.MCLIPS={"ready":{"fps":30,"t0":0,"n":120,"anim":[0,1,2,3,4,5,6,7,8,9,10,1
 const $=id=>document.getElementById(id);
 const T=THREE;
 const CHAR_BASE=window.CHAR_BASE||'https://hartwigcam98-star.github.io/golf-go/';
-const SECTIONS=['title','learn','locker','select','style','hub','recruit','season','match','result'];
+const SECTIONS=['title','learn','locker','draw','select','style','hub','recruit','season','match','result'];
 function show(id){SECTIONS.forEach(s=>{$(s).hidden=s!==id});if(id!=='match')window.scrollTo(0,0);if(id==='match')onResize()}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rnd(a,b){return a+Math.random()*(b-a)}
@@ -701,13 +723,17 @@ function renderHub(){
   if(E.how==='qual')note='<p class="note">Your ranking gets you into qualifying. Win '+E.qual+' qualifying matches to reach the main draw.</p>';
   let oppHtml='';
   if(save.cur&&save.cur.opp){const o=save.cur.opp,rv=o.rival!=null?save.rivals[o.rival]:null;
-    oppHtml='<div class="opp"><div class="row between"><div style="min-width:0"><p class="eyebrow">'+roundName(save.cur.round,total,save.cur.qual)+(rv?' · Rival · '+RIVAL_TYPES[rv.type].t:'')+'</p><p style="font-weight:600;font-size:18px">'+esc(o.name)+'</p><p class="muted" style="font-size:13px">'+OSTYLE[styleOfChar(RBYID[o.id])].name+'</p></div><div style="width:110px"><p class="muted" style="font-size:12px">Rating '+o.skill.toFixed(1)+'</p><div class="bar"><i style="width:'+o.skill*10+'%;background:var(--loss)"></i></div></div></div>'+
+    oppHtml='<div class="opp"><div class="row between"><div style="min-width:0"><p class="eyebrow">'+roundName(save.cur.round,total,save.cur.qual)+(rv?' · Rival · '+RIVAL_TYPES[rv.type].t:'')+'</p><p style="font-weight:600;font-size:18px">'+(o.seed?'<small class="seed">'+o.seed+'</small>':'')+esc(o.name)+(o.nat&&o.rival==null?' <small class="nat">'+o.nat+'</small>':'')+'</p><p class="muted" style="font-size:13px">'+OSTYLE[o.style||styleOfChar(RBYID[o.id])].name+'</p></div><div style="width:110px"><p class="muted" style="font-size:12px">Rating '+o.skill.toFixed(1)+'</p><div class="bar"><i style="width:'+o.skill*10+'%;background:var(--loss)"></i></div></div></div>'+
       (rv?'<p class="quote">“'+esc(o.line)+'”</p><p class="muted" style="font-size:13px">Head-to-head '+rv.w+'–'+rv.l+(rv.last==='l'?' · Revenge match':'')+'</p>':'')+'</div>'}
   $('nextCard').innerHTML='<p class="eyebrow">Week '+(wk+1)+' of '+W.length+' · '+esc(ev.tier)+(save.cur?' · In progress':'')+'</p><h3 style="font-size:26px">'+esc(ev.n)+'</h3>'+
     '<div class="row"><span class="chip"><span class="dot s-'+ev.surf+'"></span>'+SURF[ev.surf].name+'</span><span class="chip num">'+total+(total===1?' match':' rounds')+'</span><span class="chip">'+(f.bo===3?'Best of 3 sets':'One set')+' to '+f.g+'</span>'+
     '<span class="chip num">'+(save.stage==='pro'?money(PRIZE[ev.tier]||0)+' · ':'')+ev.pts+' pts</span></div>'+note+oppHtml+
     '<button class="go" id="btnPlay">'+(save.cur?'Play '+roundName(save.cur.round,total,save.cur.qual).toLowerCase():'Enter '+(E.how==='qual'?'qualifying':'tournament'))+'</button>';
   $('btnPlay').onclick=playNext;
+  {const row=document.createElement('div');row.className='row';
+    if(save.cur&&save.cur.draw)row.innerHTML+='<button class="ghost" id="btnDraw">View draw</button>';
+    if(save.lastDraw)row.innerHTML+='<button class="ghost" id="btnLastDraw">Last event’s draw</button>';
+    if(row.innerHTML){$('nextCard').appendChild(row);if($('btnDraw'))$('btnDraw').onclick=()=>openDraw(save.cur.draw,save.cur.ev.n);if($('btnLastDraw'))$('btnLastDraw').onclick=()=>openDraw(save.lastDraw.D,save.lastDraw.t)}}
   const pl=perkLevel();
   $('statsCard').innerHTML='<div class="row between"><h3>Training</h3><span class="chip num">'+save.xp+' training pts</span></div>'+
     STATS.map(([k,l,d])=>{const v=save.stats[k],c=trainCost(v);return'<div class="stat"><span title="'+d+'">'+l+(gearBonus(k)?' <small class="gearb">+'+gearBonus(k).toFixed(1)+'</small>':'')+'</span><div class="bar"><i style="width:'+v*10+'%"></i></div><button data-k="'+k+'" '+(v>=10||save.xp<c?'disabled':'')+'>'+(v>=10?'Max':'+1 · '+c)+'</button></div>'}).join('')+
@@ -734,6 +760,9 @@ function renderHub(){
 $('hubMenu').onclick=()=>renderTitle();
 function makeOpp(){
   const c=save.cur,ev=c.ev,r=c.round;
+  if(c.draw){const p=r<=c.qual?c.qualOpp[r-1]:drawOpp(c.draw,r-1-c.qual);let line=null;
+    if(p.rival!=null){const rv=save.rivals[p.rival];line=rv.last==='l'?'Back for more? I remember how the last one went.':pick(RIVAL_TYPES[rv.type].lines)}
+    c.opp=oppFrom(p,r,line);c.opp.seed=c.draw.seeds[p.id]||null;return}
   let skill,rival=null,who,line=null;
   if(r<=c.qual)skill=ev.sk[0]-1.2+rnd(-0.3,0.3);
   else{const mr=r-c.qual,mt=c.total-c.qual;skill=ev.sk[0]+(ev.sk[1]-ev.sk[0])*(mt>1?(mr-1)/(mt-1):1)+rnd(-0.4,0.4)}
@@ -745,7 +774,8 @@ function makeOpp(){
   c.opp={id:who.id,name:who.name,skill:Math.round(clamp(skill,1,10)*10)/10,rival,line};
 }
 function playNext(){
-  if(!save.cur){const E=entry(save.week);save.cur={ev:E.ev,how:E.how,qual:E.qual,missed:E.missed||null,why:E.why||null,round:1,total:E.ev.rounds+E.qual,opp:null,prize:0}}
+  if(!save.cur){const E=entry(save.week);save.cur={ev:E.ev,how:E.how,qual:E.qual,missed:E.missed||null,why:E.why||null,round:1,total:E.ev.rounds+E.qual,opp:null,prize:0};
+    save.cur.draw=makeDraw(save.cur);makeOpp();store();openDraw(save.cur.draw,save.cur.ev.n);return}
   if(!save.cur.opp)makeOpp();store();
   const c=save.cur,f=fmt(save.stage,c.ev);
   startMatch({ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:save.stats,meId:save.char,me:RBYID[save.char].name,opp:c.opp,style:save.style,perks:perkLevel(),
@@ -760,6 +790,8 @@ function checkSponsors(lines){
 }
 function careerResult(won,score,st){
   const c=save.cur,ev=c.ev,o=c.opp,lines=[],stageKey=save.stage;
+  if(c.draw){if(c.round>c.qual)drawRecord(c.draw,c.round-1-c.qual,won,score);
+    else if(!won){const p=c.qualOpp[c.round-1],D=c.draw;D.players[p.id]=Object.assign({},p);D.slots[D.slots.indexOf('me')]=p.id;drawSimAll(D)}}
   let xp=Math.round((won?25+Math.round(ev.pts/40):10)*xpMult());
   if(won)save.careerW++;else save.careerL++;
   if(o.rival!=null){const rv=save.rivals[o.rival];if(won)rv.w++;else rv.l++;rv.last=won?'w':'l'}
@@ -787,7 +819,7 @@ function careerResult(won,score,st){
   save.xp+=xp;lines.unshift(['Training pts','+'+xp]);
   if(done){
     if(save.stage==='pro'){const r=proRank();save.rec.best=Math.min(save.rec.best,r);if(r===1)save.rec.weeks1++}
-    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});save.week++;save.cur=null;
+    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};save.week++;save.cur=null;
     const before=perkLevel();checkSponsors(lines);
   }
   const pl=perkLevel(),S=STYLES.find(s=>s.id===save.style);
@@ -990,7 +1022,7 @@ function makeRacket(){
 }
 
 class Player{
-  constructor(D,isBoss,scene){
+  constructor(D,isBoss,scene,variant){
     this.D=D;const nb=this.nb=D.names.length;
     const lt=b64(D.lt,Float32Array),inv=b64(D.inv,Float32Array);
     const bones=this.bones=[];for(let k=0;k<nb;k++){const b=new T.Bone();b.name=D.names[k];b.position.set(lt[k*3],lt[k*3+1],lt[k*3+2]);bones.push(b);if(D.parent[k]>=0)bones[D.parent[k]].add(b)}
@@ -1004,7 +1036,7 @@ class Player{
     g.setAttribute('skinWeight',new T.BufferAttribute(b64(M.sw,Uint8Array),4,true));
     g.setIndex(new T.BufferAttribute(M.i32?b64(M.idx,Uint32Array):b64(M.idx,Uint16Array),1));g.computeBoundingSphere();g.boundingSphere.radius=1e6;
     if(!D._map){const im=new Image(),t=new T.Texture(im);t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;im.onload=()=>{t.needsUpdate=true};im.src=D.tex.d;D._map=t}
-    const mo={map:D._map,roughness:.75,metalness:0};if(D.alpha){mo.alphaTest=.5;mo.side=T.DoubleSide}
+    const mo={map:variant?variantTexture(D,variant):D._map,roughness:.75,metalness:0};if(D.alpha){mo.alphaTest=.5;mo.side=T.DoubleSide}
     this.mat=new T.MeshStandardMaterial(mo);
     const mesh=this.mesh=new T.SkinnedMesh(g,this.mat);mesh.frustumCulled=false;mesh.castShadow=true;
     mesh.bind(new T.Skeleton(bones,invs),new T.Matrix4());scene.add(mesh);
@@ -1654,13 +1686,13 @@ function startMatch(cfg){
   if(cfg.venue&&cfg.venue.startsWith('major:'))cfg.surf=MAJOR_LOOK[cfg.venue.slice(6)].surf;buildCourt(cfg.surf,cfg);
   let got={};const done=()=>{if(!('me' in got&&'op' in got))return;
     for(const p of P)if(p)p.dispose(W3.scene);
-    const mk2=(D,id)=>{try{return new Player(D||R3BOSS,!D||id==='boss',W3.scene)}catch(e){console.error(e);return new Player(R3BOSS,true,W3.scene)}};
-    P=[mk2(got.me,cfg.meId),mk2(got.op,cfg.opp.id)];
+    const mk2=(D,id,v)=>{try{return new Player(D||R3BOSS,!D||id==='boss',W3.scene,v)}catch(e){console.error(e);return new Player(R3BOSS,true,W3.scene)}};
+    P=[mk2(got.me,cfg.meId,cfg.meV),mk2(got.op,cfg.opp.id,cfg.opp.v)];
     $('loading').hidden=true;beginMatch(cfg)};
   loadChar(cfg.meId,D=>{got.me=D;done()});loadChar(cfg.opp.id,D=>{got.op=D;done()});
 }
 function beginMatch(cfg){
-  M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,ostyle:styleOfChar(RBYID[cfg.opp.id]),pat:[],readMe:false,readSaid:false,ostam:clamp(Math.round(((RBYID[cfg.opp.id]&&RBYID[cfg.opp.id].st.stamina)||5)*0.5+cfg.opp.skill*0.5),1,10),sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
+  M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,ostyle:cfg.opp.style||styleOfChar(RBYID[cfg.opp.id]),pat:[],readMe:false,readSaid:false,ostam:clamp(Math.round(((RBYID[cfg.opp.id]&&RBYID[cfg.opp.id].st.stamina)||5)*0.5+cfg.opp.skill*0.5),1,10),sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
     state:'between',shot:null,t0:0,me:{x:0.4,y:-0.05},op:{x:-0.4,y:1.08},fault:false,sw:null,preview:null,samples:[],land:null,aim:null,lock:false,commit:null,pending:null,
     stat:{aces:0,winners:0,big:0,perfect:0,smashes:0,volleys:0,slices:0,rallyMax:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
@@ -2416,9 +2448,132 @@ $('btnTune').onclick=openTune;
 (()=>{const b=$('board');let t=0;const go=()=>{t=setTimeout(()=>{t=0;openTune()},600)},stop=()=>{if(t){clearTimeout(t);t=0}};
   b.addEventListener('pointerdown',go);b.addEventListener('pointerup',stop);b.addEventListener('pointerleave',stop);b.addEventListener('pointercancel',stop);b.addEventListener('contextmenu',e=>e.preventDefault())})();
 
+/* ================= tournament draws and the player field =================
+   Each career keeps a field of fictional players for every stage (juniors, college, pro): a generated name,
+   a country, a play style and a rating, and a look that is a recoloured variant of one of the roster models.
+   Every event gets a real seeded draw; the other matches are simulated round by round, and your opponents
+   come out of the draw. Rivals are the named roster players, placed in the draw so you meet late. */
+const NAMES_M=['Mateo','Luca','Noah','Felix','Hugo','Oscar','Leo','Theo','Jonas','Elias','Rafael','Diego','Tomas','Nikolai','Andrei','Kenji','Hiro','Min-jun','Arjun','Rohan','Kofi','Tariq','Omar','Malik','Jace','Cole','Grant','Wes','Reid','Beau','Silas','Emil','Lars','Sven','Pavel','Marek','Ivan','Dario','Paolo','Enzo','Gael','Bruno','Caio','Thiago','Santi','Joaquin','Liam','Owen','Finn','Callum','Ruben','Stefan','Viktor','Yannick','Pierre','Bastien','Kai','Tane','Ari','Duncan'];
+const NAMES_F=['Elena','Sofia','Maya','Ines','Clara','Ana','Lena','Mia','Zara','Nadia','Yuki','Aiko','Priya','Amara','Lucia','Irina','Petra','Freya','Isla','Chloe','Camila','Valentina','Marta','Greta'];
+const SURNAMES=['Alvarez','Brandt','Castillo','Duval','Eriksen','Ferreira','Gallo','Hartmann','Ibarra','Janssen','Kovac','Lindqvist','Moreau','Novak','Okafor','Petrov','Quintero','Rossi','Sato','Tanaka','Ueda','Vargas','Weber','Xu','Yilmaz','Zielinski','Abara','Bianchi','Costa','Dimitrov','Engel','Fischer','Garcia','Horvat','Ivanova','Jensen','Kim','Laurent','Mendes','Nakamura','Olsen','Park','Rahman','Silva','Torres','Varga','Walsh','Young','Adeyemi','Bauer','Chen','Dubois','Esposito','Fontaine','Gruber','Haddad','Iqbal','Jovanovic','Keller','Lopez','Marin','Nilsson','Ortega','Patel','Reyes','Schulz','Takahashi','Vidal','Wright','Zhou'];
+const NATS=['USA','GBR','ESP','FRA','ITA','GER','AUS','ARG','CAN','JPN','BRA','SRB','CRO','NED','SWE','NOR','CZE','POL','RSA','MEX','KOR','CHN','IND','CHI','BEL','SUI','AUT','POR','GRE','DEN','NGR','KAZ'];
+const FEMALE_BASE={granny:1,ch31:1};
+const FIELD_BASES=['ch08','ch31','ch01','ch12','remy','boss','ch09','ch06','ch23','ch24','ch28','ch42','brute','peasant','ty','ch43','ch17','vegas'];
+const STAGE_SKILL={junior:[0.8,5.9],college:[3,7.6],pro:[4.6,9.3]};
+function rngFrom(seed){let h=seed>>>0||1;return()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return(h>>>0)/4294967296}}
+function fieldFor(stage){
+  save.pool=save.pool||{};if(save.pool[stage])return save.pool[stage];
+  if(!save.seed)save.seed=Math.floor(Math.random()*2147483647);
+  const r=rngFrom(save.seed+({junior:11,college:23,pro:37}[stage])),pk=a=>a[Math.floor(r()*a.length)],[s0,s1]=STAGE_SKILL[stage],used={};
+  const list=[];
+  for(let i=0;i<96;i++){const base=pk(FIELD_BASES),f=!!FEMALE_BASE[base];let name;do{name=pk(f?NAMES_F:NAMES_M)+' '+pk(SURNAMES)}while(used[name]);used[name]=1;
+    const u=Math.pow(r(),1.35),skill=Math.round((s1-(s1-s0)*u)*10)/10;   // fewer players near the top
+    const nat=styleOfChar(RBYID[base]),style=r()<0.55?nat:pk(['server','baseliner','allcourt','counter']);
+    list.push({id:stage[0]+i,name,base,nat:pk(NATS),style,skill,v:{h:Math.round(r()*360),t:Math.round(r()*360),a:Math.round((0.25+r()*0.35)*100)/100,l:Math.round((0.88+r()*0.24)*100)/100}})}
+  list.sort((a,b)=>b.skill-a.skill);list.forEach((p,i)=>p.rank=i+1);
+  save.pool[stage]=list;return list}
+/* standard bracket order: where seed k sits in a draw of n */
+function seedOrder(n){let s=[1,2];while(s.length<n){const m=s.length*2+1;s=s.flatMap(x=>[x,m-x])}return s}
+function setScore(f,winHigh){const g=f.g;const one=()=>{const lose=Math.random()<0.18?g:Math.floor(Math.random()*(g-1));return lose===g?[g+1,g]:[g,lose]};
+  if(f.bo===1)return[one()];const a=one(),b=one();if(Math.random()<0.62)return[a,b];const c=one();return[a,[b[1],b[0]],c]}
+function fmtSets(sets,flip){return sets.map(s=>flip?s[1]+'–'+s[0]:s[0]+'–'+s[1]).join(' ')}
+function simPair(D,a,b){const A=D.players[a],B=D.players[b],p=1/(1+Math.exp(-(A.skill-B.skill)*1.25)),aw=Math.random()<p;
+  return{w:aw?a:b,l:aw?b:a,score:fmtSets(setScore(D.f,true))}}
+/* build a draw for the event you just entered */
+function makeDraw(c){
+  const ev=c.ev,stage=save.stage,R=ev.rounds,size=1<<R,f=fmt(stage,ev),field=fieldFor(stage),[k0,k1]=ev.sk;
+  const players={me:{id:'me',name:RBYID[save.char].name,me:true,nat:'YOU',skill:0}},picked=new Set();
+  // entrants spread across the event's level: weakest near the bottom of the range, top seed near the top
+  const need=size-1,targets=Array.from({length:need},(_,i)=>k1+0.3-(k1-k0+0.5)*(need>1?i/(need-1):0));
+  for(const t of targets){let best=null,bd=1e9;for(const p of field){if(picked.has(p.id))continue;const d=Math.abs(p.skill-t)+Math.random()*0.25;if(d<bd){bd=d;best=p}}
+    if(best){picked.add(best.id);players[best.id]=Object.assign({},best)}}
+  // a rival waits in the draw at the bigger events: the final, or the semifinal at a major
+  let rivalId=null;
+  if(R>=3){const ri=save.history.length%3,rv=save.rivals[ri],C=RBYID[rv.id];
+    const weakest=Object.values(players).filter(p=>!p.me).sort((a,b)=>a.skill-b.skill)[0];delete players[weakest.id];
+    rivalId='rv'+ri;players[rivalId]={id:rivalId,name:C.name,base:rv.id,v:null,nat:'RIV',style:styleOfChar(C),skill:Math.round((k1+rv.edge*0.5)*10)/10,rival:ri}}
+  // seed by rating; you slot in by ranking when it is good enough, otherwise as an unseeded player (or a qualifier)
+  const others=Object.values(players).filter(p=>!p.me).sort((a,b)=>b.skill-a.skill);
+  let myRank=size;if(stage==='pro'&&!c.qual){const r=proRank();myRank=r<=4?r:r<=16?Math.min(size,4+Math.ceil((r-4)/2)):size}
+  {const ns=size>=8?size/4:size>=4?2:0;if(myRank>ns)myRank=ns+1+Math.floor(Math.random()*(size-ns))}   // unseeded: a random unseeded spot, like a real draw
+  myRank=clamp(myRank,1,size);
+  const order=others.slice();order.splice(myRank-1,0,players.me);
+  const sl=seedOrder(size),slots=new Array(size);sl.forEach((k,pos)=>{slots[pos]=order[k-1].id});
+  // seeds are the highest-rated entrants (you only carry a seed on the pro tour)
+  const nSeeds=size>=8?size/4:size>=4?2:0,seeds={};order.slice(0,nSeeds).forEach((p,i)=>{if(!p.me||stage==='pro')seeds[p.id]=i+1});
+  // keep the rival away from you: opposite half (final) or the other quarter of your half at a major (semifinal)
+  if(rivalId){const myPos=slots.indexOf('me'),rp=slots.indexOf(rivalId),half=ev.major?size>>2:size>>1;
+    const same=(a,b)=>Math.floor(a/half)===Math.floor(b/half);
+    if(same(rp,myPos)||(ev.major&&Math.floor(rp/(half*2))!==Math.floor(myPos/(half*2)))){const want=myPos^half;
+      // swap the rival with whoever sits in the matching spot of the target section, keeping seeds where they are when possible
+      let tgt=want;for(let j=0;j<half;j++){const c=(Math.floor(want/half)*half)+j;if(!seeds[slots[c]]&&slots[c]!=='me'){tgt=c;break}}
+      [slots[rp],slots[tgt]]=[slots[tgt],slots[rp]]}}
+  const D={size,R,f:{bo:f.bo,g:f.g},players,slots,seeds,res:[],ev:ev.n};
+  // qualifying: weaker players who did not make the main draw
+  if(c.qual){c.qualOpp=[];for(let q=0;q<c.qual;q++){const cand=field.filter(p=>!picked.has(p.id)&&p.skill<k0+0.4);const p=cand[Math.floor(Math.random()*cand.length)]||field[field.length-1-q];picked.add(p.id);
+    c.qualOpp.push(Object.assign({},p,{skill:Math.round(clamp(k0-1.2+q*0.4+rnd(-0.3,0.3),1,10)*10)/10}))}}
+  return D}
+function entrantsAt(D,k){return k===0?D.slots:D.res[k-1].map(m=>m.w)}
+/* who you face in main-draw round k (0-based) */
+function drawOpp(D,k){const E=entrantsAt(D,k),p=E.indexOf('me');return p<0?null:D.players[E[p^1]]}
+/* record your match in round k and play out the rest of that round (and the whole event if you are out) */
+function drawRecord(D,k,won,score){const E=entrantsAt(D,k),res=[];
+  for(let i=0;i<E.length;i+=2){const a=E[i],b=E[i+1];if(a==='me'||b==='me'){const o=a==='me'?b:a;res.push({a,b,w:won?'me':o,score:won?score.replace(/, /g,' '):score.split(', ').map(s=>s.split('–').reverse().join('–')).join(' '),me:true})}
+    else{const m=simPair(D,a,b);res.push({a,b,w:m.w,score:m.score})}}
+  D.res[k]=res;
+  if(!won)while(D.res.length<D.R){const k2=D.res.length,E2=entrantsAt(D,k2),r2=[];for(let i=0;i<E2.length;i+=2){const m=simPair(D,E2[i],E2[i+1]);r2.push({a:E2[i],b:E2[i+1],w:m.w,score:m.score})}D.res.push(r2)}}
+function drawSimAll(D){while(D.res.length<D.R){const k=D.res.length,E=entrantsAt(D,k),r=[];for(let i=0;i<E.length;i+=2){const m=simPair(D,E[i],E[i+1]);r.push({a:E[i],b:E[i+1],w:m.w,score:m.score})}D.res.push(r)}}
+/* the opponent object the match uses, from a draw player */
+function oppFrom(p,round,line){const skill=Math.round(clamp(p.skill,1,10)*10)/10;
+  return{id:p.base,name:p.name,skill,rival:p.rival!=null?p.rival:null,line:line||null,v:p.v||null,style:p.style,nat:p.nat,seed:null}}
+
+/* ---- the bracket screen ---- */
+let drawBack=null;
+function openDraw(D,title,back){drawBack=back||(()=>renderHub());renderDraw(D,title);show('draw')}
+function renderDraw(D,title){
+  $('drTitle').textContent=title||D.ev;const cur=save&&save.cur,live=cur&&cur.draw===D;
+  const rn=k=>{const left=D.R-1-k;return left===0?'Final':left===1?'Semis':left===2?'Quarters':'Round of '+(D.size>>k)};
+  const nm=id=>{const p=D.players[id];if(!p)return'<span class="muted">TBD</span>';const s=D.seeds[id];return(s?'<small class="seed">'+s+'</small>':'')+esc(p.name)+' <small class="nat">'+(p.me?'':p.rival!=null?'Rival':p.nat)+'</small>'};
+  let q='';if(live&&cur.qualOpp){q='<div class="card" style="gap:6px"><p class="eyebrow">Your qualifying</p>'+cur.qualOpp.map((p,i)=>'<p>Q'+(i+1)+': '+esc(p.name)+' <small class="nat">'+p.nat+'</small>'+(cur.round>i+1?' <b class="res w">Won</b>':cur.round===i+1?' <b class="res next">Next</b>':'')+'</p>').join('')+'</div>'}
+  let cols='';
+  for(let k=0;k<D.R;k++){const E=k===0?D.slots:D.res[k-1]?D.res[k-1].map(m=>m.w):Array(D.size>>k).fill(null),R=D.res[k];let ms='';
+    for(let i=0;i<E.length;i+=2){const a=E[i],b=E[i+1],m=R&&R[i>>1],mine=a==='me'||b==='me';
+      const row=(id)=>'<div class="dr-p'+(m&&m.w===id?' w':m?' l':'')+(id==='me'?' me':'')+'"><span>'+nm(id)+'</span>'+(m&&m.w===id?'<small class="num">'+esc(m.score)+'</small>':'')+'</div>';
+      ms+='<div class="dr-m'+(mine?' mine':'')+'">'+row(a)+row(b)+'</div>'}
+    cols+='<div class="dr-col"><p class="eyebrow">'+rn(k)+'</p><div class="dr-ms">'+ms+'</div></div>'}
+  const champ=D.res[D.R-1]&&D.res[D.R-1][0]?D.res[D.R-1][0].w:null;
+  cols+='<div class="dr-col"><p class="eyebrow">Champion</p><div class="dr-ms"><div class="dr-m champ">'+(champ?'<div class="dr-p w'+(champ==='me'?' me':'')+'"><span>'+nm(champ)+'</span></div>':'<div class="dr-p"><span class="muted">?</span></div>')+'</div></div></div>';
+  $('drBody').innerHTML=q+'<div class="dr-scroll"><div class="dr-grid" style="--n:'+(D.size/2)+'">'+cols+'</div></div>';
+  const can=live&&!cur.done;$('drPlay').hidden=!can;if(can)$('drPlay').textContent='Play '+roundName(cur.round,cur.total,cur.qual).toLowerCase();
+  // bring your match into view
+  setTimeout(()=>{const m=document.querySelector('#drBody .dr-m.mine:last-of-type');if(m)m.scrollIntoView({block:'center',inline:'nearest'})},50)}
+$('drBack').onclick=()=>{const f=drawBack;drawBack=null;(f||renderHub)()};
+$('drPlay').onclick=()=>playNext();
+
+/* ---- appearance variants: recolour the clothes, keep the skin ---- */
+function variantTexture(D,v){D._vmaps=D._vmaps||{};const key=v.h+'_'+v.t+'_'+v.a+'_'+v.l;if(D._vmaps[key])return D._vmaps[key];
+  const cv=document.createElement('canvas');cv.width=cv.height=1024;{const g0=cv.getContext('2d');g0.fillStyle='#8a8f96';g0.fillRect(0,0,1024,1024)}  // final size from the start: GPU textures cannot be resized after upload
+  const t=new T.CanvasTexture(cv);t.colorSpace=T.SRGBColorSpace;t.anisotropy=4;D._vmaps[key]=t;
+  const im=new Image();im.onload=()=>{const S=1024;const g=cv.getContext('2d');g.clearRect(0,0,S,S);g.drawImage(im,0,0,S,S);const id=g.getImageData(0,0,S,S),d=id.data;
+    const tr=Math.cos(v.t*Math.PI/180),tg=Math.cos((v.t-120)*Math.PI/180),tb=Math.cos((v.t+120)*Math.PI/180),tint=[0.5+0.5*tr,0.5+0.5*tg,0.5+0.5*tb];
+    const ch=Math.cos(v.h*Math.PI/180),sh=Math.sin(v.h*Math.PI/180);
+    // hue rotation matrix in RGB space
+    const m=[0.213+ch*0.787-sh*0.213,0.715-ch*0.715-sh*0.715,0.072-ch*0.072+sh*0.928,0.213-ch*0.213+sh*0.143,0.715+ch*0.285+sh*0.140,0.072-ch*0.072-sh*0.283,0.213-ch*0.213-sh*0.787,0.715-ch*0.715+sh*0.715,0.072+ch*0.928+sh*0.072];
+    for(let i=0;i<d.length;i+=4){const r=d[i],gg=d[i+1],b=d[i+2],mx=Math.max(r,gg,b),mn=Math.min(r,gg,b),val=mx/255,sat=mx?(mx-mn)/mx:0;
+      if(d[i+3]<10)continue;
+      let hue=0;if(mx!==mn){if(mx===r)hue=((gg-b)/(mx-mn)+6)%6;else if(mx===gg)hue=(b-r)/(mx-mn)+2;else hue=(r-gg)/(mx-mn)+4;hue*=60}
+      const skin=hue>=4&&hue<=48&&sat>=0.16&&sat<=0.72&&val>=0.28&&r>gg&&gg>=b;
+      if(skin)continue;
+      let R=r,G=gg,B=b;
+      if(val<0.38){const a=0.8*clamp((val-0.01)/0.1,0,1),lift=72+val*120;R=r*(1-a)+tint[0]*lift*a;G=gg*(1-a)+tint[1]*lift*a;B=b*(1-a)+tint[2]*lift*a}   // black kit becomes a deep colour
+      else if(sat>=0.14){R=m[0]*r+m[1]*gg+m[2]*b;G=m[3]*r+m[4]*gg+m[5]*b;B=m[6]*r+m[7]*gg+m[8]*b}   // coloured kit changes hue
+      else if(val>0.5){const a=v.a;R=r*(1-a)+r*tint[0]*a*1.1;G=gg*(1-a)+gg*tint[1]*a*1.1;B=b*(1-a)+b*tint[2]*a*1.1}   // white and grey kit takes a colour
+      d[i]=clamp(R*v.l,0,255);d[i+1]=clamp(G*v.l,0,255);d[i+2]=clamp(B*v.l,0,255)}
+    g.putImageData(id,0,0);t.needsUpdate=true};im.src=D.tex.d;return t}
+
 document.addEventListener('pointerdown',sndResume,{passive:true});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
 </script>
