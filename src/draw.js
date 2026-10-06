@@ -13,9 +13,12 @@ const STAGE_SKILL={junior:[0.8,5.9],college:[3,7.6],pro:[4.6,9.3]};
 /* ---- one ranking per stage: the field, your rivals and you on the same points scale ----
    Field players carry points from their rating (results elsewhere) plus half of what they earn in the draws you play.
    A rank comes from points the same way yours always has (rank = N * e^(-points / K)), kept in strict order. */
-const RANK_SCALE={junior:{N:300,K:250,label:'Junior'},college:{N:400,K:300,label:'College'},pro:{N:1500,K:500,label:'World'}};
+const RANK_SCALE={junior:{N:300,K:190,label:'Junior'},college:{N:400,K:230,label:'College'},pro:{N:1500,K:450,label:'World'}};
 function skillPts(stage,skill){const [s0,s1]=STAGE_SKILL[stage],{N,K}=RANK_SCALE[stage];const r=Math.pow(N,clamp((s1+0.2-skill)/(s1-s0+0.4),0,1));return K*Math.log(N/Math.max(1,r))}
-function fieldPts(stage,p){return skillPts(stage,p.skill)+0.5*((p.cur||0)+0.5*(p.prev||0))}
+/* the field's standing: by skill order, the best 30 fill the top 30 places and the rest spread down the ranking,
+   so the field sits where the points scale says it should and your results move you past them */
+function slotPts(stage,i){const {N,K}=RANK_SCALE[stage],D=30,n=96,r=i<D?i+1:D*Math.pow(N/D,(i-D+1)/(n-D));return K*Math.log(N/r)}
+function fieldPts(stage,p){return slotPts(stage,(p.rank||1)-1)+0.5*((p.cur||0)+fadeW(stage)*(p.prev||0))}
 let RANK_CACHE={key:null,list:null};
 function rankingList(stage){stage=stage||save.stage;const my=roll(stage),key=stage+'|'+my+'|'+save.week+'|'+save.season+'|'+(save.fieldV||0)+'|'+save.char+'|'+(save.rivals||[]).map(r=>r.fid||r.id).join();
   if(RANK_CACHE.key===key)return RANK_CACHE.list;
@@ -28,10 +31,11 @@ function rankingList(stage){stage=stage||save.stage;const my=roll(stage),key=sta
 function rankOf(id,stage){const e=rankingList(stage).find(x=>x.id===id);return e?e.rank:null}
 function myRankIn(stage){return rankOf('me',stage)}
 /* field players bank points from the draws you play in, like you do */
+function rivalPtsBox(i){const rv=save.rivals[i];if(!rv)return null;rv.rp=rv.rp||{};return rv.rp[save.stage]=rv.rp[save.stage]||{cur:0,prev:0}}
 function awardDrawPoints(D,ev){const pool=fieldFor(save.stage),byId={};for(const p of pool)byId[p.id]=p;
-  for(const id in D.players){const p=byId[id];if(!p)continue;let wins=0;for(const r of D.res)for(const m of r)if(m.w===id)wins++;
+  for(const id in D.players){const p=byId[id]||(D.players[id].rival!=null?rivalPtsBox(D.players[id].rival):null);if(!p)continue;let wins=0;for(const r of D.res)for(const m of r)if(m.w===id)wins++;
     if(wins>=D.R)stTitle(D.players[id]);
-    const pts=wins>=D.R?ev.pts:wins>0?Math.round(ev.pts*Math.pow(0.55,D.R-wins)):Math.round(ev.pts*0.03);p.cur=(p.cur||0)+pts}
+    const pts=wins>=D.R?ev.pts:Math.round(ev.pts*reachFrac(D.R-1-wins));p.cur=(p.cur||0)+pts}
   save.fieldV=(save.fieldV||0)+1}
 /* ---- the rankings screen ---- */
 function openRankings(){const st=save.stage,L=rankingList(st),meI=L.findIndex(e=>e.me),lab=RANK_SCALE[st].label;
@@ -39,7 +43,7 @@ function openRankings(){const st=save.stage,L=rankingList(st),meI=L.findIndex(e=
   const idx=[...show].sort((a,b)=>a-b);let h='',last=-1;
   for(const i of idx){if(i>last+1)h+='<li class="rk-gap">···</li>';const e=L[i];
     h+='<li class="rk'+(e.me?' me':'')+(e.rival!=null?' rv':'')+'" data-pid="'+e.id+'" role="button" tabindex="0"><b class="num">'+e.rank+'</b><span>'+esc(e.name)+' <small class="nat">'+(e.me?'You':e.rival!=null?'Rival':e.nat)+'</small><small class="muted" style="display:block">'+(e.me?'':OSTYLE[e.style].name)+'</small></span><small class="num">'+Math.round(e.pts)+' pts</small></li>';last=i}
-  $('rkTitle').textContent=lab+' rankings';$('rkSub').textContent='You are #'+L[meI].rank+' with '+Math.round(L[meI].pts)+' points. Points from this season count in full, last season’s count half.';
+  $('rkTitle').textContent=lab+' rankings';$('rkSub').textContent='You are #'+L[meI].rank+' with '+Math.round(L[meI].pts)+' points. Rankings cover the last year: this season’s points count in full, and last season’s fade out week by week.';
   $('rkList').innerHTML=h;$('rkList').querySelectorAll('[data-pid]').forEach(li=>li.onclick=()=>{openRecords(()=>openRankings(),st);if(li.dataset.pid!=='me'){REC.player=li.dataset.pid;renderRecords()}});show_('rank')}
 const show_=id=>show(id);
 $('rkBack').onclick=()=>renderHub();

@@ -65,7 +65,8 @@ function rvChar(rv){return rv.fid?rv.base:rv.id}
 function rvStyle(rv){return rv.fid?rv.style:styleOfChar(RBYID[rv.id])}
 /* rivals grow with you: about your level, the Ice-cold type a touch above, the Showman a touch below */
 function rivalSkill(rv,ev){return Math.round(clamp(myRating()+(rv.edge-0.9)*0.8+0.35,ev.sk[0],ev.sk[1]+0.8)*10)/10}
-function rivalPts(stage,rv){return roll(stage)+(rv.edge-0.9)*RANK_SCALE[stage].K*0.35}
+/* rivals rank near you, but on their own results: a share of your points plus what they win in your draws, so a run of titles takes you past them */
+function rivalPts(stage,rv){const e=(rv.rp&&rv.rp[stage])||{cur:0,prev:0};return 0.85*roll(stage)+(rv.edge-0.9)*RANK_SCALE[stage].K*0.3+0.5*(e.cur+fadeW(stage)*e.prev)}
 function h2hNote(fid,won){save.h2h=save.h2h||{};const h=save.h2h[fid]=save.h2h[fid]||{w:0,l:0};if(won)h.w++;else h.l++;return h}
 /* after a loss: does this player become a rival? */
 function maybeNewRival(o,c,lines){if(!o.fid||o.rival!=null)return null;const h=save.h2h[o.fid];if(!h)return null;

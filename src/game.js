@@ -46,10 +46,10 @@ const KEY_V='tennis-go-v2';
 const EV=(n,tier,surf,rounds,sk,pts,extra)=>Object.assign({n,tier,surf,rounds,sk,pts},extra||{});
 const JUNIOR_WEEKS=[
   {main:EV('Twin Cities Junior Open','Local','hard',2,[1,2],50)},
-  {main:EV('Midwest Junior Sectionals','Sectional','clay',3,[1.5,3],120,{cut:40}),alt:EV('Minnesota Junior Classic','Local','clay',2,[1,2],40)},
-  {main:EV('National Junior Hardcourts','National','hard',3,[2.5,4],220,{cut:150}),alt:EV('Great Lakes Regional','Regional','hard',3,[1.5,3],90)},
-  {main:EV('National Junior Clay Courts','National','clay',3,[3,4.5],220,{cut:220}),alt:EV('Heartland Regional Clay','Regional','clay',3,[2,3],90)},
-  {main:EV('Junior Major','Junior major','grass',4,[3.5,5.5],400,{cut:380}),alt:EV('Junior International Open','International','grass',3,[2.5,4],160)}
+  {main:EV('Midwest Junior Sectionals','Sectional','clay',3,[1.5,3],120,{cut:25}),alt:EV('Minnesota Junior Classic','Local','clay',2,[1,2],40)},
+  {main:EV('National Junior Hardcourts','National','hard',3,[2.5,4],220,{cut:110}),alt:EV('Great Lakes Regional','Regional','hard',3,[1.5,3],90)},
+  {main:EV('National Junior Clay Courts','National','clay',3,[3,4.5],220,{cut:170}),alt:EV('Heartland Regional Clay','Regional','clay',3,[2,3],90)},
+  {main:EV('Junior Major','Junior major','grass',4,[3.5,5.5],400,{cut:300}),alt:EV('Junior International Open','International','grass',3,[2.5,4],160)}
 ];
 const PROGRAMS=[
   {id:'lakeshore',name:'Lakeshore University',need:900,o:1,xp:1.5,start:250,blurb:'National title contender. Tougher lineups, the big invitationals, best coaching (50% more training points).'},
@@ -79,7 +79,7 @@ const PRO_WEEKS=[
   ['New York Major','Major','hard',5,[6,9],2000,{major:'New York'}]
 ].map(([n,t,s,r,sk,p,x])=>({main:EV(n,t,s,r,sk,p,x),alt:'pro'}));
 const ALT_CITIES=['Canberra','Burnie','Tenerife','Monterrey','Sarasota','Aix','Bordeaux','Ilkley','Nottingham','Lexington','Granby','Cary'];
-function proAlt(wk){const surf=PRO_WEEKS[wk].main.surf;return proRank()<=300?EV('Challenger '+ALT_CITIES[wk],'Challenger',surf,4,[5,6.5],150):EV('Futures '+ALT_CITIES[wk],'Futures',surf,3,[4,5.5],80)}
+function proAlt(wk){const surf=PRO_WEEKS[wk].main.surf;return proRank()<=300?EV('Challenger '+ALT_CITIES[wk],'Challenger',surf,4,[5,6.5],250):EV('Futures '+ALT_CITIES[wk],'Futures',surf,3,[4,5.5],100)}
 const PRIZE={Futures:15000,Challenger:40000,'Tour 250':100000,'Tour 500':250000,Masters:600000,Major:2500000};
 const MAJORS=['Melbourne','Paris','London','New York'];
 const STYLES=[
@@ -121,7 +121,11 @@ function load(){try{const s=localStorage.getItem(KEY_V);return s?JSON.parse(s):n
 function store(){try{localStorage.setItem(KEY_V,JSON.stringify(save))}catch(e){}}
 save=load();
 if(save&&save.stats&&save.stats.stamina==null){const c=RBYID[save.char];save.stats.stamina=Math.max(1,Math.round(((c&&c.st.stamina)||5)*0.45));store()}
-const roll=k=>Math.round(save.pts[k].cur+0.5*save.pts[k].prev);
+/* rolling year: last season's points fade out week by week as this season's come in, so there is no cliff at a new season */
+function fadeW(k){if(!save||k!==save.stage)return 0.5;const n=weeks().length;return clamp(1-save.week/n,0,1)}
+const roll=k=>Math.round(save.pts[k].cur+fadeW(k)*save.pts[k].prev);
+/* share of the winner's points for the round you go out in (0 = lost the final), the same in every draw size */
+const REACH=[0.6,0.36,0.18,0.09,0.045,0.02];function reachFrac(left){return REACH[clamp(left,0,5)]}
 function proRank(){return save?myRankIn('pro'):1500}
 function collegeRank(){return save?myRankIn('college'):400}
 function juniorRank(){return save?myRankIn('junior'):300}
@@ -321,7 +325,7 @@ function makeOpp(){
 }
 function playNext(){
   if(!save.cur){const E=chosenEntry(save.week);if(!E){restWeek();return}save.cur={ev:E.ev,how:E.how,qual:E.qual,missed:E.missed||null,why:E.why||null,round:1,total:E.ev.rounds+E.qual,opp:null,prize:0};
-    save.cur.draw=makeDraw(save.cur);makeOpp();store();openDraw(save.cur.draw,save.cur.ev.n);return}
+    save.cur.rk0=myRankIn(save.stage);save.cur.draw=makeDraw(save.cur);makeOpp();store();openDraw(save.cur.draw,save.cur.ev.n);return}
   {const L=liveFor('career');if(L&&save.cur.opp){resumeLive(L);return}}
   if(!save.cur.opp)makeOpp();store();
   const c=save.cur,f=fmt(save.stage,c.ev);
@@ -360,7 +364,7 @@ function careerResult(won,score,st){
     text=wasQual?'Through qualifying! You are in the main draw.':'Into the '+roundName(c.round,c.total,c.qual).toLowerCase()+'.';
   }else{
     done=true;
-    const earned=winsMain>0?Math.round(ev.pts*Math.pow(0.55,mainRounds-winsMain)):(c.round>c.qual?Math.round(ev.pts*0.03):0);
+    const earned=c.round>c.qual?Math.round(ev.pts*reachFrac(c.total-c.round)):0;
     save.pts[stageKey].cur+=earned;if(stageKey==='junior')save.juniorTotal+=earned;
     prize=c.round>c.qual?prizeFor(ev,winsMain,mainRounds,false):(save.stage==='pro'&&PRIZE[ev.tier]?Math.round(PRIZE[ev.tier]*0.005):0);
     const rn=roundName(c.round,c.total,c.qual);resLabel=c.round<=c.qual?'Q'+c.round:c.round===c.total?'F':(SHORT[rn]||'R1');
@@ -374,6 +378,7 @@ function careerResult(won,score,st){
     if(save.stage==='pro'){const r=proRank();save.rec.best=Math.min(save.rec.best,r);if(r===1)save.rec.weeks1++}
     save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});if(c.draw){if(!c.draw.res||c.draw.res.length<c.draw.R)drawSimAll(c.draw);awardDrawPoints(c.draw,ev)}if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};save.week++;save.cur=null;save.pick=null;weekOff();
     const before=perkLevel();checkSponsors(lines);
+    if(c.rk0){const r1=myRankIn(stageKey);lines.push(['Ranking','#'+c.rk0+' → #'+r1+(r1<c.rk0?' ▲':r1>c.rk0?' ▼':'')])}
   }
   const pl=perkLevel(),S=STYLES.find(s=>s.id===save.style);
   if(won&&PERK_AT.includes(save.careerW)&&save.careerW>0)lines.push(['Perk unlocked',S.perks[PERK_AT.indexOf(save.careerW)]]);
@@ -382,7 +387,7 @@ function careerResult(won,score,st){
 
 /* ================= season transitions ================= */
 function settle(amount){const k=save.stage+save.season;if(save.settled!==k){save.settled=k;if(amount){save.money+=amount;save.earnings+=amount}store()}}
-function newSeasonPts(k){save.pts[k].prev=save.pts[k].cur;save.pts[k].cur=0;if(save.pool&&save.pool[k]){for(const p of save.pool[k]){p.prev=p.cur||0;p.cur=0}save.fieldV=(save.fieldV||0)+1}}
+function newSeasonPts(k){save.pts[k].prev=save.pts[k].cur;save.pts[k].cur=0;for(const rv of save.rivals||[]){const e=rv.rp&&rv.rp[k];if(e){e.prev=e.cur;e.cur=0}}if(save.pool&&save.pool[k]){for(const p of save.pool[k]){p.prev=p.cur||0;p.cur=0}save.fieldV=(save.fieldV||0)+1}}
 function seasonScreen(eyebrow,title,text,buttons){
   $('seEyebrow').textContent=eyebrow;$('seTitle').textContent=title;$('seText').innerHTML=text;
   $('seBtns').innerHTML='';buttons.forEach(([label,cls,fn])=>{const b=document.createElement('button');b.textContent=label;if(cls)b.className=cls;b.onclick=fn;$('seBtns').appendChild(b)});
@@ -392,7 +397,7 @@ function seasonSummary(){const hs=save.history.filter(h=>h.stage===save.stage&&h
 function seasonEnd(){
   const st=save.stage;
   if(st==='junior'){
-    if(save.season<2){seasonScreen('Junior season 1 complete','On to season 2',seasonSummary()+'. You have '+roll('junior')+' junior points. Points carry into next season at half value, so keep climbing.',
+    if(save.season<2){seasonScreen('Junior season 1 complete','On to season 2',seasonSummary()+'. You have '+roll('junior')+' junior points. Last season’s points fade out week by week through the next one, so keep climbing.',
       [['Start junior season 2','go',()=>{save.season=2;save.week=0;save.age++;newSeasonPts('junior');store();renderHub()}]]);return}
     renderRecruit();return}
   if(st==='college'){
