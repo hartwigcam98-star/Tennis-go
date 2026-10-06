@@ -3,7 +3,7 @@
 const $=id=>document.getElementById(id);
 const T=THREE;
 const CHAR_BASE=window.CHAR_BASE||'https://hartwigcam98-star.github.io/golf-go/';
-const SECTIONS=['title','learn','locker','draw','rank','select','style','hub','recruit','season','match','result'];
+const SECTIONS=['records','title','learn','locker','draw','rank','select','style','hub','recruit','season','match','result'];
 function show(id){SECTIONS.forEach(s=>{$(s).hidden=s!==id});if(id!=='match')window.scrollTo(0,0);if(id==='match')onResize()}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rnd(a,b){return a+Math.random()*(b-a)}
@@ -275,8 +275,8 @@ function renderHub(){
   {const row=document.createElement('div');row.className='row';
     if(save.cur&&save.cur.draw)row.innerHTML+='<button class="ghost" id="btnDraw">View draw</button>';
     if(save.lastDraw)row.innerHTML+='<button class="ghost" id="btnLastDraw">Last event’s draw</button>';
-    row.innerHTML+='<button class="ghost" id="btnRank">Rankings</button>';
-    if(row.innerHTML){$('nextCard').appendChild(row);if($('btnDraw'))$('btnDraw').onclick=()=>openDraw(save.cur.draw,save.cur.ev.n);if($('btnLastDraw'))$('btnLastDraw').onclick=()=>openDraw(save.lastDraw.D,save.lastDraw.t);$('btnRank').onclick=openRankings}}
+    row.innerHTML+='<button class="ghost" id="btnRank">Rankings</button><button class="ghost" id="btnRec">Records</button>';
+    if(row.innerHTML){$('nextCard').appendChild(row);if($('btnDraw'))$('btnDraw').onclick=()=>openDraw(save.cur.draw,save.cur.ev.n);if($('btnLastDraw'))$('btnLastDraw').onclick=()=>openDraw(save.lastDraw.D,save.lastDraw.t);$('btnRank').onclick=openRankings;$('btnRec').onclick=()=>openRecords(()=>renderHub())}}
   }
   const pl=perkLevel();
   $('statsCard').innerHTML='<div class="row between"><h3>Training</h3><span class="chip num">'+save.xp+' training pts</span></div>'+
@@ -346,10 +346,11 @@ function careerResult(won,score,st){
   if(won)save.careerW++;else save.careerL++;
   if(o.rival!=null){const rv=save.rivals[o.rival];if(won)rv.w++;else rv.l++;rv.last=won?'w':'l'}
   if(o.fid)h2hNote(o.fid,won);
+  statMine(o,won,score,lines,ev.n,roundName(c.round,c.total,c.qual));
   let text,champ=false,done=false,resLabel,prize=0;
   const mainRounds=c.total-c.qual,winsMain=Math.max(0,c.round-1-c.qual);
   if(won&&c.round===c.total){
-    champ=true;done=true;careerMilestone(ev,true);xp+=Math.round(40*xpMult());save.pts[stageKey].cur+=ev.pts;save.titles.push(ev.n+' '+save.season);save.rec.titles++;
+    champ=true;done=true;myLine().t++;careerMilestone(ev,true);xp+=Math.round(40*xpMult());save.pts[stageKey].cur+=ev.pts;save.titles.push(ev.n+' '+save.season);save.rec.titles++;
     if(ev.major)save.majors[ev.major]=(save.majors[ev.major]||0)+1,save.rec.majors++;if(ev.tier==='Masters')save.rec.masters++;
     if(stageKey==='junior')save.juniorTotal+=ev.pts;
     prize=prizeFor(ev,mainRounds,mainRounds,true);
@@ -910,7 +911,7 @@ function beginMatch(cfg){
     stat:{aces:0,winners:0,big:0,perfect:0,smashes:0,volleys:0,slices:0,rallyMax:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
   $('quit').textContent='Pause';M.quitArm=false;applyCosmetics();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
-  if(cfg.fat){M.en[0]=M.cap[0]=1-cfg.fat}if(cfg.ofat){M.en[1]=M.cap[1]=1-cfg.ofat}
+  msStart();if(cfg.fat){M.en[0]=M.cap[0]=1-cfg.fat}if(cfg.ofat){M.en[1]=M.cap[1]=1-cfg.ofat}
   if(cfg.resume){applyResume(cfg.resume);cfg.intro='Match resumed at '+scoreText(M.sets,M.pts,M.tb)+'.'}
   renderBoard();{const O=OSTYLE[M.ostyle];say(cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))}
   REP.setsN=1;REP.lastPt=-9;REP.buf=[];perfReset();W3.camPos.set(0,4,22);
@@ -921,15 +922,15 @@ function ptLabel(i){const a=M.pts[i],b=M.pts[1-i];if(M.tb)return String(a);if(a>
 function renderBoard(){for(let i=0;i<2;i++){$('s'+i).innerHTML=M.sets.map((g,k)=>'<span class="'+(k===M.sets.length-1?'cur':'')+'">'+g[i]+'</span>').join('');$('p'+i).textContent=ptLabel(i);$('srv'+i).classList.toggle('on',M.server===i)}}
 function nextPoint(){
   if(!M||M.over)return;clearMarks();FX.tp=[];slowMo(false);
-  M.lock=false;M.fault=false;M.shot=null;M.land=null;M.aim=null;M.commit=null;M.pending=null;M.rally=0;M.home=[{x:0,y:-0.05},{x:0,y:1.08}];W3.homeMark&&(W3.homeMark.visible=false);
+  M.lock=false;M.fault=false;M.oFault=false;M.shot=null;M.land=null;M.aim=null;M.commit=null;M.pending=null;M.rally=0;M.home=[{x:0,y:-0.05},{x:0,y:1.08}];W3.homeMark&&(W3.homeMark.visible=false);
   const d=side()==='deuce';
   if(M.server===0){M.me={x:d?0.4:-0.4,y:-0.05};M.op={x:d?-0.45:0.45,y:1.08};M.state='serveMe';say((M.tb?'Tiebreak. ':'')+'Your serve. Swipe up into the box.')}
   else{M.op={x:d?-0.4:0.4,y:1.08};M.me={x:d?0.45:-0.45,y:-0.05};M.state='oppServe';say(M.cfg.opp.name+' to serve.');after(oppServeStart,900)}
   M.mv[0]={x:M.me.x*HW,v:0,z:toW(0,-0.05).z,vz:0};M.mv[1]={x:M.op.x*HW,v:0,z:toW(0,1.08).z,vz:0};M.me.y=-0.05;M.op.y=1.08;P[0].pos.x=M.mv[0].x;P[1].pos.x=M.mv[1].x;P[0].runW=P[1].runW=0;saveLive();
 }
-function pointTo(w,text,call){
+function pointTo(w,text,call,kind){
   if(M&&M.drill){drillPoint(w,text,call);return}
-  if(!M||M.lock)return;M.lock=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
+  if(!M||M.lock)return;msPoint(w,call,kind);M.lock=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
   {const rl=M.rally||0,big=call==='ACE'||call==='WINNER';
     if(big){crowdCheer(1,2.6,rl>=6||Math.random()<0.25?2.2:0);sndApplause(1);if(rl>=6)sndCrowdVoice('cheer',0.9)}
     else if(call==='NET'||call==='DOUBLE FAULT'){crowdCheer(0.35,1.4);sndCrowdVoice('ooh',0.7);after(()=>sndApplause(0.3),600)}
@@ -957,7 +958,7 @@ function gameWon(w){
     M.sets.push([0,0]);after(()=>say(w===0?'You take the set!':M.cfg.opp.name+' takes the set.'),900)}
   else if(g[0]===G&&g[1]===G){M.tb=true;M.tbFirst=M.server}
 }
-function endMatch(){if(!M)return;LAST_LOAD=M.cfg.mode==='career'&&!M.drill?matchLoad():null;drillCleanup();clearLive();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
+function endMatch(){if(!M)return;LAST_LOAD=M.cfg.mode==='career'&&!M.drill?matchLoad():null;LAST_MS=M.cfg.mode==='career'&&!M.drill&&(M.over||M.retired)?msFinish():null;drillCleanup();clearLive();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
   if(!M.drill&&!M.retired&&M.over){const sets=M.sets,games=sets.reduce((a,g)=>a+g[0],0),V=W3.venue||{};
     matchRewards({won:M.winner===0,games,lostFirst:sets.length>1&&sets[0][0]<sets[0][1],bagels:sets.filter(g=>g[0]===6&&g[1]===0).length,
       surf:M.cfg.surf,venue:V.kind==='major'?'major:'+V.major:V.kind==='tour'&&V.rows>=16?'masters':V.kind||'tour',style:M.ostyle,skill:M.os,
@@ -1002,8 +1003,11 @@ function oppServeStart(){
 function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
   const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,C=P[1].tossC||P[1].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
-  const O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd;tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndHit(Math.min(1.2,spd/45));
-  if(Math.random()<(0.06-s*0.004)*O.df){
+  const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndHit(Math.min(1.2,spd/45));
+  const oppFault=()=>{M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('FAULT');say('Fault. Second serve.');M.oFault=true;M.shot=null;M.state='oppServe';after(oppServeStart,1000)},sh0.net?600:900)};let sh0=null;
+  // first serves miss about a third of the time (less for better players); double faults only happen on the second
+  if(!sec&&!M.drill&&Math.random()<clamp(0.4-s*0.022,0.18,0.4)){sh0=M.shot=makeShot(from,{x:(lo+hi)/2+rnd(-0.35,0.35),y:Math.random()<0.5?0.5:0.17},spd,OV.w,{who:'op',err:true});oppFault();return}
+  if(sec&&Math.random()<Math.max(0.02,0.1-s*0.007)*O.df){
     M.shot=makeShot(from,{x:(lo+hi)/2,y:0.5},spd,120,{who:'op',err:true});M.t0=now();M.state='oppErr';
     after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}
   // smarter servers mix the T and out wide, and go after the receiver's backhand
@@ -1012,7 +1016,7 @@ function oppServeLaunch(){
   const by=0.24+Math.random()*0.1;
   let sh=null;for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),OV.w+k*70,{who:'op',serve:true,recv:null,ss:OV.ss});sh.svType=oty;if(!sh.net&&sh.land.y>0.2&&sh.land.y<0.5)break}
   M.shot=sh;
-  {const L=sh.land,inBox=!sh.net&&L.x>=lo-0.01&&L.x<=hi+0.01&&L.y>=0.228&&L.y<=0.5;if(!inBox){sh.err=true;M.t0=now();M.state='oppErr';after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
+  {const L=sh.land,inBox=!sh.net&&L.x>=lo-0.01&&L.x<=hi+0.01&&L.y>=0.228&&L.y<=0.5;if(!inBox){sh.err=true;if(!sec&&!M.drill){sh0=sh;oppFault();return}M.t0=now();M.state='oppErr';after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
   setReach(M.shot);if(M.shot.unreach)M.shot.ace=true;
   if(Math.random()<O.sv*(0.6+s*0.05)){M.home[1]={x:0,y:0.72};say(M.cfg.opp.name+' serves and volleys.')}else M.home[1]={x:0,y:1.08};
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);M.t0=now();M.state='op';P[0].hop=0.15;
@@ -1055,7 +1059,7 @@ function oppHit(from){
   for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(kind==='lob'?0.95:0.88,k),w,{who:'op',err,kind,lob:kind==='lob',recv:recvPos(0)});
     if(err)break;const L=sh.land;if(!sh.net&&Math.abs(L.x)<=1&&L.y>=0&&L.y<0.5)break}
   {const L=sh.land;sh.err=sh.net||Math.abs(L.x)>1.012||L.y<-0.004||L.y>0.5}  // the physics decides in or out
-  M.shot=sh;sh.kind=kind;sh.w=w;sh.slice=!!M.oSlice;M.oSlice=false;onContact('op',toW(from.x,from.y,from.z),sh.speed,false);tire(1,0.004+0.004*clamp((sh.speed-18)/20,0,1));sndHit(Math.min(1.2,sh.speed/38));
+  M.shot=sh;sh.kind=kind;sh.pr=pr;sh.w=w;sh.slice=!!M.oSlice;M.oSlice=false;onContact('op',toW(from.x,from.y,from.z),sh.speed,false);tire(1,0.004+0.004*clamp((sh.speed-18)/20,0,1));sndHit(Math.min(1.2,sh.speed/38));
   {const oy=from.y,app=ovol||osm||(kind==='attack'&&Math.random()<O.approach)||(oy<0.82&&Math.random()<O.approach*0.5);M.home[1]=app?{x:0,y:0.72}:{x:0,y:1.08};if(osm)say(M.cfg.opp.name+' smashes it!');else if(kind==='defend'&&!err)say(M.cfg.opp.name+' is on the run and slices it back.');else if(pr>0.55&&!err&&kind==='deep')say('Weak reply. Go after it.');else if(kind==='lob'&&!err)say(M.cfg.opp.name+' throws up a lob.');else if(kind==='attack'&&!err)say(M.cfg.opp.name+' attacks the short ball'+(M.home[1].y<1?' and comes in.':'.'));else if(kind==='pass'&&!err)say('Passing shot from '+M.cfg.opp.name+'.');else if(kind==='wrongfoot'&&!err)say('Behind you: '+M.cfg.opp.name+' wrong-foots you.');else if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
   if(!sh.err){setReach(M.shot);if(M.shot.unreach&&pointWins(1)===2)slowMo(true)}
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);
@@ -1080,7 +1084,7 @@ function executeShot(){
   if(!landIn(shot,false)){
     const L=shot.land,why=shot.net?'Into the net. Swipe slower or a little longer.':Math.abs(L.x)>1?'Just wide.':'Long. Swipe a little shorter or slower.';
     shot.err=true;M.shot=shot;M.t0=now();M.state='err';drillEvent({k:'hit',in:false,why,tim,slice:!!c.slice});
-    after(()=>pointTo(1,why,shot.net?'NET':'OUT'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
+    after(()=>pointTo(1,why,shot.net?'NET':'OUT',mp>0.55?'fe':'ue'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
   if(c.pw>=0.85)M.stat.big++;
   const tx=shot.land.x,ty=shot.land.y;
   {const sd=Math.sign(tx);M.pat.push(sd);if(M.pat.length>4)M.pat.shift();const same=M.pat.length===4&&M.pat.every(v=>v===sd);
@@ -1201,14 +1205,14 @@ function step(dt){
       if(M.commit&&!sh.err&&!sh.unreach)swingFor(P[0],M.meSide,M.t0+0.9*sh.T*1000,sh.hz);
       if(M.commit&&p>=0.9){executeShot()}else{
         if(sh.err&&p>(sh.net?0.3:sh.pb+0.02)&&!sh.called){sh.called=true;callOut(sh.net?'NET':'OUT');say(sh.net?'Into the net!':'Out!')}
-        if(sh.err&&p>1.0)pointTo(0,sh.net?'Their shot found the net.':'Their shot was out.',null);
-        else if(sh.unreach&&p>1.1){pointTo(1,sh.ace?'Ace from '+M.cfg.opp.name+'.':'Out of reach.',sh.ace?'ACE':null)}
-        else if(!sh.err&&!sh.unreach&&p>1.0)pointTo(1,'You didn’t swipe in time.',null)}
+        if(sh.err&&p>1.0)pointTo(0,sh.net?'Their shot found the net.':'Their shot was out.',null,(sh.pr||0)>0.55?'fe':'ue');
+        else if(sh.unreach&&p>1.1){pointTo(1,sh.ace?'Ace from '+M.cfg.opp.name+'.':'Out of reach.',sh.ace?'ACE':null,'wn')}
+        else if(!sh.err&&!sh.unreach&&p>1.0)pointTo(1,'You didn’t swipe in time.',null,'ue')}
     }
     else if(M.state==='me'&&sh.who==='me'){
       if(M.returns)swingFor(P[1],M.opSide,M.t0+0.9*sh.T*1000,sh.hz);
       if(M.returns&&p>=0.9)oppHit(pos(sh,p));
-      else if(!M.returns&&p>1.15){if(sh.type==='serve'){M.stat.aces++;pointTo(0,'Ace!','ACE')}else{M.stat.winners++;pointTo(0,'Winner!','WINNER')}}
+      else if(!M.returns&&p>1.15){if(sh.type==='serve'){M.stat.aces++;pointTo(0,'Ace!','ACE')}else{M.stat.winners++;pointTo(0,'Winner!','WINNER','wn')}}
     }
   }
   // players: accelerate and brake like people, side to side and up and back; the body ends up beside the ball
@@ -1273,6 +1277,7 @@ function camera(dt){
 /*@DRAW*/
 /*@SESSION*/
 /*@CAREER*/
+/*@STATS*/
 document.addEventListener('pointerdown',sndResume,{passive:true});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
 window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};

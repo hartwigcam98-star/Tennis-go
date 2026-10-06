@@ -30,6 +30,7 @@ function myRankIn(stage){return rankOf('me',stage)}
 /* field players bank points from the draws you play in, like you do */
 function awardDrawPoints(D,ev){const pool=fieldFor(save.stage),byId={};for(const p of pool)byId[p.id]=p;
   for(const id in D.players){const p=byId[id];if(!p)continue;let wins=0;for(const r of D.res)for(const m of r)if(m.w===id)wins++;
+    if(wins>=D.R)stTitle(D.players[id]);
     const pts=wins>=D.R?ev.pts:wins>0?Math.round(ev.pts*Math.pow(0.55,D.R-wins)):Math.round(ev.pts*0.03);p.cur=(p.cur||0)+pts}
   save.fieldV=(save.fieldV||0)+1}
 /* ---- the rankings screen ---- */
@@ -37,9 +38,9 @@ function openRankings(){const st=save.stage,L=rankingList(st),meI=L.findIndex(e=
   const show=new Set();L.slice(0,20).forEach((e,i)=>show.add(i));for(let i=meI-3;i<=meI+3;i++)if(i>=0&&i<L.length)show.add(i);L.forEach((e,i)=>{if(e.rival!=null)show.add(i)});
   const idx=[...show].sort((a,b)=>a-b);let h='',last=-1;
   for(const i of idx){if(i>last+1)h+='<li class="rk-gap">···</li>';const e=L[i];
-    h+='<li class="rk'+(e.me?' me':'')+(e.rival!=null?' rv':'')+'"><b class="num">'+e.rank+'</b><span>'+esc(e.name)+' <small class="nat">'+(e.me?'You':e.rival!=null?'Rival':e.nat)+'</small><small class="muted" style="display:block">'+(e.me?'':OSTYLE[e.style].name)+'</small></span><small class="num">'+Math.round(e.pts)+' pts</small></li>';last=i}
+    h+='<li class="rk'+(e.me?' me':'')+(e.rival!=null?' rv':'')+'" data-pid="'+e.id+'" role="button" tabindex="0"><b class="num">'+e.rank+'</b><span>'+esc(e.name)+' <small class="nat">'+(e.me?'You':e.rival!=null?'Rival':e.nat)+'</small><small class="muted" style="display:block">'+(e.me?'':OSTYLE[e.style].name)+'</small></span><small class="num">'+Math.round(e.pts)+' pts</small></li>';last=i}
   $('rkTitle').textContent=lab+' rankings';$('rkSub').textContent='You are #'+L[meI].rank+' with '+Math.round(L[meI].pts)+' points. Points from this season count in full, last season’s count half.';
-  $('rkList').innerHTML=h;show_('rank')}
+  $('rkList').innerHTML=h;$('rkList').querySelectorAll('[data-pid]').forEach(li=>li.onclick=()=>{openRecords(()=>openRankings(),st);if(li.dataset.pid!=='me'){REC.player=li.dataset.pid;renderRecords()}});show_('rank')}
 const show_=id=>show(id);
 $('rkBack').onclick=()=>renderHub();
 function rngFrom(seed){let h=seed>>>0||1;return()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return(h>>>0)/4294967296}}
@@ -60,7 +61,7 @@ function setScore(f,winHigh){const g=f.g;const one=()=>{const lose=Math.random()
   if(f.bo===1)return[one()];const a=one(),b=one();if(Math.random()<0.62)return[a,b];const c=one();return[a,[b[1],b[0]],c]}
 function fmtSets(sets,flip){return sets.map(s=>flip?s[1]+'–'+s[0]:s[0]+'–'+s[1]).join(' ')}
 function simPair(D,a,b){const A=D.players[a],B=D.players[b],p=1/(1+Math.exp(-(A.skill-B.skill)*1.25)),aw=Math.random()<p;
-  return{w:aw?a:b,l:aw?b:a,score:fmtSets(setScore(D.f,true))}}
+  const r={w:aw?a:b,l:aw?b:a,score:fmtSets(setScore(D.f,true))};statSim(A,B,r.w,r.score);return r}
 /* build a draw for the event you just entered */
 function makeDraw(c){
   const ev=c.ev,stage=save.stage,R=ev.rounds,size=1<<R,f=fmt(stage,ev),field=fieldFor(stage),[k0,k1]=ev.sk;

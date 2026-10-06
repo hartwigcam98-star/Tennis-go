@@ -17,7 +17,7 @@
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 29 · career depth</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 30 · records and stats</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -112,6 +112,13 @@
   <div class="row between"><p class="eyebrow">Career</p><button class="ghost" id="rkBack" style="padding:6px 12px;font-size:13px">Back</button></div>
   <div class="hero"><h2 id="rkTitle">Rankings</h2><p class="muted" id="rkSub" style="font-size:14px"></p></div>
   <ol class="rk-list" id="rkList"></ol>
+</section>
+
+<section id="records" class="wrap" hidden>
+  <div class="row between"><p class="eyebrow">Career</p><button class="ghost" id="recBack" style="padding:6px 12px;font-size:13px">Back</button></div>
+  <div class="hero"><h2>Records</h2><p class="muted" style="font-size:14px">Your stats and every player's, kept for each league.</p></div>
+  <div class="wkpick" id="recTabs"></div>
+  <div id="recBody" style="display:flex;flex-direction:column;gap:12px"></div>
 </section>
 
 <section id="select" class="wrap" hidden>

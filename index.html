@@ -90,6 +90,7 @@ select{background:var(--panel-2);border:1px solid var(--line);border-radius:10px
 /* career extras */
 .note{font-size:14px;color:var(--chalk);background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .opp{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.stgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;margin:4px 0}.stgrid div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding:4px 0;font-size:14px}.stgrid small{color:var(--muted)}.stgrid strong{font-size:15px}
 .wkpick{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:6px}
 .wkpick .pc{padding:10px;gap:2px}.wkpick .pc strong{font-size:15px;line-height:1.2}.wkpick .pc small{font-size:12px}
 .ftab{width:100%;border-collapse:collapse;font-size:14px}.ftab th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:4px 2px;border-bottom:1px solid var(--line)}
@@ -221,7 +222,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 29 · career depth</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 30 · records and stats</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -318,6 +319,13 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <ol class="rk-list" id="rkList"></ol>
 </section>
 
+<section id="records" class="wrap" hidden>
+  <div class="row between"><p class="eyebrow">Career</p><button class="ghost" id="recBack" style="padding:6px 12px;font-size:13px">Back</button></div>
+  <div class="hero"><h2>Records</h2><p class="muted" style="font-size:14px">Your stats and every player's, kept for each league.</p></div>
+  <div class="wkpick" id="recTabs"></div>
+  <div id="recBody" style="display:flex;flex-direction:column;gap:12px"></div>
+</section>
+
 <section id="select" class="wrap" hidden>
   <div class="hero"><p class="eyebrow" id="selEyebrow">New career</p><h2>Choose your player</h2><p class="muted" id="selIntro"></p></div>
   <div class="roster" id="roster"></div>
@@ -400,7 +408,7 @@ window.MCLIPS={"ready":{"fps":30,"t0":0,"n":120,"anim":[0,1,2,3,4,5,6,7,8,9,10,1
 const $=id=>document.getElementById(id);
 const T=THREE;
 const CHAR_BASE=window.CHAR_BASE||'https://hartwigcam98-star.github.io/golf-go/';
-const SECTIONS=['title','learn','locker','draw','rank','select','style','hub','recruit','season','match','result'];
+const SECTIONS=['records','title','learn','locker','draw','rank','select','style','hub','recruit','season','match','result'];
 function show(id){SECTIONS.forEach(s=>{$(s).hidden=s!==id});if(id!=='match')window.scrollTo(0,0);if(id==='match')onResize()}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function rnd(a,b){return a+Math.random()*(b-a)}
@@ -777,8 +785,8 @@ function renderHub(){
   {const row=document.createElement('div');row.className='row';
     if(save.cur&&save.cur.draw)row.innerHTML+='<button class="ghost" id="btnDraw">View draw</button>';
     if(save.lastDraw)row.innerHTML+='<button class="ghost" id="btnLastDraw">Last event’s draw</button>';
-    row.innerHTML+='<button class="ghost" id="btnRank">Rankings</button>';
-    if(row.innerHTML){$('nextCard').appendChild(row);if($('btnDraw'))$('btnDraw').onclick=()=>openDraw(save.cur.draw,save.cur.ev.n);if($('btnLastDraw'))$('btnLastDraw').onclick=()=>openDraw(save.lastDraw.D,save.lastDraw.t);$('btnRank').onclick=openRankings}}
+    row.innerHTML+='<button class="ghost" id="btnRank">Rankings</button><button class="ghost" id="btnRec">Records</button>';
+    if(row.innerHTML){$('nextCard').appendChild(row);if($('btnDraw'))$('btnDraw').onclick=()=>openDraw(save.cur.draw,save.cur.ev.n);if($('btnLastDraw'))$('btnLastDraw').onclick=()=>openDraw(save.lastDraw.D,save.lastDraw.t);$('btnRank').onclick=openRankings;$('btnRec').onclick=()=>openRecords(()=>renderHub())}}
   }
   const pl=perkLevel();
   $('statsCard').innerHTML='<div class="row between"><h3>Training</h3><span class="chip num">'+save.xp+' training pts</span></div>'+
@@ -848,10 +856,11 @@ function careerResult(won,score,st){
   if(won)save.careerW++;else save.careerL++;
   if(o.rival!=null){const rv=save.rivals[o.rival];if(won)rv.w++;else rv.l++;rv.last=won?'w':'l'}
   if(o.fid)h2hNote(o.fid,won);
+  statMine(o,won,score,lines,ev.n,roundName(c.round,c.total,c.qual));
   let text,champ=false,done=false,resLabel,prize=0;
   const mainRounds=c.total-c.qual,winsMain=Math.max(0,c.round-1-c.qual);
   if(won&&c.round===c.total){
-    champ=true;done=true;careerMilestone(ev,true);xp+=Math.round(40*xpMult());save.pts[stageKey].cur+=ev.pts;save.titles.push(ev.n+' '+save.season);save.rec.titles++;
+    champ=true;done=true;myLine().t++;careerMilestone(ev,true);xp+=Math.round(40*xpMult());save.pts[stageKey].cur+=ev.pts;save.titles.push(ev.n+' '+save.season);save.rec.titles++;
     if(ev.major)save.majors[ev.major]=(save.majors[ev.major]||0)+1,save.rec.majors++;if(ev.tier==='Masters')save.rec.masters++;
     if(stageKey==='junior')save.juniorTotal+=ev.pts;
     prize=prizeFor(ev,mainRounds,mainRounds,true);
@@ -1752,7 +1761,7 @@ function beginMatch(cfg){
     stat:{aces:0,winners:0,big:0,perfect:0,smashes:0,volleys:0,slices:0,rallyMax:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
   $('quit').textContent='Pause';M.quitArm=false;applyCosmetics();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
-  if(cfg.fat){M.en[0]=M.cap[0]=1-cfg.fat}if(cfg.ofat){M.en[1]=M.cap[1]=1-cfg.ofat}
+  msStart();if(cfg.fat){M.en[0]=M.cap[0]=1-cfg.fat}if(cfg.ofat){M.en[1]=M.cap[1]=1-cfg.ofat}
   if(cfg.resume){applyResume(cfg.resume);cfg.intro='Match resumed at '+scoreText(M.sets,M.pts,M.tb)+'.'}
   renderBoard();{const O=OSTYLE[M.ostyle];say(cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))}
   REP.setsN=1;REP.lastPt=-9;REP.buf=[];perfReset();W3.camPos.set(0,4,22);
@@ -1763,15 +1772,15 @@ function ptLabel(i){const a=M.pts[i],b=M.pts[1-i];if(M.tb)return String(a);if(a>
 function renderBoard(){for(let i=0;i<2;i++){$('s'+i).innerHTML=M.sets.map((g,k)=>'<span class="'+(k===M.sets.length-1?'cur':'')+'">'+g[i]+'</span>').join('');$('p'+i).textContent=ptLabel(i);$('srv'+i).classList.toggle('on',M.server===i)}}
 function nextPoint(){
   if(!M||M.over)return;clearMarks();FX.tp=[];slowMo(false);
-  M.lock=false;M.fault=false;M.shot=null;M.land=null;M.aim=null;M.commit=null;M.pending=null;M.rally=0;M.home=[{x:0,y:-0.05},{x:0,y:1.08}];W3.homeMark&&(W3.homeMark.visible=false);
+  M.lock=false;M.fault=false;M.oFault=false;M.shot=null;M.land=null;M.aim=null;M.commit=null;M.pending=null;M.rally=0;M.home=[{x:0,y:-0.05},{x:0,y:1.08}];W3.homeMark&&(W3.homeMark.visible=false);
   const d=side()==='deuce';
   if(M.server===0){M.me={x:d?0.4:-0.4,y:-0.05};M.op={x:d?-0.45:0.45,y:1.08};M.state='serveMe';say((M.tb?'Tiebreak. ':'')+'Your serve. Swipe up into the box.')}
   else{M.op={x:d?-0.4:0.4,y:1.08};M.me={x:d?0.45:-0.45,y:-0.05};M.state='oppServe';say(M.cfg.opp.name+' to serve.');after(oppServeStart,900)}
   M.mv[0]={x:M.me.x*HW,v:0,z:toW(0,-0.05).z,vz:0};M.mv[1]={x:M.op.x*HW,v:0,z:toW(0,1.08).z,vz:0};M.me.y=-0.05;M.op.y=1.08;P[0].pos.x=M.mv[0].x;P[1].pos.x=M.mv[1].x;P[0].runW=P[1].runW=0;saveLive();
 }
-function pointTo(w,text,call){
+function pointTo(w,text,call,kind){
   if(M&&M.drill){drillPoint(w,text,call);return}
-  if(!M||M.lock)return;M.lock=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
+  if(!M||M.lock)return;msPoint(w,call,kind);M.lock=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
   {const rl=M.rally||0,big=call==='ACE'||call==='WINNER';
     if(big){crowdCheer(1,2.6,rl>=6||Math.random()<0.25?2.2:0);sndApplause(1);if(rl>=6)sndCrowdVoice('cheer',0.9)}
     else if(call==='NET'||call==='DOUBLE FAULT'){crowdCheer(0.35,1.4);sndCrowdVoice('ooh',0.7);after(()=>sndApplause(0.3),600)}
@@ -1799,7 +1808,7 @@ function gameWon(w){
     M.sets.push([0,0]);after(()=>say(w===0?'You take the set!':M.cfg.opp.name+' takes the set.'),900)}
   else if(g[0]===G&&g[1]===G){M.tb=true;M.tbFirst=M.server}
 }
-function endMatch(){if(!M)return;LAST_LOAD=M.cfg.mode==='career'&&!M.drill?matchLoad():null;drillCleanup();clearLive();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
+function endMatch(){if(!M)return;LAST_LOAD=M.cfg.mode==='career'&&!M.drill?matchLoad():null;LAST_MS=M.cfg.mode==='career'&&!M.drill&&(M.over||M.retired)?msFinish():null;drillCleanup();clearLive();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
   if(!M.drill&&!M.retired&&M.over){const sets=M.sets,games=sets.reduce((a,g)=>a+g[0],0),V=W3.venue||{};
     matchRewards({won:M.winner===0,games,lostFirst:sets.length>1&&sets[0][0]<sets[0][1],bagels:sets.filter(g=>g[0]===6&&g[1]===0).length,
       surf:M.cfg.surf,venue:V.kind==='major'?'major:'+V.major:V.kind==='tour'&&V.rows>=16?'masters':V.kind||'tour',style:M.ostyle,skill:M.os,
@@ -1844,8 +1853,11 @@ function oppServeStart(){
 function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
   const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,C=P[1].tossC||P[1].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
-  const O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd;tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndHit(Math.min(1.2,spd/45));
-  if(Math.random()<(0.06-s*0.004)*O.df){
+  const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndHit(Math.min(1.2,spd/45));
+  const oppFault=()=>{M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('FAULT');say('Fault. Second serve.');M.oFault=true;M.shot=null;M.state='oppServe';after(oppServeStart,1000)},sh0.net?600:900)};let sh0=null;
+  // first serves miss about a third of the time (less for better players); double faults only happen on the second
+  if(!sec&&!M.drill&&Math.random()<clamp(0.4-s*0.022,0.18,0.4)){sh0=M.shot=makeShot(from,{x:(lo+hi)/2+rnd(-0.35,0.35),y:Math.random()<0.5?0.5:0.17},spd,OV.w,{who:'op',err:true});oppFault();return}
+  if(sec&&Math.random()<Math.max(0.02,0.1-s*0.007)*O.df){
     M.shot=makeShot(from,{x:(lo+hi)/2,y:0.5},spd,120,{who:'op',err:true});M.t0=now();M.state='oppErr';
     after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}
   // smarter servers mix the T and out wide, and go after the receiver's backhand
@@ -1854,7 +1866,7 @@ function oppServeLaunch(){
   const by=0.24+Math.random()*0.1;
   let sh=null;for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),OV.w+k*70,{who:'op',serve:true,recv:null,ss:OV.ss});sh.svType=oty;if(!sh.net&&sh.land.y>0.2&&sh.land.y<0.5)break}
   M.shot=sh;
-  {const L=sh.land,inBox=!sh.net&&L.x>=lo-0.01&&L.x<=hi+0.01&&L.y>=0.228&&L.y<=0.5;if(!inBox){sh.err=true;M.t0=now();M.state='oppErr';after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
+  {const L=sh.land,inBox=!sh.net&&L.x>=lo-0.01&&L.x<=hi+0.01&&L.y>=0.228&&L.y<=0.5;if(!inBox){sh.err=true;if(!sec&&!M.drill){sh0=sh;oppFault();return}M.t0=now();M.state='oppErr';after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
   setReach(M.shot);if(M.shot.unreach)M.shot.ace=true;
   if(Math.random()<O.sv*(0.6+s*0.05)){M.home[1]={x:0,y:0.72};say(M.cfg.opp.name+' serves and volleys.')}else M.home[1]={x:0,y:1.08};
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);M.t0=now();M.state='op';P[0].hop=0.15;
@@ -1897,7 +1909,7 @@ function oppHit(from){
   for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(kind==='lob'?0.95:0.88,k),w,{who:'op',err,kind,lob:kind==='lob',recv:recvPos(0)});
     if(err)break;const L=sh.land;if(!sh.net&&Math.abs(L.x)<=1&&L.y>=0&&L.y<0.5)break}
   {const L=sh.land;sh.err=sh.net||Math.abs(L.x)>1.012||L.y<-0.004||L.y>0.5}  // the physics decides in or out
-  M.shot=sh;sh.kind=kind;sh.w=w;sh.slice=!!M.oSlice;M.oSlice=false;onContact('op',toW(from.x,from.y,from.z),sh.speed,false);tire(1,0.004+0.004*clamp((sh.speed-18)/20,0,1));sndHit(Math.min(1.2,sh.speed/38));
+  M.shot=sh;sh.kind=kind;sh.pr=pr;sh.w=w;sh.slice=!!M.oSlice;M.oSlice=false;onContact('op',toW(from.x,from.y,from.z),sh.speed,false);tire(1,0.004+0.004*clamp((sh.speed-18)/20,0,1));sndHit(Math.min(1.2,sh.speed/38));
   {const oy=from.y,app=ovol||osm||(kind==='attack'&&Math.random()<O.approach)||(oy<0.82&&Math.random()<O.approach*0.5);M.home[1]=app?{x:0,y:0.72}:{x:0,y:1.08};if(osm)say(M.cfg.opp.name+' smashes it!');else if(kind==='defend'&&!err)say(M.cfg.opp.name+' is on the run and slices it back.');else if(pr>0.55&&!err&&kind==='deep')say('Weak reply. Go after it.');else if(kind==='lob'&&!err)say(M.cfg.opp.name+' throws up a lob.');else if(kind==='attack'&&!err)say(M.cfg.opp.name+' attacks the short ball'+(M.home[1].y<1?' and comes in.':'.'));else if(kind==='pass'&&!err)say('Passing shot from '+M.cfg.opp.name+'.');else if(kind==='wrongfoot'&&!err)say('Behind you: '+M.cfg.opp.name+' wrong-foots you.');else if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
   if(!sh.err){setReach(M.shot);if(M.shot.unreach&&pointWins(1)===2)slowMo(true)}
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);
@@ -1922,7 +1934,7 @@ function executeShot(){
   if(!landIn(shot,false)){
     const L=shot.land,why=shot.net?'Into the net. Swipe slower or a little longer.':Math.abs(L.x)>1?'Just wide.':'Long. Swipe a little shorter or slower.';
     shot.err=true;M.shot=shot;M.t0=now();M.state='err';drillEvent({k:'hit',in:false,why,tim,slice:!!c.slice});
-    after(()=>pointTo(1,why,shot.net?'NET':'OUT'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
+    after(()=>pointTo(1,why,shot.net?'NET':'OUT',mp>0.55?'fe':'ue'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
   if(c.pw>=0.85)M.stat.big++;
   const tx=shot.land.x,ty=shot.land.y;
   {const sd=Math.sign(tx);M.pat.push(sd);if(M.pat.length>4)M.pat.shift();const same=M.pat.length===4&&M.pat.every(v=>v===sd);
@@ -2043,14 +2055,14 @@ function step(dt){
       if(M.commit&&!sh.err&&!sh.unreach)swingFor(P[0],M.meSide,M.t0+0.9*sh.T*1000,sh.hz);
       if(M.commit&&p>=0.9){executeShot()}else{
         if(sh.err&&p>(sh.net?0.3:sh.pb+0.02)&&!sh.called){sh.called=true;callOut(sh.net?'NET':'OUT');say(sh.net?'Into the net!':'Out!')}
-        if(sh.err&&p>1.0)pointTo(0,sh.net?'Their shot found the net.':'Their shot was out.',null);
-        else if(sh.unreach&&p>1.1){pointTo(1,sh.ace?'Ace from '+M.cfg.opp.name+'.':'Out of reach.',sh.ace?'ACE':null)}
-        else if(!sh.err&&!sh.unreach&&p>1.0)pointTo(1,'You didn’t swipe in time.',null)}
+        if(sh.err&&p>1.0)pointTo(0,sh.net?'Their shot found the net.':'Their shot was out.',null,(sh.pr||0)>0.55?'fe':'ue');
+        else if(sh.unreach&&p>1.1){pointTo(1,sh.ace?'Ace from '+M.cfg.opp.name+'.':'Out of reach.',sh.ace?'ACE':null,'wn')}
+        else if(!sh.err&&!sh.unreach&&p>1.0)pointTo(1,'You didn’t swipe in time.',null,'ue')}
     }
     else if(M.state==='me'&&sh.who==='me'){
       if(M.returns)swingFor(P[1],M.opSide,M.t0+0.9*sh.T*1000,sh.hz);
       if(M.returns&&p>=0.9)oppHit(pos(sh,p));
-      else if(!M.returns&&p>1.15){if(sh.type==='serve'){M.stat.aces++;pointTo(0,'Ace!','ACE')}else{M.stat.winners++;pointTo(0,'Winner!','WINNER')}}
+      else if(!M.returns&&p>1.15){if(sh.type==='serve'){M.stat.aces++;pointTo(0,'Ace!','ACE')}else{M.stat.winners++;pointTo(0,'Winner!','WINNER','wn')}}
     }
   }
   // players: accelerate and brake like people, side to side and up and back; the body ends up beside the ball
@@ -2535,6 +2547,7 @@ function myRankIn(stage){return rankOf('me',stage)}
 /* field players bank points from the draws you play in, like you do */
 function awardDrawPoints(D,ev){const pool=fieldFor(save.stage),byId={};for(const p of pool)byId[p.id]=p;
   for(const id in D.players){const p=byId[id];if(!p)continue;let wins=0;for(const r of D.res)for(const m of r)if(m.w===id)wins++;
+    if(wins>=D.R)stTitle(D.players[id]);
     const pts=wins>=D.R?ev.pts:wins>0?Math.round(ev.pts*Math.pow(0.55,D.R-wins)):Math.round(ev.pts*0.03);p.cur=(p.cur||0)+pts}
   save.fieldV=(save.fieldV||0)+1}
 /* ---- the rankings screen ---- */
@@ -2542,9 +2555,9 @@ function openRankings(){const st=save.stage,L=rankingList(st),meI=L.findIndex(e=
   const show=new Set();L.slice(0,20).forEach((e,i)=>show.add(i));for(let i=meI-3;i<=meI+3;i++)if(i>=0&&i<L.length)show.add(i);L.forEach((e,i)=>{if(e.rival!=null)show.add(i)});
   const idx=[...show].sort((a,b)=>a-b);let h='',last=-1;
   for(const i of idx){if(i>last+1)h+='<li class="rk-gap">···</li>';const e=L[i];
-    h+='<li class="rk'+(e.me?' me':'')+(e.rival!=null?' rv':'')+'"><b class="num">'+e.rank+'</b><span>'+esc(e.name)+' <small class="nat">'+(e.me?'You':e.rival!=null?'Rival':e.nat)+'</small><small class="muted" style="display:block">'+(e.me?'':OSTYLE[e.style].name)+'</small></span><small class="num">'+Math.round(e.pts)+' pts</small></li>';last=i}
+    h+='<li class="rk'+(e.me?' me':'')+(e.rival!=null?' rv':'')+'" data-pid="'+e.id+'" role="button" tabindex="0"><b class="num">'+e.rank+'</b><span>'+esc(e.name)+' <small class="nat">'+(e.me?'You':e.rival!=null?'Rival':e.nat)+'</small><small class="muted" style="display:block">'+(e.me?'':OSTYLE[e.style].name)+'</small></span><small class="num">'+Math.round(e.pts)+' pts</small></li>';last=i}
   $('rkTitle').textContent=lab+' rankings';$('rkSub').textContent='You are #'+L[meI].rank+' with '+Math.round(L[meI].pts)+' points. Points from this season count in full, last season’s count half.';
-  $('rkList').innerHTML=h;show_('rank')}
+  $('rkList').innerHTML=h;$('rkList').querySelectorAll('[data-pid]').forEach(li=>li.onclick=()=>{openRecords(()=>openRankings(),st);if(li.dataset.pid!=='me'){REC.player=li.dataset.pid;renderRecords()}});show_('rank')}
 const show_=id=>show(id);
 $('rkBack').onclick=()=>renderHub();
 function rngFrom(seed){let h=seed>>>0||1;return()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return(h>>>0)/4294967296}}
@@ -2565,7 +2578,7 @@ function setScore(f,winHigh){const g=f.g;const one=()=>{const lose=Math.random()
   if(f.bo===1)return[one()];const a=one(),b=one();if(Math.random()<0.62)return[a,b];const c=one();return[a,[b[1],b[0]],c]}
 function fmtSets(sets,flip){return sets.map(s=>flip?s[1]+'–'+s[0]:s[0]+'–'+s[1]).join(' ')}
 function simPair(D,a,b){const A=D.players[a],B=D.players[b],p=1/(1+Math.exp(-(A.skill-B.skill)*1.25)),aw=Math.random()<p;
-  return{w:aw?a:b,l:aw?b:a,score:fmtSets(setScore(D.f,true))}}
+  const r={w:aw?a:b,l:aw?b:a,score:fmtSets(setScore(D.f,true))};statSim(A,B,r.w,r.score);return r}
 /* build a draw for the event you just entered */
 function makeDraw(c){
   const ev=c.ev,stage=save.stage,R=ev.rounds,size=1<<R,f=fmt(stage,ev),field=fieldFor(stage),[k0,k1]=ev.sk;
@@ -2693,7 +2706,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&M&&!$('mat
 const KEY_LIVE='tennis-go-live';
 function saveLive(){if(!M||M.drill||M.over||!M.cfg.mode)return;
   const c=Object.assign({},M.cfg,{onEnd:null,resume:null,stats:M.cfg.baseStats||M.cfg.stats});
-  const s={v:1,mode:M.cfg.mode,cfg:c,sets:M.sets,setsWon:M.setsWon,pts:M.pts,tb:M.tb,tbFirst:M.tbFirst,server:M.server,stat:M.stat,en:M.en,cap:M.cap,
+  const s={v:1,mode:M.cfg.mode,cfg:c,sets:M.sets,setsWon:M.setsWon,pts:M.pts,tb:M.tb,tbFirst:M.tbFirst,server:M.server,stat:M.stat,ms:M.ms,en:M.en,cap:M.cap,
     career:M.cfg.mode==='career'?liveKey():null,t:Date.now()};
   try{localStorage.setItem(KEY_LIVE,JSON.stringify(s))}catch(e){}}
 /* which career match this is: a tournament round, or a Tour Finals match */
@@ -2706,7 +2719,7 @@ function liveFor(mode){const L=loadLive();if(!L||L.mode!==mode)return null;
   return L}
 function liveScore(L){return scoreText(L.sets,L.pts,L.tb)}
 /* put a saved score back into a fresh match */
-function applyResume(L){M.sets=L.sets;M.setsWon=L.setsWon;M.pts=L.pts;M.tb=L.tb;M.tbFirst=L.tbFirst;M.server=L.server;M.stat=Object.assign(M.stat,L.stat);M.en=L.en||M.en;M.cap=L.cap||M.cap;renderBoard();renderEnergy()}
+function applyResume(L){M.sets=L.sets;M.setsWon=L.setsWon;M.pts=L.pts;M.tb=L.tb;M.tbFirst=L.tbFirst;M.server=L.server;M.stat=Object.assign(M.stat,L.stat);if(L.ms)M.ms=L.ms;M.en=L.en||M.en;M.cap=L.cap||M.cap;renderBoard();renderEnergy()}
 function quickEnd(won,score,st){showResult(won,score,st,won?'Nice set. Try a tougher opponent next.':'Shake it off and run it back.',[],'Back to menu',()=>renderTitle())}
 function resumeLive(L){startMatch(Object.assign({},L.cfg,{resume:L,onEnd:L.mode==='career'?careerResult:quickEnd}))}
 /* title screen: a quick match left mid-way */
@@ -2772,7 +2785,7 @@ function simScore(won,f){const sets=setScore(f,true);return sets.map(s=>won?s[0]
 function simLoad(sets){const st=withAge(save.stats).stamina||5;return clamp((save.fat||0)+sets*0.08*(1.25-st*0.06),0,0.55)}
 function simNow(){if(!save)return;clearLive();const F=finalsMode();
   let opp,f;if(F){F.next=finOppId(F);opp=F.P[F.next];f={bo:3,g:6}}else{if(!save.cur)return;if(!save.cur.opp)makeOpp();opp=save.cur.opp;f=fmt(save.stage,save.cur.ev)}
-  const won=Math.random()<simWinP(opp.skill,f.bo),score=simScore(won,f);LAST_LOAD=simLoad(score.split(', ').length);LAST_REWARDS=null;SIMMED=true;
+  const won=Math.random()<simWinP(opp.skill,f.bo),score=simScore(won,f);LAST_LOAD=simLoad(score.split(', ').length);LAST_REWARDS=null;LAST_MS=null;SIMMED=true;
   careerResult(won,score,{aces:'–',winners:'–',perfect:'–'});SIMMED=false}
 
 /* ---- rivals ---- */
@@ -2813,7 +2826,7 @@ function finalsState(){if(save.stage!=='pro')return null;const F=save.finals;if(
 function finalsMode(){if(!save||save.stage!=='pro'||save.week<weeks().length)return null;const F=finalsState();return F&&F.in&&!F.done?F:null}
 function finPair(F,a,b,meWon,meScore){const f={bo:3,g:6};
   if(a==='me'||b==='me'){const o=a==='me'?b:a;return{a,b,w:meWon?'me':o,score:meScore}}
-  const A=F.P[a],B=F.P[b],p=1/(1+Math.exp(-(A.skill-B.skill)*1.25)),aw=Math.random()<p;return{a,b,w:aw?a:b,score:simScore(true,f)}}
+  const A=F.P[a],B=F.P[b],p=1/(1+Math.exp(-(A.skill-B.skill)*1.25)),aw=Math.random()<p,r={a,b,w:aw?a:b,score:simScore(true,f)};statSim(A,B,r.w,r.score);return r}
 function finTable(F,g){const G=F.groups[g],t={};G.forEach(id=>t[id]={id,w:0,l:0,sw:0,sl:0});
   for(const day of F.rr)for(const m of day){if(!t[m.a]||!t[m.b])continue;const W=t[m.w],Lr=t[m.w===m.a?m.b:m.a];W.w++;Lr.l++;
     const sets=m.score.split(', ').map(s=>s.split('–').map(Number));let x=0,y=0;for(const [p,q] of sets){if(p>q)x++;else y++}
@@ -2841,7 +2854,7 @@ function playFinals(){const F=finalsMode();if(!F)return;{const L=liveFor('career
   startMatch({mode:'career',ev:FIN_EV,stage:'pro',surf:'hard',bo:3,g:6,stats:careerStats(),meId:save.char,me:RBYID[save.char].name,opp:o,style:save.style,perks:perkLevel(),
     fat:save.fat||0,ofat:F.phase==='rr'?0.04*F.day:0.1,label:'Tour Finals · '+finRoundName(F),intro:o.line?o.name+': “'+o.line+'”':'Tour Finals. The best eight players of the season.',onEnd:careerResult})}
 function finalsResult(won,score,st){const F=finalsMode(),lines=[],xp=Math.round((won?60:20)*(SIMMED?0.6:1));let text,champ=false,out=false;
-  const opp=F.P[F.next],stageKey='pro';
+  const opp=F.P[F.next],stageKey='pro';statMine(opp,won,score,lines,'Tour Finals',finRoundName(F));
   if(won)save.careerW++;else save.careerL++;
   if(opp.rival!=null){const rv=save.rivals[opp.rival];if(won)rv.w++;else rv.l++;rv.last=won?'w':'l'}
   let pts=0,pay=0;
@@ -2853,7 +2866,8 @@ function finalsResult(won,score,st){const F=finalsMode(),lines=[],xp=Math.round(
   else{F.finRes=finPair(F,F.fin[0],F.fin[1],won,score);if(won){pts+=FIN_PTS.f;pay+=FIN_PAY.f;champ=true;text='Tour Finals champion! The best player of the season.'}else{out=true;text='Runner-up at the Tour Finals.'}F.phase='done'}
   if(out)finalsSimAll(F);
   if(champ||out){F.done=true;F.champ=F.champ||(champ?'me':F.finRes&&F.finRes.w);
-    if(champ){save.titles.push('Tour Finals '+save.season);save.rec.titles++;save.rec.finals=(save.rec.finals||0)+1;careerMilestone(FIN_EV,true)}
+    if(!champ&&F.champ&&F.P[F.champ])stTitle(F.P[F.champ]);
+    if(champ){myLine().t++;save.titles.push('Tour Finals '+save.season);save.rec.titles++;save.rec.finals=(save.rec.finals||0)+1;careerMilestone(FIN_EV,true)}
     const res=champ?'W':F.phase==='done'&&!champ&&F.fin&&F.fin.includes('me')?'F':F.sfRes&&F.sf.some(p=>p.includes('me'))?'SF':'RR';
     save.history.push({stage:stageKey,season:save.season,wk:weeks().length,name:'Tour Finals',res,champ});
     const r=proRank();save.rec.best=Math.min(save.rec.best,r)}
@@ -2874,6 +2888,134 @@ function finalsCard(){const F=finalsMode(),me=F.P.me;
     tbl(0)+tbl(1)+ko+
     '<div class="opp"><p class="eyebrow">'+finRoundName(F)+(o.rival!=null?' · Rival':'')+'</p><p style="font-weight:600;font-size:18px"><small class="seed">'+o.seed+'</small>'+esc(o.name)+' <small class="nat">#'+o.rank+'</small></p><p class="muted" style="font-size:14px">'+OSTYLE[o.style||'baseliner'].name+' · Rating '+o.skill.toFixed(1)+'</p></div>'+
     '<div class="row"><button class="go" id="btnPlay" style="flex:1">Play '+(F.phase==='rr'?'group match':F.phase==='sf'?'semifinal':'final')+'</button><button class="ghost" id="btnSim">Sim</button></div>'}
+
+/* ================= match statistics and the Records screen =================
+   Every career match records a full stat line for both players: serve (first serves in, points won behind the
+   first and second serve, aces, double faults), break points, winners, unforced and forced errors, points won.
+   Your own matches are counted point by point; matches between other players in your draws (and sims) get a
+   believable line generated from their rating, style and the score. Lines are kept per league, so juniors and
+   college records stay after you move up. */
+const ST_KEYS=['m','w','l','t','sw','sl','gw','gl','sp','s1','s1w','s2','s2w','ace','df','bpf','bps','bpo','bpc','wn','ue','fe','pw','pt'];
+function stLine(){const o={};for(const k of ST_KEYS)o[k]=0;return o}
+function stAdd(a,b){for(const k of ST_KEYS)a[k]=(a[k]||0)+(b[k]||0);return a}
+
+/* ---- point by point, during a match ---- */
+function msStart(){M.ms=[stLine(),stLine()]}
+/* called at the start of pointTo, before the score moves. kind: 'wn' winner by w, 'ue' / 'fe' error by the loser */
+function msPoint(w,call,kind){if(!M||!M.ms)return;const sv=M.server,rc=1-sv,S=M.ms[sv],R=M.ms[rc],second=sv===0?!!M.fault:!!M.oFault;
+  if(!M.tb&&pointWins(rc)>0){R.bpo++;S.bpf++;if(w===rc)R.bpc++;else S.bps++}
+  S.sp++;if(second){S.s2++;if(w===sv)S.s2w++}else{S.s1++;if(w===sv)S.s1w++}
+  M.ms[w].pw++;M.ms[0].pt++;M.ms[1].pt++;
+  if(call==='ACE')S.ace++;else if(call==='DOUBLE FAULT')S.df++;
+  else if(kind==='wn')M.ms[w].wn++;else if(kind==='ue')M.ms[1-w].ue++;else if(kind==='fe')M.ms[1-w].fe++}
+/* the finished match: sets and games onto both lines */
+let LAST_MS=null;
+function msFinish(){if(!M||!M.ms)return null;const a=M.ms[0],b=M.ms[1];
+  for(const g of M.sets){if(g[0]+g[1]===0)continue;a.gw+=g[0];a.gl+=g[1];b.gw+=g[1];b.gl+=g[0];if(g[0]>g[1])a.sw++,b.sl++;else if(g[1]>g[0])b.sw++,a.sl++}
+  return[a,b]}
+
+/* ---- a believable line for a match nobody watched ---- */
+const SSTY={server:{ace:1.7,df:1.3,fi:-0.03,s1:0.04,wn:1.2,ue:1.15},baseliner:{ace:0.9,df:0.9,fi:0.02,s1:0,wn:1,ue:0.9},allcourt:{ace:1,df:1,fi:0,s1:0.01,wn:1.15,ue:1},counter:{ace:0.6,df:0.8,fi:0.05,s1:-0.03,wn:0.75,ue:0.75}};
+function parseSets(score){return String(score).split(/,\s*|\s+/).filter(Boolean).map(s=>s.split('–').map(Number)).filter(x=>x.length===2&&!isNaN(x[0]))}
+/* games: [[gA,gB],...] from A's side. returns [lineA,lineB] */
+function synthMatch(sa,sb,styA,styB,games){
+  const A=stLine(),B=stLine(),YA=SSTY[styA]||SSTY.baseliner,YB=SSTY[styB]||SSTY.baseliner;
+  let GA=0,GB=0;for(const [x,y] of games){GA+=x;GB+=y;if(x>y)A.sw++,B.sl++;else B.sw++,A.sl++}
+  A.gw=B.gl=GA;A.gl=B.gw=GB;const tot=GA+GB;
+  const svA=Math.ceil(tot/2)-(Math.random()<0.5&&tot%2?1:0),svB=tot-svA;
+  // breaks: GA = holds + breaks, so A's breaks minus B's breaks = GA - svA
+  let bB=Math.round(rnd(0,0.18)*svA+Math.max(0,sb-sa)*0.3),bA=bB+GA-svA;if(bA<0){bB-=bA;bA=0}
+  bB=Math.min(bB,svA);bA=Math.min(bA,svB);const hA=svA-bB,hB=svB-bA;
+  const serve=(L,s,Y,held,broken)=>{const sp=Math.round(held*rnd(5,6.2)+broken*rnd(6,7.4)),won=Math.round(held*rnd(3.9,4.3)+broken*rnd(2.1,2.8));
+    const fi=clamp(0.52+s*0.014+Y.fi+rnd(-0.05,0.05),0.42,0.78);L.sp=sp;L.s1=Math.round(sp*fi);L.s2=sp-L.s1;
+    const r1=0.58+s*0.018+Y.s1,r2=r1-0.17,k=won/Math.max(1,L.s1*r1+L.s2*r2);L.s1w=Math.min(L.s1,Math.round(L.s1*r1*k));L.s2w=clamp(won-L.s1w,0,L.s2);
+    L.ace=Math.min(L.s1w,Math.round(L.s1*(0.03+s*0.011)*Y.ace*rnd(0.6,1.4)));L.df=Math.min(L.s2-L.s2w,Math.round(L.s2*Math.max(0.02,0.11-s*0.008)*Y.df*rnd(0.5,1.5)));return won};
+  const wA=serve(A,sa,YA,hA,bB),wB=serve(B,sb,YB,hB,bA);
+  A.pw=wA+(B.sp-wB);B.pw=wB+(A.sp-wA);A.pt=B.pt=A.sp+B.sp;
+  A.bpc=bA;A.bpo=bA+Math.round(rnd(0.6,1.6)*bA+rnd(0,2.2));B.bpf=A.bpo;B.bps=A.bpo-A.bpc;
+  B.bpc=bB;B.bpo=bB+Math.round(rnd(0.6,1.6)*bB+rnd(0,2.2));A.bpf=B.bpo;A.bps=B.bpo-B.bpc;
+  const rally=(L,O,s,Y)=>{L.wn=Math.round(Math.max(0,L.pw-L.ace-O.df)*(0.24+s*0.012)*Y.wn*rnd(0.8,1.2));L.ue=Math.round(O.pw*clamp(0.36-s*0.02,0.12,0.36)*Y.ue*rnd(0.8,1.2));L.fe=Math.round(O.pw*rnd(0.12,0.2))};
+  rally(A,B,sa,YA);rally(B,A,sb,YB);return[A,B]}
+
+/* ---- where lines are kept ---- */
+function poolById(id,stage){const L=fieldFor(stage||save.stage);for(const p of L)if(p.id===id)return p;return null}
+/* the record object for a player in a draw / finals / opponent: a field player, or a rival (by stage) */
+function stOf(x,stage){stage=stage||save.stage;if(!x||x.me)return null;
+  const ri=x.rival!=null?x.rival:null;
+  if(ri!=null){const rv=save.rivals[ri];if(!rv)return null;if(rv.fid){const p=poolById(rv.fid,stage);if(p)return p.st=p.st||stLine()}rv.st=rv.st||{};return rv.st[stage]=rv.st[stage]||stLine()}
+  const id=x.fid||x.id;const p=id&&poolById(id,stage);return p?p.st=p.st||stLine():null}
+function myLine(stage,season){save.my=save.my||{};const S=save.my[stage||save.stage]=save.my[stage||save.stage]||{};const k=season||save.season;return S[k]=S[k]||stLine()}
+function stMatch(L,won){L.m=1;L[won?'w':'l']=1;return L}
+/* a simulated match between two non-you players (draw rounds, Tour Finals) */
+function statSim(A,B,winId,score){try{const aw=winId===A.id,g=parseSets(score).map(s=>aw?s:[s[1],s[0]]);
+  const [la,lb]=synthMatch(A.skill||5,B.skill||5,A.style,B.style,g);const ta=stOf(A),tb=stOf(B);
+  if(ta)stAdd(ta,stMatch(la,aw));if(tb)stAdd(tb,stMatch(lb,!aw))}catch(e){console.error(e)}}
+/* your match: from the point-by-point count, or generated if you simmed it */
+function statMine(o,won,score,lines,ev,round){const sim=!LAST_MS;let me,op;
+  if(LAST_MS){[me,op]=LAST_MS;LAST_MS=null}else{const g=parseSets(score);[me,op]=synthMatch(myRating(),o.skill||5,save.style,o.style,g)}
+  stAdd(myLine(),stMatch(me,won));const t=stOf(o);if(t)stAdd(t,stMatch(op,!won));
+  save.log=save.log||[];save.log.push({s:save.stage,se:save.season,e:ev,r:round,o:o.name,k:stKey(o),w:won?1:0,sc:score,a:me.ace,d:me.df,wn:me.wn,ue:me.ue,oa:op.ace,sim:sim?1:0});
+  if(save.log.length>400)save.log.splice(0,save.log.length-400);
+  lines.push(['1st serve in',pct(me.s1,me.sp)],['Double faults',me.df],['Unforced errors',me.ue]);return me}
+function stKey(o){if(o.rival!=null){const rv=save.rivals[o.rival];return rv?(rv.fid||'R:'+rv.id):'?'}return o.fid||o.id}
+function stTitle(x){const t=stOf(x);if(t)t.t++}
+
+/* ---- numbers for display ---- */
+const pct=(a,b)=>b?Math.round(a/b*100)+'%':'–';
+function stRows(L){return[['Matches',L.w+'–'+L.l+(L.m?' ('+pct(L.w,L.m)+')':'')],['Titles',L.t],['Sets',L.sw+'–'+L.sl],['Games',L.gw+'–'+L.gl],
+  ['Aces',L.ace],['Double faults',L.df],['1st serve in',pct(L.s1,L.sp)],['1st serve pts won',pct(L.s1w,L.s1)],['2nd serve pts won',pct(L.s2w,L.s2)],
+  ['Break points saved',L.bpf?L.bps+'/'+L.bpf+' ('+pct(L.bps,L.bpf)+')':'–'],['Break points won',L.bpo?L.bpc+'/'+L.bpo+' ('+pct(L.bpc,L.bpo)+')':'–'],
+  ['Winners',L.wn],['Unforced errors',L.ue],['Forced errors',L.fe],['Points won',pct(L.pw,L.pt)],['Aces per match',L.m?(L.ace/L.m).toFixed(1):'–']]}
+function stGrid(L){return'<div class="stgrid">'+stRows(L).map(([k,v])=>'<div><small>'+k+'</small><strong class="num">'+v+'</strong></div>').join('')+'</div>'}
+const SORTS=[['rank','Ranking'],['w','Wins'],['wp','Win %'],['t','Titles'],['ace','Aces'],['apm','Aces per match'],['df','Double faults'],['s1p','1st serve in'],['s1wp','1st serve pts won'],['bpp','Break points won %'],['wn','Winners'],['ue','Unforced errors']];
+function sortVal(L,k){switch(k){case'wp':return L.m?L.w/L.m:-1;case'apm':return L.m?L.ace/L.m:-1;case's1p':return L.sp?L.s1/L.sp:-1;case's1wp':return L.s1?L.s1w/L.s1:-1;case'bpp':return L.bpo?L.bpc/L.bpo:-1;default:return L[k]||0}}
+function sortShow(L,k){switch(k){case'wp':return pct(L.w,L.m);case'apm':return L.m?(L.ace/L.m).toFixed(1):'–';case's1p':return pct(L.s1,L.sp);case's1wp':return pct(L.s1w,L.s1);case'bpp':return pct(L.bpc,L.bpo);case'rank':return L.w+'–'+L.l;default:return L[k]||0}}
+
+/* ---- the Records screen ---- */
+const REC={stage:null,sort:'rank',back:null,player:null};
+function stagesPlayed(){return['junior','college','pro'].filter(s=>s===save.stage||(save.my&&save.my[s])||(save.pool&&save.pool[s]))}
+function openRecords(back,stage){REC.back=back||REC.back||(()=>renderHub());REC.stage=stage||REC.stage||save.stage;if(!stagesPlayed().includes(REC.stage))REC.stage=save.stage;REC.player=null;renderRecords();show('records')}
+function allPlayers(stage){const L=rankingList(stage),out=[];
+  for(const e of L){let line,info;
+    if(e.me){line=myTotal(stage);info={me:true}}
+    else if(e.rival!=null){const rv=save.rivals[e.rival];const p=rv.fid&&poolById(rv.fid,stage);line=p?(p.st||stLine()):(rv.st&&rv.st[stage])||stLine();info={rival:e.rival,skill:p?p.skill:null}}
+    else{const p=poolById(e.id,stage);line=(p&&p.st)||stLine();info={skill:p&&p.skill,base:p&&p.base}}
+    out.push(Object.assign({id:e.id,name:e.name,nat:e.nat,style:e.style,rank:e.rank,line},info))}
+  return out}
+function myTotal(stage){const S=(save.my&&save.my[stage])||{},t=stLine();for(const k in S)stAdd(t,S[k]);return t}
+function renderRecords(){const st=REC.stage,tabs=stagesPlayed(),LBL={junior:'Juniors',college:'College',pro:'Pro tour'};
+  $('recTabs').innerHTML=tabs.map(s=>'<button class="pc" data-st="'+s+'" aria-pressed="'+(s===st)+'">'+LBL[s]+'</button>').join('');
+  $('recTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{REC.stage=b.dataset.st;REC.player=null;renderRecords()});
+  if(REC.player){renderPlayerCard(REC.player);return}
+  const me=myTotal(st),S=(save.my&&save.my[st])||{},seasons=Object.keys(S).map(Number).sort((a,b)=>a-b);
+  const evs=save.history.filter(h=>h.stage===st);
+  let h='<div class="card"><p class="eyebrow">You · '+LBL[st]+'</p><h3>'+esc(RBYID[save.char].name)+'</h3>'+(me.m?stGrid(me):'<p class="muted">No matches recorded here yet. Stats are kept from Build 30 on.</p>')+
+    (seasons.length?'<table class="ftab"><tr><th>Season</th><th>W–L</th><th>Titles</th><th>Aces</th><th>Win/UE</th></tr>'+seasons.map(k=>{const L=S[k];return'<tr><td>Season '+k+'</td><td class="num">'+L.w+'–'+L.l+'</td><td class="num">'+L.t+'</td><td class="num">'+L.ace+'</td><td class="num">'+L.wn+'/'+L.ue+'</td></tr>'}).join('')+'</table>':'')+
+    (evs.length?'<p class="muted" style="font-size:13px">'+evs.length+' events, '+evs.filter(e=>e.champ).length+' titles in '+LBL[st].toLowerCase()+'.</p>':'')+
+    '<button class="ghost" id="recLog">Match log</button></div>';
+  const P=allPlayers(st),k=REC.sort;
+  const rows=P.slice().sort((a,b)=>k==='rank'?a.rank-b.rank:(sortVal(b.line,k)-sortVal(a.line,k))||a.rank-b.rank);
+  h+='<div class="card"><div class="row between"><h3>Players</h3><label class="muted" style="font-size:13px">Sort <select id="recSort">'+SORTS.map(([v,l])=>'<option value="'+v+'"'+(v===k?' selected':'')+'>'+l+'</option>').join('')+'</select></label></div>'+
+    '<p class="muted" style="font-size:13px;margin-top:-6px">Every player in the '+LBL[st].toLowerCase()+' field. Stats come from the events you play in. Tap a player for their full record.</p>'+
+    '<ol class="rk-list">'+rows.slice(0,60).map(p=>'<li class="rk'+(p.me?' me':'')+(p.rival!=null?' rv':'')+'" data-pid="'+p.id+'" role="button" tabindex="0"><b class="num">'+p.rank+'</b><span>'+esc(p.name)+' <small class="nat">'+(p.me?'You':p.rival!=null?'Rival':p.nat||'')+'</small><small class="muted" style="display:block">'+p.line.w+'–'+p.line.l+(p.line.t?' · '+p.line.t+(p.line.t>1?' titles':' title'):'')+'</small></span><small class="num">'+(k==='rank'?(p.line.m?pct(p.line.w,p.line.m):'–'):sortShow(p.line,k))+'</small></li>').join('')+'</ol></div>';
+  $('recBody').innerHTML=h;
+  $('recSort').onchange=e=>{REC.sort=e.target.value;renderRecords()};
+  $('recLog').onclick=()=>{REC.player='__log';renderRecords()};
+  $('recBody').querySelectorAll('[data-pid]').forEach(li=>li.onclick=()=>{REC.player=li.dataset.pid;renderRecords();window.scrollTo(0,0)})}
+function renderPlayerCard(pid){const st=REC.stage;
+  if(pid==='__log'){const L=(save.log||[]).filter(x=>x.s===st).slice().reverse();
+    $('recBody').innerHTML='<div class="card"><div class="row between"><h3>Match log</h3><button class="ghost" id="recPBack">Back</button></div>'+(L.length?'<ol class="rk-list">'+L.map(x=>'<li class="rk"><b class="num" style="font-size:16px;color:'+(x.w?'var(--win)':'var(--loss)')+'">'+(x.w?'W':'L')+'</b><span>'+esc(x.o)+'<small class="muted" style="display:block">'+esc(x.e)+' · '+esc(x.r)+' · Season '+x.se+(x.sim?' · simmed':'')+'</small></span><small class="num">'+esc(x.sc)+'<br>'+x.a+' aces</small></li>').join('')+'</ol>':'<p class="muted">No matches logged here yet.</p>')+'</div>';
+    $('recPBack').onclick=()=>{REC.player=null;renderRecords()};return}
+  const P=allPlayers(st).find(p=>p.id===pid);if(!P){REC.player=null;renderRecords();return}
+  const key=P.rival!=null?stKey({rival:P.rival}):pid,meet=(save.log||[]).filter(x=>x.k===key);
+  const h2=meet.reduce((a,x)=>(a[x.w?0:1]++,a),[0,0]);
+  const LBL={junior:'Junior',college:'College',pro:'World'};
+  $('recBody').innerHTML='<div class="card"><div class="row between"><p class="eyebrow">'+LBL[st]+' #'+P.rank+(P.rival!=null?' · Rival':'')+'</p><button class="ghost" id="recPBack">Back</button></div><h3 style="font-size:26px">'+esc(P.name)+' <small class="nat">'+(P.me?'You':P.nat||'')+'</small></h3>'+
+    (P.me?'':'<p class="muted" style="font-size:14px">'+(OSTYLE[P.style]?OSTYLE[P.style].name:'')+(P.skill!=null?' · Rating '+(+P.skill).toFixed(1):'')+'</p>')+
+    (P.line.m?stGrid(P.line):'<p class="muted">No recorded matches yet. Their stats build up as they play in your events.</p>')+
+    (P.me?'':'<h3 style="margin-top:6px">Against you</h3><p class="num" style="font-size:20px">'+h2[0]+'–'+h2[1]+'</p>'+(meet.length?'<ol class="rk-list">'+meet.slice().reverse().map(x=>'<li class="rk"><b class="num" style="font-size:16px;color:'+(x.w?'var(--win)':'var(--loss)')+'">'+(x.w?'W':'L')+'</b><span>'+esc(x.e)+'<small class="muted" style="display:block">'+esc(x.r)+' · Season '+x.se+'</small></span><small class="num">'+esc(x.sc)+'</small></li>').join('')+'</ol>':'<p class="muted" style="font-size:14px">You haven’t played each other yet.</p>'))+'</div>';
+  $('recPBack').onclick=()=>{REC.player=null;renderRecords()}}
+$('recBack').onclick=()=>{const f=REC.back;REC.back=null;(f||renderHub)()};
 
 document.addEventListener('pointerdown',sndResume,{passive:true});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};

@@ -3,7 +3,7 @@ import json,os
 R=os.path.dirname(os.path.dirname(os.path.abspath(__file__)));S=os.path.join(R,'src')
 rd=lambda *p:open(os.path.join(S,*p),encoding='utf-8').read()
 mc=json.loads(rd('assets','mclips.json'))
-game=rd('game.js').replace('/*@VENUE*/',rd('venue.js')).replace('/*@AUDIO*/',rd('audio.js')).replace('/*@FX*/',rd('fx.js')).replace('/*@LEARN*/',rd('learn.js')).replace('/*@PROGRESS*/',rd('progress.js')).replace('/*@TUNE*/',rd('tune.js')).replace('/*@DRAW*/',rd('draw.js')).replace('/*@SESSION*/',rd('session.js')).replace('/*@CAREER*/',rd('career.js'))
+game=rd('game.js').replace('/*@VENUE*/',rd('venue.js')).replace('/*@AUDIO*/',rd('audio.js')).replace('/*@FX*/',rd('fx.js')).replace('/*@LEARN*/',rd('learn.js')).replace('/*@PROGRESS*/',rd('progress.js')).replace('/*@TUNE*/',rd('tune.js')).replace('/*@DRAW*/',rd('draw.js')).replace('/*@SESSION*/',rd('session.js')).replace('/*@CAREER*/',rd('career.js')).replace('/*@STATS*/',rd('stats.js'))
 out=rd('head.html')+rd('body.html')
 out+='<script>'+rd('vendor','three.js')+'</script>\n'
 out+='<script>'+rd('assets','boss.js')+'\nwindow.MCLIPS='+json.dumps(mc,separators=(',',':'))+';</script>\n'

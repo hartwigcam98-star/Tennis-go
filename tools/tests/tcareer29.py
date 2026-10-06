@@ -62,6 +62,23 @@ async def main():
         btn=await pg.query_selector('#offers button:not([disabled])');await btn.click()
       else:
         log.append('END on '+str(vis));break
+    # records screen
+    await pg.evaluate("()=>{if(!document.getElementById('hub').hidden||true){}}")
+    for _ in range(30):
+      vis=await pg.evaluate("()=>['hub','result','season','recruit','title','draw'].find(s=>!document.getElementById(s).hidden)")
+      if vis=='hub':break
+      if vis=='result':await pg.evaluate("document.getElementById('rGo').click()")
+      elif vis=='season':await pg.evaluate("document.querySelector('#seBtns button').click()")
+      elif vis=='draw':await pg.evaluate("document.getElementById('drBack').click()")
+      await pg.wait_for_timeout(50)
+    print('records check on',vis)
+    if vis!='hub' or not await pg.evaluate("()=>!!document.getElementById('btnRec')"):
+      await pg.evaluate("()=>{document.getElementById('hubMenu').click()}");await pg.wait_for_timeout(100)
+      await pg.evaluate("()=>{const b=document.getElementById('btnContinue');b&&b.click()}");await pg.wait_for_timeout(200)
+    if await pg.evaluate("()=>!!document.getElementById('btnRec')"):
+      await pg.evaluate("document.getElementById('btnRec').click()");await pg.wait_for_timeout(200);await pg.screenshot(path='records.png',full_page=True)
+      await pg.evaluate("document.querySelector('#recBody [data-pid]:not(.me)').click()");await pg.wait_for_timeout(200);await pg.screenshot(path='records_player.png',full_page=True)
+      print('PLAYER CARD',(await pg.inner_text('#recBody'))[:600].replace('\n',' | '))
     s=json.loads(await pg.evaluate("()=>localStorage.getItem('tennis-go-v2')"))
     print('\n'.join(log[-40:]))
     print('counts',seen)

@@ -31,7 +31,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&M&&!$('mat
 const KEY_LIVE='tennis-go-live';
 function saveLive(){if(!M||M.drill||M.over||!M.cfg.mode)return;
   const c=Object.assign({},M.cfg,{onEnd:null,resume:null,stats:M.cfg.baseStats||M.cfg.stats});
-  const s={v:1,mode:M.cfg.mode,cfg:c,sets:M.sets,setsWon:M.setsWon,pts:M.pts,tb:M.tb,tbFirst:M.tbFirst,server:M.server,stat:M.stat,en:M.en,cap:M.cap,
+  const s={v:1,mode:M.cfg.mode,cfg:c,sets:M.sets,setsWon:M.setsWon,pts:M.pts,tb:M.tb,tbFirst:M.tbFirst,server:M.server,stat:M.stat,ms:M.ms,en:M.en,cap:M.cap,
     career:M.cfg.mode==='career'?liveKey():null,t:Date.now()};
   try{localStorage.setItem(KEY_LIVE,JSON.stringify(s))}catch(e){}}
 /* which career match this is: a tournament round, or a Tour Finals match */
@@ -44,7 +44,7 @@ function liveFor(mode){const L=loadLive();if(!L||L.mode!==mode)return null;
   return L}
 function liveScore(L){return scoreText(L.sets,L.pts,L.tb)}
 /* put a saved score back into a fresh match */
-function applyResume(L){M.sets=L.sets;M.setsWon=L.setsWon;M.pts=L.pts;M.tb=L.tb;M.tbFirst=L.tbFirst;M.server=L.server;M.stat=Object.assign(M.stat,L.stat);M.en=L.en||M.en;M.cap=L.cap||M.cap;renderBoard();renderEnergy()}
+function applyResume(L){M.sets=L.sets;M.setsWon=L.setsWon;M.pts=L.pts;M.tb=L.tb;M.tbFirst=L.tbFirst;M.server=L.server;M.stat=Object.assign(M.stat,L.stat);if(L.ms)M.ms=L.ms;M.en=L.en||M.en;M.cap=L.cap||M.cap;renderBoard();renderEnergy()}
 function quickEnd(won,score,st){showResult(won,score,st,won?'Nice set. Try a tougher opponent next.':'Shake it off and run it back.',[],'Back to menu',()=>renderTitle())}
 function resumeLive(L){startMatch(Object.assign({},L.cfg,{resume:L,onEnd:L.mode==='career'?careerResult:quickEnd}))}
 /* title screen: a quick match left mid-way */

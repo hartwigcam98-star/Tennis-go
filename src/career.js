@@ -55,7 +55,7 @@ function simScore(won,f){const sets=setScore(f,true);return sets.map(s=>won?s[0]
 function simLoad(sets){const st=withAge(save.stats).stamina||5;return clamp((save.fat||0)+sets*0.08*(1.25-st*0.06),0,0.55)}
 function simNow(){if(!save)return;clearLive();const F=finalsMode();
   let opp,f;if(F){F.next=finOppId(F);opp=F.P[F.next];f={bo:3,g:6}}else{if(!save.cur)return;if(!save.cur.opp)makeOpp();opp=save.cur.opp;f=fmt(save.stage,save.cur.ev)}
-  const won=Math.random()<simWinP(opp.skill,f.bo),score=simScore(won,f);LAST_LOAD=simLoad(score.split(', ').length);LAST_REWARDS=null;SIMMED=true;
+  const won=Math.random()<simWinP(opp.skill,f.bo),score=simScore(won,f);LAST_LOAD=simLoad(score.split(', ').length);LAST_REWARDS=null;LAST_MS=null;SIMMED=true;
   careerResult(won,score,{aces:'–',winners:'–',perfect:'–'});SIMMED=false}
 
 /* ---- rivals ---- */
@@ -96,7 +96,7 @@ function finalsState(){if(save.stage!=='pro')return null;const F=save.finals;if(
 function finalsMode(){if(!save||save.stage!=='pro'||save.week<weeks().length)return null;const F=finalsState();return F&&F.in&&!F.done?F:null}
 function finPair(F,a,b,meWon,meScore){const f={bo:3,g:6};
   if(a==='me'||b==='me'){const o=a==='me'?b:a;return{a,b,w:meWon?'me':o,score:meScore}}
-  const A=F.P[a],B=F.P[b],p=1/(1+Math.exp(-(A.skill-B.skill)*1.25)),aw=Math.random()<p;return{a,b,w:aw?a:b,score:simScore(true,f)}}
+  const A=F.P[a],B=F.P[b],p=1/(1+Math.exp(-(A.skill-B.skill)*1.25)),aw=Math.random()<p,r={a,b,w:aw?a:b,score:simScore(true,f)};statSim(A,B,r.w,r.score);return r}
 function finTable(F,g){const G=F.groups[g],t={};G.forEach(id=>t[id]={id,w:0,l:0,sw:0,sl:0});
   for(const day of F.rr)for(const m of day){if(!t[m.a]||!t[m.b])continue;const W=t[m.w],Lr=t[m.w===m.a?m.b:m.a];W.w++;Lr.l++;
     const sets=m.score.split(', ').map(s=>s.split('–').map(Number));let x=0,y=0;for(const [p,q] of sets){if(p>q)x++;else y++}
@@ -124,7 +124,7 @@ function playFinals(){const F=finalsMode();if(!F)return;{const L=liveFor('career
   startMatch({mode:'career',ev:FIN_EV,stage:'pro',surf:'hard',bo:3,g:6,stats:careerStats(),meId:save.char,me:RBYID[save.char].name,opp:o,style:save.style,perks:perkLevel(),
     fat:save.fat||0,ofat:F.phase==='rr'?0.04*F.day:0.1,label:'Tour Finals · '+finRoundName(F),intro:o.line?o.name+': “'+o.line+'”':'Tour Finals. The best eight players of the season.',onEnd:careerResult})}
 function finalsResult(won,score,st){const F=finalsMode(),lines=[],xp=Math.round((won?60:20)*(SIMMED?0.6:1));let text,champ=false,out=false;
-  const opp=F.P[F.next],stageKey='pro';
+  const opp=F.P[F.next],stageKey='pro';statMine(opp,won,score,lines,'Tour Finals',finRoundName(F));
   if(won)save.careerW++;else save.careerL++;
   if(opp.rival!=null){const rv=save.rivals[opp.rival];if(won)rv.w++;else rv.l++;rv.last=won?'w':'l'}
   let pts=0,pay=0;
@@ -136,7 +136,8 @@ function finalsResult(won,score,st){const F=finalsMode(),lines=[],xp=Math.round(
   else{F.finRes=finPair(F,F.fin[0],F.fin[1],won,score);if(won){pts+=FIN_PTS.f;pay+=FIN_PAY.f;champ=true;text='Tour Finals champion! The best player of the season.'}else{out=true;text='Runner-up at the Tour Finals.'}F.phase='done'}
   if(out)finalsSimAll(F);
   if(champ||out){F.done=true;F.champ=F.champ||(champ?'me':F.finRes&&F.finRes.w);
-    if(champ){save.titles.push('Tour Finals '+save.season);save.rec.titles++;save.rec.finals=(save.rec.finals||0)+1;careerMilestone(FIN_EV,true)}
+    if(!champ&&F.champ&&F.P[F.champ])stTitle(F.P[F.champ]);
+    if(champ){myLine().t++;save.titles.push('Tour Finals '+save.season);save.rec.titles++;save.rec.finals=(save.rec.finals||0)+1;careerMilestone(FIN_EV,true)}
     const res=champ?'W':F.phase==='done'&&!champ&&F.fin&&F.fin.includes('me')?'F':F.sfRes&&F.sf.some(p=>p.includes('me'))?'SF':'RR';
     save.history.push({stage:stageKey,season:save.season,wk:weeks().length,name:'Tour Finals',res,champ});
     const r=proRank();save.rec.best=Math.min(save.rec.best,r)}
