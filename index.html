@@ -616,10 +616,17 @@ $('btnQuick').onclick=()=>openSelect('quick');
 
 /* ================= player select + play style ================= */
 let selMode='career',selId=null,styleId=null;
+/* every career starts from the same 14 points: 2 in each stat, plus 4 more shared out by the character's shape
+   (weighted toward what they are best at), so players keep their personality without anyone starting behind */
+const START_TOTAL=14,START_FLOOR=2;
+function careerStart(c){const keys=STATS.map(s=>s[0]),full=keys.map(k=>c.st[k]),mn=Math.min(...full),w=full.map(v=>Math.pow(v-mn+1,1.5)),sw=w.reduce((a,b)=>a+b,0);
+  const extra=START_TOTAL-START_FLOOR*keys.length,raw=w.map(x=>extra*x/sw),got=raw.map(Math.floor);let left=extra-got.reduce((a,b)=>a+b,0);
+  raw.map((v,i)=>[v-Math.floor(v),full[i],i]).sort((a,b)=>b[0]-a[0]||b[1]-a[1]).forEach(([,,i])=>{if(left>0){got[i]++;left--}});
+  const st={};keys.forEach((k,i)=>st[k]=START_FLOOR+got[i]);return st}
 function openSelect(mode){
   selMode=mode;selId=mode==='quick'&&save?save.char:null;
   $('selEyebrow').textContent=mode==='career'?'New career':'Quick match';
-  $('selIntro').textContent=mode==='career'?'Your player starts as a raw 16-year-old with a fraction of these ratings. Win matches and train to grow into them, and past them.':'Pick who you want to play as.';
+  $('selIntro').textContent=mode==='career'?'Every career starts as a raw 16-year-old with the same 14 rating points, shaped like the player you pick. Win matches and train to grow into the full ratings shown here, and past them.':'Pick who you want to play as.';
   $('roster').innerHTML=ROSTER.map(r=>{const ok=charUnlocked(r.id);return'<button class="pc'+(ok?'':' locked')+'" data-id="'+r.id+'" aria-pressed="'+(r.id===selId)+'" '+(ok?'':'disabled')+'><strong>'+esc(r.name)+'</strong><small>'+(ok?esc(r.nick)+' · '+OSTYLE[styleOfChar(r)].name+(masteryOf(r.id)?' · Mastery '+masteryOf(r.id):''):'Unlocks at level '+charUnlockLv(r.id))+'</small><div class="mini">'+STATS.map(([k,l])=>'<span>'+l+'</span><div class="bar"><i style="width:'+r.st[k]*10+'%"></i></div>').join('')+'</div></button>'}).join('');
   $('roster').querySelectorAll('.pc:not(.locked)').forEach(b=>b.onclick=()=>{selId=b.dataset.id;$('roster').querySelectorAll('.pc').forEach(x=>x.setAttribute('aria-pressed',x===b));updSel()});
   updSel();show('select');
@@ -643,7 +650,7 @@ function openStyle(){
 $('styleBack').onclick=()=>openSelect('career');
 $('styleGo').onclick=()=>{
   if(!styleId)return;
-  const c=RBYID[selId],st={};for(const [k] of STATS)st[k]=Math.max(1,Math.round(c.st[k]*0.45));
+  const c=RBYID[selId],st=careerStart(c);
   const pool=ROSTER.filter(r=>r.id!==selId).sort(()=>Math.random()-0.5).slice(0,3);
   save={char:selId,style:styleId,stats:st,xp:0,stage:'junior',season:1,week:0,age:16,
     pts:{junior:{cur:0,prev:0},college:{cur:0,prev:0},pro:{cur:0,prev:0}},juniorTotal:0,
