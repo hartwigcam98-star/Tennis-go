@@ -23,8 +23,15 @@ function applauseBuf(c,n,len){// many short claps, each a few ms of decaying noi
       for(let i=0;i<sr*0.012&&s0+i<d.length;i++)d[s0+i]+=(Math.random()*2-1)*a*Math.exp(-i/tau)}
     let mx=0;for(let i=0;i<d.length;i++)mx=Math.max(mx,Math.abs(d[i]));const k=0.9/(mx||1);for(let i=0;i<d.length;i++)d[i]*=k}
   return b}
-function sndResume(){if(!sndInit())return;if(SND.ctx.state==='suspended')SND.ctx.resume()}
-function sndToggle(){SND.on=!SND.on;try{localStorage.setItem('tennis-go-sound',SND.on?'on':'off')}catch(e){}if(SND.master)SND.master.gain.setTargetAtTime(SND.on?0.9:0,SND.ctx.currentTime,0.05);if(!SND.on&&window.speechSynthesis)speechSynthesis.cancel();return SND.on}
+/* iPhones play web audio as "ambient" sound, which the silent switch mutes. Asking for the playback session (newer iOS)
+   and running a silent media loop (older iOS) makes the game sound like any video or music app instead. */
+function silentLoopUrl(){const n=4000,b=new Uint8Array(44+n),v=new DataView(b.buffer),w=(o,s)=>{for(let i=0;i<s.length;i++)b[o+i]=s.charCodeAt(i)};
+  w(0,'RIFF');v.setUint32(4,36+n,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,8000,true);v.setUint32(28,8000,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,'data');v.setUint32(40,n,true);b.fill(128,44);
+  return URL.createObjectURL(new Blob([b],{type:'audio/wav'}))}
+function sndUnlockIOS(){try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+  if(SND.tag||!SND.on)return;try{const a=SND.tag=document.createElement('audio');a.src=silentLoopUrl();a.loop=true;a.setAttribute('playsinline','');a.volume=0.01;a.style.display='none';document.body.appendChild(a);const p=a.play();if(p&&p.catch)p.catch(()=>{SND.tag=null})}catch(e){SND.tag=null}}
+function sndResume(){if(!sndInit())return;sndUnlockIOS();if(SND.ctx.state!=='running')SND.ctx.resume().catch(()=>{})}
+function sndToggle(){SND.on=!SND.on;if(SND.tag){if(SND.on)SND.tag.play().catch(()=>{});else SND.tag.pause()}try{localStorage.setItem('tennis-go-sound',SND.on?'on':'off')}catch(e){}if(SND.master)SND.master.gain.setTargetAtTime(SND.on?0.9:0,SND.ctx.currentTime,0.05);if(!SND.on&&window.speechSynthesis)speechSynthesis.cancel();return SND.on}
 function sndReady(){return SND.ctx&&SND.on&&SND.ctx.state==='running'}
 function burst(dur,type,freq,q,gain,when,attack){const c=SND.ctx,t=c.currentTime+(when||0),s=c.createBufferSource();s.buffer=SND.buf.noise;
   const f=c.createBiquadFilter();f.type=type;f.frequency.value=freq;f.Q.value=q;const g=c.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(gain,t+(attack||0.002));g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
