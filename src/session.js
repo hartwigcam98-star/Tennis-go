@@ -32,12 +32,15 @@ const KEY_LIVE='tennis-go-live';
 function saveLive(){if(!M||M.drill||M.over||!M.cfg.mode)return;
   const c=Object.assign({},M.cfg,{onEnd:null,resume:null,stats:M.cfg.baseStats||M.cfg.stats});
   const s={v:1,mode:M.cfg.mode,cfg:c,sets:M.sets,setsWon:M.setsWon,pts:M.pts,tb:M.tb,tbFirst:M.tbFirst,server:M.server,stat:M.stat,en:M.en,cap:M.cap,
-    career:M.cfg.mode==='career'&&save&&save.cur?{ev:save.cur.ev.n,round:save.cur.round,season:save.season,week:save.week,stage:save.stage}:null,t:Date.now()};
+    career:M.cfg.mode==='career'?liveKey():null,t:Date.now()};
   try{localStorage.setItem(KEY_LIVE,JSON.stringify(s))}catch(e){}}
+/* which career match this is: a tournament round, or a Tour Finals match */
+function liveKey(){if(!save)return null;if(save.cur)return{ev:save.cur.ev.n,round:save.cur.round,season:save.season,week:save.week,stage:save.stage};
+  const F=finalsMode();return F?{ev:'Tour Finals',round:F.phase+F.day,season:save.season,week:save.week,stage:save.stage}:null}
 function clearLive(){try{localStorage.removeItem(KEY_LIVE)}catch(e){}}
 function loadLive(){try{const L=JSON.parse(localStorage.getItem(KEY_LIVE)||'null');return L&&L.v===1?L:null}catch(e){return null}}
 function liveFor(mode){const L=loadLive();if(!L||L.mode!==mode)return null;
-  if(mode==='career'){const c=save&&save.cur,k=L.career;if(!c||!k||k.ev!==c.ev.n||k.round!==c.round||k.season!==save.season||k.week!==save.week||k.stage!==save.stage)return null}
+  if(mode==='career'){const a=liveKey(),k=L.career;if(!a||!k||JSON.stringify(a)!==JSON.stringify(k))return null}
   return L}
 function liveScore(L){return scoreText(L.sets,L.pts,L.tb)}
 /* put a saved score back into a fresh match */

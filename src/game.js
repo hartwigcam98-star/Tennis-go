@@ -131,7 +131,7 @@ function weeks(){return save.stage==='junior'?JUNIOR_WEEKS:save.stage==='college
 function fmt(stage,ev){if(stage==='junior')return{bo:1,g:4};if(stage==='college')return{bo:1,g:6};return ev.tier==='Major'?{bo:3,g:6}:{bo:3,g:4}}
 function perkLevel(){if(!save)return 0;return PERK_AT.filter(n=>save.careerW>=n).length}
 function money(n){return n>=1e6?'$'+(n/1e6).toFixed(n>=1e7?0:1)+'M':n>=1e3?'$'+Math.round(n/1e3)+'k':'$'+n}
-function hof(){const r=save.rec;return r.majors*100+r.masters*25+r.titles*10+r.weeks1*5+(MAJORS.every(m=>save.majors[m])?200:0)}
+function hof(){const r=save.rec;return r.majors*100+(r.finals||0)*50+r.masters*25+r.titles*10+r.weeks1*5+(MAJORS.every(m=>save.majors[m])?200:0)}
 /* which event you play this week, and how you got in */
 function entry(wk){
   const W=weeks()[wk],ev=W.main;
@@ -240,37 +240,48 @@ function standing(){
 }
 function renderHub(){
   if(!save){renderTitle();return}
-  if(save.week>=weeks().length){seasonEnd();return}
+  const FM=finalsMode();
+  if(save.week>=weeks().length&&!FM){seasonEnd();return}
   const C=RBYID[save.char],S=STYLES.find(s=>s.id===save.style);
   const stages=[['junior','Juniors'],['college','College'],['pro','Pro tour']],si=stages.findIndex(s=>s[0]===save.stage);
   $('stepper').innerHTML=stages.map((s,i)=>'<div class="step '+(i<si?'done':i===si?'now':'')+'">'+s[1]+'</div>').join('');
   const [sl,sv]=standing();
   $('playerCard').innerHTML='<div style="min-width:0"><h2 style="font-size:32px">'+esc(C.name)+'</h2><p class="muted">'+S.name+' · Age '+save.age+' · '+stageName()+' season '+save.season+(save.stage==='college'?' · '+esc(program().name):'')+'</p></div>'+
     '<div class="kv"><div><small>'+sl+'</small><strong class="num">'+sv+'</strong></div><div><small>Record</small><strong class="num">'+save.careerW+'–'+save.careerL+'</strong></div><div><small>'+(save.stage==='pro'?'Bank':'Titles')+'</small><strong class="num">'+(save.stage==='pro'?money(save.money):save.titles.length)+'</strong></div></div>';
-  const W=weeks(),wk=save.week;
-  const E=save.cur?{ev:save.cur.ev,how:save.cur.how,qual:save.cur.qual,missed:save.cur.missed,why:save.cur.why}:entry(wk);
-  const ev=E.ev,f=fmt(save.stage,ev),total=save.cur?save.cur.total:ev.rounds+E.qual;
+  const W=weeks(),wk=save.week;let ev=null;
+  if(FM){$('nextCard').innerHTML=finalsCard();$('btnPlay').onclick=playFinals;$('btnSim').onclick=simNow;{const L=liveFor('career');if(L)$('btnPlay').textContent='Resume match · '+liveScore(L)}}
+  else if(!save.cur&&pickOf(wk)==='rest'){$('nextCard').innerHTML=pickerHtml(wk)+'<p class="eyebrow">Week '+(wk+1)+' of '+W.length+'</p><h3 style="font-size:26px">Rest week</h3><div class="row">'+fitChip()+'</div><p class="muted">Skip this week’s event to train and recover. You earn no ranking points or prize money that week.</p><button class="go" id="btnPlay">Take the week off</button>';wirePicker(wk);$('btnPlay').onclick=restWeek}
+  else{
+  const E=save.cur?{ev:save.cur.ev,how:save.cur.how,qual:save.cur.qual,missed:save.cur.missed,why:save.cur.why}:(chosenEntry(wk)||entry(wk));
+  ev=E.ev;const f=fmt(save.stage,ev),total=save.cur?save.cur.total:ev.rounds+E.qual;
   let note='';
   if(E.how==='alt')note='<p class="note">You missed the cut for the <b>'+esc(E.missed.n)+'</b> ('+E.why+'), so you play the alternate event this week.</p>';
+  if(E.how==='pick')note='<p class="note">You are playing the smaller event this week: weaker field, fewer points.</p>';
+  if(fitness()<0.85)note+='<p class="note">You are carrying fatigue ('+Math.round(fitness()*100)+'% fitness). Long matches pile it on; a rest week gets you back to 100%.</p>';
   if(E.how==='qual')note='<p class="note">Your ranking gets you into qualifying. Win '+E.qual+' qualifying matches to reach the main draw.</p>';
   let oppHtml='';
+  if(save.cur&&!save.cur.opp){makeOpp();store()}
   if(save.cur&&save.cur.opp){const o=save.cur.opp,rv=o.rival!=null?save.rivals[o.rival]:null;
     oppHtml='<div class="opp"><div class="row between"><div style="min-width:0"><p class="eyebrow">'+roundName(save.cur.round,total,save.cur.qual)+(rv?' · Rival · '+RIVAL_TYPES[rv.type].t:'')+'</p><p style="font-weight:600;font-size:18px">'+(o.seed?'<small class="seed">'+o.seed+'</small>':'')+esc(o.name)+(o.nat&&o.rival==null?' <small class="nat">'+o.nat+'</small>':'')+'</p>'+(o.rk?'<p class="muted num" style="font-size:13px">'+RANK_SCALE[save.stage].label+' #'+o.rk+' · You #'+myRankIn(save.stage)+'</p>':'')+'<p class="muted" style="font-size:13px">'+OSTYLE[o.style||styleOfChar(RBYID[o.id])].name+'</p></div><div style="width:110px"><p class="muted" style="font-size:12px">Rating '+o.skill.toFixed(1)+'</p><div class="bar"><i style="width:'+o.skill*10+'%;background:var(--loss)"></i></div></div></div>'+
       (rv?'<p class="quote">“'+esc(o.line)+'”</p><p class="muted" style="font-size:13px">Head-to-head '+rv.w+'–'+rv.l+(rv.last==='l'?' · Revenge match':'')+'</p>':'')+'</div>'}
-  $('nextCard').innerHTML='<p class="eyebrow">Week '+(wk+1)+' of '+W.length+' · '+esc(ev.tier)+(save.cur?' · In progress':'')+'</p><h3 style="font-size:26px">'+esc(ev.n)+'</h3>'+
+  $('nextCard').innerHTML=(save.cur?'':pickerHtml(wk))+'<p class="eyebrow">Week '+(wk+1)+' of '+W.length+' · '+esc(ev.tier)+(save.cur?' · In progress':'')+'</p><h3 style="font-size:26px">'+esc(ev.n)+'</h3>'+
     '<div class="row"><span class="chip"><span class="dot s-'+ev.surf+'"></span>'+SURF[ev.surf].name+'</span><span class="chip num">'+total+(total===1?' match':' rounds')+'</span><span class="chip">'+(f.bo===3?'Best of 3 sets':'One set')+' to '+f.g+'</span>'+
-    '<span class="chip num">'+(save.stage==='pro'?money(PRIZE[ev.tier]||0)+' · ':'')+ev.pts+' pts</span></div>'+note+oppHtml+
+    '<span class="chip num">'+(save.stage==='pro'?money(PRIZE[ev.tier]||0)+' · ':'')+ev.pts+' pts</span>'+fitChip()+'</div>'+note+oppHtml+
     '<button class="go" id="btnPlay">'+(save.cur?'Play '+roundName(save.cur.round,total,save.cur.qual).toLowerCase():'Enter '+(E.how==='qual'?'qualifying':'tournament'))+'</button>';
   {const L=liveFor('career');if(L)$('btnPlay').textContent='Resume match · '+liveScore(L)}
-  $('btnPlay').onclick=playNext;
+  $('btnPlay').onclick=playNext;if(!save.cur)wirePicker(wk);
+  if(save.cur&&save.cur.opp){const bp=$('btnPlay'),r=document.createElement('div'),b=document.createElement('button');r.className='row';bp.replaceWith(r);bp.style.flex='1';r.appendChild(bp);
+    b.className='ghost';b.id='btnSim';b.textContent='Sim';b.title='Let your ratings play this round (less training XP)';b.onclick=simNow;r.appendChild(b)}
   {const row=document.createElement('div');row.className='row';
     if(save.cur&&save.cur.draw)row.innerHTML+='<button class="ghost" id="btnDraw">View draw</button>';
     if(save.lastDraw)row.innerHTML+='<button class="ghost" id="btnLastDraw">Last event’s draw</button>';
     row.innerHTML+='<button class="ghost" id="btnRank">Rankings</button>';
     if(row.innerHTML){$('nextCard').appendChild(row);if($('btnDraw'))$('btnDraw').onclick=()=>openDraw(save.cur.draw,save.cur.ev.n);if($('btnLastDraw'))$('btnLastDraw').onclick=()=>openDraw(save.lastDraw.D,save.lastDraw.t);$('btnRank').onclick=openRankings}}
+  }
   const pl=perkLevel();
   $('statsCard').innerHTML='<div class="row between"><h3>Training</h3><span class="chip num">'+save.xp+' training pts</span></div>'+
     STATS.map(([k,l,d])=>{const v=save.stats[k],c=trainCost(v);return'<div class="stat"><span title="'+d+'">'+l+(gearBonus(k)?' <small class="gearb">+'+gearBonus(k).toFixed(1)+'</small>':'')+'</span><div class="bar"><i style="width:'+v*10+'%"></i></div><button data-k="'+k+'" '+(v>=10||save.xp<c?'disabled':'')+'>'+(v>=10?'Max':'+1 · '+c)+'</button></div>'}).join('')+
+    (ageText()?'<p class="muted" style="font-size:13px">Age '+save.age+': '+ageText()+(save.age>=30?' (speed and stamina slip a little each year from 30)':' (experience)')+'</p>':'')+
     '<h3 style="margin-top:4px">'+S.name+' perks</h3><ul class="perklist">'+S.perks.map((p,i)=>'<li class="'+(i<pl?'on':'')+'"><span>'+(i<pl?'✓':PERK_AT[i]+' wins')+'</span>'+p+'</li>').join('')+'</ul>'+
     (save.stage!=='junior'?'<h3 style="margin-top:4px">Training camps</h3><p class="muted" style="font-size:13px;margin-top:-6px">Spend prize and sponsor money on extra training points. Bank: '+money(save.money)+'</p>'+
       CAMPS.map((c,i)=>'<div class="row between"><span>'+c.n+' <span class="muted">+'+c.xp+' pts</span></span><button data-camp="'+i+'" '+(save.money<c.cost?'disabled':'')+'>'+money(c.cost)+'</button></div>').join(''):'');
@@ -278,10 +289,11 @@ function renderHub(){
   $('statsCard').querySelectorAll('button[data-camp]').forEach(b=>b.onclick=()=>{const c=CAMPS[+b.dataset.camp];if(save.money>=c.cost){save.money-=c.cost;save.xp+=c.xp;store();renderHub()}});
   $('calCard').innerHTML='<h3>'+stageName()+' season '+save.season+'</h3><ul>'+W.map((w,i)=>{
     const h=save.history.find(x=>x.stage===save.stage&&x.season===save.season&&x.wk===i);
-    const nm=h?h.name:(i===wk?ev.n:w.main.n);
+    const nm=h?h.name:(i===wk&&ev?ev.n:w.main.n);
     const r=h?'<span class="res '+(h.champ?'w':'')+'">'+h.res+'</span>':i===wk?'<span class="res next">Now</span>':'<span class="res up">'+(w.main.tier)+'</span>';
-    return'<li class="'+(i===wk?'is-next':'')+'"><span class="dot s-'+w.main.surf+'"></span><span style="min-width:0">'+esc(nm)+'</span>'+r+'</li>'}).join('')+'</ul>';
-  const rv=save.rivals.map(r=>'<div class="row between" style="font-size:15px"><span>'+esc(RBYID[r.id].name)+' <span class="muted">· '+RIVAL_TYPES[r.type].t+'</span></span><span class="num muted">'+r.w+'–'+r.l+'</span></div>').join('');
+    return'<li class="'+(i===wk?'is-next':'')+'"><span class="dot s-'+w.main.surf+'"></span><span style="min-width:0">'+esc(nm)+'</span>'+r+'</li>'}).join('')+
+    (save.stage==='pro'?(()=>{const h=save.history.find(x=>x.stage==='pro'&&x.season===save.season&&x.name==='Tour Finals');return'<li class="'+(FM?'is-next':'')+'"><span class="dot s-hard"></span><span style="min-width:0">Tour Finals <span class="muted">(top 8)</span></span>'+(h?'<span class="res '+(h.champ?'w':'')+'">'+h.res+'</span>':FM?'<span class="res next">Now</span>':'<span class="res up">Finals</span>')+'</li>'})():'')+'</ul>';
+  const rv=save.rivals.map(r=>'<div class="row between" style="font-size:15px"><span>'+esc(rvName(r))+' <span class="muted">· '+RIVAL_TYPES[r.type].t+(r.fid?' · earned':'')+'</span></span><span class="num muted">'+r.w+'–'+r.l+'</span></div>').join('');
   const sp=save.sponsors.length?save.sponsors.map(id=>{const s=SPONSORS.find(x=>x.id===id);return'<div class="row between" style="font-size:15px"><span>'+s.name+'</span><span class="num muted">'+money(s.pay)+'/season</span></div>'}).join(''):'<p class="muted" style="font-size:14px">No deals yet. Next: '+SPONSORS.find(s=>!save.sponsors.includes(s.id)).when+'.</p>';
   const R=save.rec,slam=MAJORS.every(m=>save.majors[m]);
   $('trophyCard').innerHTML='<h3>Major titles</h3><div class="slots">'+MAJORS.map(m=>{const n=save.majors[m]||0;return'<div class="slot '+(n?'won':'')+'"><strong>'+m+'</strong><span class="num">'+(n?n+(n>1?' titles':' title'):'Not yet won')+'</span></div>'}).join('')+'</div>'+
@@ -303,17 +315,18 @@ function makeOpp(){
   const rivIds=save.rivals.map(x=>x.id);who=pick(ROSTER.filter(x=>x.id!==save.char&&!rivIds.includes(x.id)));
   const mainLeft=c.total-r;
   if(r>c.qual&&c.total-c.qual>=3&&(mainLeft===0||(mainLeft===1&&ev.tier==='Major'))){
-    rival=(save.history.length+(mainLeft===1?1:0))%3;const rv=save.rivals[rival];who=RBYID[rv.id];skill=ev.sk[1]+rv.edge*0.5-(mainLeft===1?0.4:0);
+    rival=(save.history.length+(mainLeft===1?1:0))%3;const rv=save.rivals[rival];who={id:rvChar(rv),name:rvName(rv)};skill=rivalSkill(rv,ev);
     line=rv.last==='l'?'Back for more? I remember how the last one went.':pick(RIVAL_TYPES[rv.type].lines)}
   c.opp={id:who.id,name:who.name,skill:Math.round(clamp(skill,1,10)*10)/10,rival,line};
 }
 function playNext(){
-  if(!save.cur){const E=entry(save.week);save.cur={ev:E.ev,how:E.how,qual:E.qual,missed:E.missed||null,why:E.why||null,round:1,total:E.ev.rounds+E.qual,opp:null,prize:0};
+  if(!save.cur){const E=chosenEntry(save.week);if(!E){restWeek();return}save.cur={ev:E.ev,how:E.how,qual:E.qual,missed:E.missed||null,why:E.why||null,round:1,total:E.ev.rounds+E.qual,opp:null,prize:0};
     save.cur.draw=makeDraw(save.cur);makeOpp();store();openDraw(save.cur.draw,save.cur.ev.n);return}
   {const L=liveFor('career');if(L&&save.cur.opp){resumeLive(L);return}}
   if(!save.cur.opp)makeOpp();store();
   const c=save.cur,f=fmt(save.stage,c.ev);
-  startMatch({mode:'career',ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:save.stats,meId:save.char,me:RBYID[save.char].name,opp:c.opp,style:save.style,perks:perkLevel(),
+  const mr=c.round-c.qual;
+  startMatch({mode:'career',ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:careerStats(),fat:save.fat||0,ofat:mr>1?clamp(rnd(0.02,0.06)*(mr-1),0,0.22):0,meId:save.char,me:RBYID[save.char].name,opp:c.opp,style:save.style,perks:perkLevel(),
     label:c.ev.n+' · '+roundName(c.round,c.total,c.qual),intro:c.opp.line?c.opp.name+': “'+c.opp.line+'”':null,onEnd:careerResult});
 }
 const SHORT={Semifinal:'SF',Quarterfinal:'QF','Round of 16':'R16','Round of 32':'R32','Round of 64':'R64'};
@@ -324,12 +337,15 @@ function checkSponsors(lines){
   if(save.stage==='pro'){if(save.history.some(h=>h.stage==='pro'&&h.champ))add('strings');if(proRank()<=100)add('apparel');if(proRank()<=10)add('ace');if(Object.keys(save.majors).length)add('watch')}
 }
 function careerResult(won,score,st){
+  if(finalsMode()){finalsResult(won,score,st);return}
   const c=save.cur,ev=c.ev,o=c.opp,lines=[],stageKey=save.stage;
+  save.fat=LAST_LOAD!=null?LAST_LOAD:(save.fat||0);LAST_LOAD=null;sleepOff();
   if(c.draw){if(c.round>c.qual)drawRecord(c.draw,c.round-1-c.qual,won,score);
     else if(!won){const p=c.qualOpp[c.round-1],D=c.draw;D.players[p.id]=Object.assign({},p);D.slots[D.slots.indexOf('me')]=p.id;drawSimAll(D)}}
-  let xp=Math.round((won?25+Math.round(ev.pts/40):10)*xpMult());
+  let xp=Math.round((won?25+Math.round(ev.pts/40):10)*xpMult()*(SIMMED?0.6:1));
   if(won)save.careerW++;else save.careerL++;
   if(o.rival!=null){const rv=save.rivals[o.rival];if(won)rv.w++;else rv.l++;rv.last=won?'w':'l'}
+  if(o.fid)h2hNote(o.fid,won);
   let text,champ=false,done=false,resLabel,prize=0;
   const mainRounds=c.total-c.qual,winsMain=Math.max(0,c.round-1-c.qual);
   if(won&&c.round===c.total){
@@ -348,18 +364,19 @@ function careerResult(won,score,st){
     prize=c.round>c.qual?prizeFor(ev,winsMain,mainRounds,false):(save.stage==='pro'&&PRIZE[ev.tier]?Math.round(PRIZE[ev.tier]*0.005):0);
     const rn=roundName(c.round,c.total,c.qual);resLabel=c.round<=c.qual?'Q'+c.round:c.round===c.total?'F':(SHORT[rn]||'R1');
     text=o.rival!=null?'Your rival '+o.name+' gets the better of you this time.':'Out in the '+rn.toLowerCase()+'.';
+    if(o.fid){const nr=maybeNewRival(o,c,lines);if(nr)text+=' '+nr.name+' is now one of your rivals'+(nr.old?', taking '+nr.old+'’s place':'')+'.'}
     lines.push(['Points','+'+earned]);
   }
   if(prize){save.money+=prize;save.earnings+=prize;lines.push(['Prize money',money(prize)])}
   save.xp+=xp;lines.unshift(['Training pts','+'+xp]);
   if(done){
     if(save.stage==='pro'){const r=proRank();save.rec.best=Math.min(save.rec.best,r);if(r===1)save.rec.weeks1++}
-    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});if(c.draw){if(!c.draw.res||c.draw.res.length<c.draw.R)drawSimAll(c.draw);awardDrawPoints(c.draw,ev)}if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};save.week++;save.cur=null;
+    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});if(c.draw){if(!c.draw.res||c.draw.res.length<c.draw.R)drawSimAll(c.draw);awardDrawPoints(c.draw,ev)}if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};save.week++;save.cur=null;save.pick=null;weekOff();
     const before=perkLevel();checkSponsors(lines);
   }
   const pl=perkLevel(),S=STYLES.find(s=>s.id===save.style);
   if(won&&PERK_AT.includes(save.careerW)&&save.careerW>0)lines.push(['Perk unlocked',S.perks[PERK_AT.indexOf(save.careerW)]]);
-  store();showResult(won,score,st,text,lines,'Back to hub',()=>renderHub(),champ);
+  store();showResult(won,score,st,(SIMMED?'Simulated. ':'')+text,lines,'Back to hub',()=>renderHub(),champ);
 }
 
 /* ================= season transitions ================= */
@@ -389,14 +406,15 @@ function seasonEnd(){
   // pro
   let pay=0;save.sponsors.forEach(id=>{if(id!=='nil')pay+=SPONSORS.find(s=>s.id===id).pay});
   settle(pay);
-  const sum=seasonSummary()+'. World rank #'+proRank()+'.'+(pay?' Sponsors paid '+money(pay)+'.':'');
+  const fn=finalsNote(save.finals&&save.finals.season===save.season?save.finals:finalsState());
+  const sum=seasonSummary()+'. World rank #'+proRank()+'.'+(pay?' Sponsors paid '+money(pay)+'.':'')+(fn?' '+fn:'')+(save.age+1===30?'<br><br>You turn 30. From here your speed and stamina slip a little each season, while experience keeps sharpening your control.':'');
   const next=()=>{save.season++;save.week=0;save.age++;newSeasonPts('pro');store();renderHub()};
   if(save.age+1>=35&&!save.retireAsked){save.retireAsked=true;store();
     seasonScreen('Season '+save.season+' complete','Time to retire?',sum+'<br><br>'+legacyText(),[['Retire','go',retire],['Keep playing','',next]]);return}
   seasonScreen('Season '+save.season+' complete','On to season '+(save.season+1),sum,[['Start season '+(save.season+1),'go',next]]);
 }
 function legacyText(){const R=save.rec,slam=MAJORS.every(m=>save.majors[m]);
-  return R.titles+' titles, '+R.majors+' majors'+(slam?' (a Career Slam)':'')+', best ranking #'+(R.best<9999?R.best:'–')+', '+R.weeks1+' weeks at No. 1, '+money(save.earnings)+' in earnings. Hall of Fame score '+hof()+(hof()>=600?': a first-ballot Hall of Famer.':hof()>=250?': Hall of Fame worthy.':'.')}
+  return R.titles+' titles, '+R.majors+' majors'+(R.finals?', '+R.finals+' Tour Finals':'')+(slam?' (a Career Slam)':'')+', best ranking #'+(R.best<9999?R.best:'–')+', '+R.weeks1+' weeks at No. 1, '+money(save.earnings)+' in earnings. Hall of Fame score '+hof()+(hof()>=600?': a first-ballot Hall of Famer.':hof()>=250?': Hall of Fame worthy.':'.')}
 function retire(){save.retired=true;store();seasonScreen('Career over','Thanks for the memories',RBYID[save.char].name+' retires at '+(save.age+1)+'. '+legacyText(),[['Back to menu','go',()=>renderTitle()],['Keep playing anyway','',()=>{save.retired=false;save.season++;save.week=0;save.age++;newSeasonPts('pro');store();renderHub()}]])}
 function turnPro(){save.stage='pro';save.season=1;save.week=0;save.age++;save.pts.pro={cur:Math.round(roll('college')*0.6),prev:0};store();
   seasonScreen('Welcome to the tour','Pro season 1','You start ranked #'+proRank()+'. Majors need a top-100 ranking for direct entry and top-200 for qualifying. Below that you play Challengers or Futures to climb.',[['Start pro season 1','go',()=>renderHub()]])}
@@ -892,6 +910,7 @@ function beginMatch(cfg){
     stat:{aces:0,winners:0,big:0,perfect:0,smashes:0,volleys:0,slices:0,rallyMax:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
   $('quit').textContent='Pause';M.quitArm=false;applyCosmetics();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
+  if(cfg.fat){M.en[0]=M.cap[0]=1-cfg.fat}if(cfg.ofat){M.en[1]=M.cap[1]=1-cfg.ofat}
   if(cfg.resume){applyResume(cfg.resume);cfg.intro='Match resumed at '+scoreText(M.sets,M.pts,M.tb)+'.'}
   renderBoard();{const O=OSTYLE[M.ostyle];say(cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))}
   REP.setsN=1;REP.lastPt=-9;REP.buf=[];perfReset();W3.camPos.set(0,4,22);
@@ -938,7 +957,7 @@ function gameWon(w){
     M.sets.push([0,0]);after(()=>say(w===0?'You take the set!':M.cfg.opp.name+' takes the set.'),900)}
   else if(g[0]===G&&g[1]===G){M.tb=true;M.tbFirst=M.server}
 }
-function endMatch(){if(!M)return;drillCleanup();clearLive();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
+function endMatch(){if(!M)return;LAST_LOAD=M.cfg.mode==='career'&&!M.drill?matchLoad():null;drillCleanup();clearLive();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
   if(!M.drill&&!M.retired&&M.over){const sets=M.sets,games=sets.reduce((a,g)=>a+g[0],0),V=W3.venue||{};
     matchRewards({won:M.winner===0,games,lostFirst:sets.length>1&&sets[0][0]<sets[0][1],bagels:sets.filter(g=>g[0]===6&&g[1]===0).length,
       surf:M.cfg.surf,venue:V.kind==='major'?'major:'+V.major:V.kind==='tour'&&V.rows>=16?'masters':V.kind||'tour',style:M.ostyle,skill:M.os,
@@ -1253,8 +1272,9 @@ function camera(dt){
 /*@TUNE*/
 /*@DRAW*/
 /*@SESSION*/
+/*@CAREER*/
 document.addEventListener('pointerdown',sndResume,{passive:true});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();

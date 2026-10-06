@@ -22,7 +22,7 @@ function venueFor(cfg){
   else if(cfg.stage==='college'&&tier!=='Futures')kind='college';
   else if(['Local','Sectional','Regional','Futures'].includes(tier))kind='club';
   else if(['National','International','Challenger'].includes(tier))kind='college';
-  else if(tier==='Masters')kind='masters';
+  else if(tier==='Masters'||tier==='Finals')kind='masters';
   else if(tier)kind='tour';
   else kind='tour';
   if(kind==='club')return Object.assign(L,{kind,fill:0.5,surf,wind:0x1F4433});

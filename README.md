@@ -19,6 +19,7 @@ Play it at https://hartwigcam98-star.github.io/Tennis-go/
 | `src/tune.js` | Automatic quality scaling and the Game settings panel (long-press the scoreboard). Inserted at `/*@TUNE*/` |
 | `src/draw.js` | The career's field of fictional players, tournament draws, bracket screen, appearance variants. Inserted at `/*@DRAW*/` |
 | `src/session.js` | Pause menu, game-clock timers (`after`), saving and resuming a match in progress. Inserted at `/*@SESSION*/` |
+| `src/career.js` | Weekly schedule choice and rest weeks, fatigue between matches, Sim, aging, earned rivals, the Tour Finals. Inserted at `/*@CAREER*/` |
 | `src/audio.js` | Synthesised sound and officials' calls. Inserted at `/*@AUDIO*/` in game.js |
 | `src/vendor/three.js` | three.js r170 |
 | `src/assets/boss.js` | Fallback character (R3BOSS) |

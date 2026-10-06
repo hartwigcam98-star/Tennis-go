@@ -17,11 +17,11 @@ const RANK_SCALE={junior:{N:300,K:250,label:'Junior'},college:{N:400,K:300,label
 function skillPts(stage,skill){const [s0,s1]=STAGE_SKILL[stage],{N,K}=RANK_SCALE[stage];const r=Math.pow(N,clamp((s1+0.2-skill)/(s1-s0+0.4),0,1));return K*Math.log(N/Math.max(1,r))}
 function fieldPts(stage,p){return skillPts(stage,p.skill)+0.5*((p.cur||0)+0.5*(p.prev||0))}
 let RANK_CACHE={key:null,list:null};
-function rankingList(stage){stage=stage||save.stage;const my=roll(stage),key=stage+'|'+my+'|'+save.week+'|'+save.season+'|'+(save.fieldV||0)+'|'+save.char;
+function rankingList(stage){stage=stage||save.stage;const my=roll(stage),key=stage+'|'+my+'|'+save.week+'|'+save.season+'|'+(save.fieldV||0)+'|'+save.char+'|'+(save.rivals||[]).map(r=>r.fid||r.id).join();
   if(RANK_CACHE.key===key)return RANK_CACHE.list;
   const {N,K}=RANK_SCALE[stage],[,s1]=STAGE_SKILL[stage];
   const all=fieldFor(stage).map(p=>({id:p.id,name:p.name,nat:p.nat,style:p.style,pts:fieldPts(stage,p)}));
-  (save.rivals||[]).forEach((rv,i)=>{const C=RBYID[rv.id];all.push({id:'rv'+i,name:C.name,nat:'',style:styleOfChar(C),pts:skillPts(stage,s1-0.6+rv.edge*0.5),rival:i})});
+  (save.rivals||[]).forEach((rv,i)=>{const fi=rv.fid?all.findIndex(e=>e.id===rv.fid):-1;if(fi>=0)all.splice(fi,1);all.push({id:'rv'+i,name:rvName(rv),nat:'',style:rvStyle(rv),pts:rivalPts(stage,rv),rival:i})});
   all.push({id:'me',name:RBYID[save.char].name,me:true,pts:my});
   all.sort((a,b)=>b.pts-a.pts||(a.me?-1:b.me?1:0));let prev=0;for(const e of all){e.rank=Math.max(1,Math.round(N*Math.exp(-e.pts/K)),prev+1);prev=e.rank}
   RANK_CACHE={key,list:all};return all}
@@ -65,15 +65,16 @@ function simPair(D,a,b){const A=D.players[a],B=D.players[b],p=1/(1+Math.exp(-(A.
 function makeDraw(c){
   const ev=c.ev,stage=save.stage,R=ev.rounds,size=1<<R,f=fmt(stage,ev),field=fieldFor(stage),[k0,k1]=ev.sk;
   const players={me:{id:'me',name:RBYID[save.char].name,me:true,nat:'YOU',skill:0}},picked=new Set();
+  for(const r of save.rivals||[])if(r.fid)picked.add(r.fid);   // rivals from the field only appear as rivals
   // entrants spread across the event's level: weakest near the bottom of the range, top seed near the top
   const need=size-1,targets=Array.from({length:need},(_,i)=>k1+0.3-(k1-k0+0.5)*(need>1?i/(need-1):0));
   for(const t of targets){let best=null,bd=1e9;for(const p of field){if(picked.has(p.id))continue;const d=Math.abs(p.skill-t)+Math.random()*0.25;if(d<bd){bd=d;best=p}}
     if(best){picked.add(best.id);players[best.id]=Object.assign({},best)}}
   // a rival waits in the draw at the bigger events: the final, or the semifinal at a major
   let rivalId=null;
-  if(R>=3){const ri=save.history.length%3,rv=save.rivals[ri],C=RBYID[rv.id];
+  if(R>=3){const ri=save.history.length%3,rv=save.rivals[ri];if(rv.fid&&players[rv.fid]){delete players[rv.fid];picked.delete(rv.fid);const pool=field.filter(p=>!picked.has(p.id)&&p.id!==rv.fid);const fill=pool[Math.floor(Math.random()*pool.length)];if(fill){picked.add(fill.id);players[fill.id]=Object.assign({},fill)}}picked.add(rv.fid);
     const weakest=Object.values(players).filter(p=>!p.me).sort((a,b)=>a.skill-b.skill)[0];delete players[weakest.id];
-    rivalId='rv'+ri;players[rivalId]={id:rivalId,name:C.name,base:rv.id,v:null,nat:'RIV',style:styleOfChar(C),skill:Math.round((k1+rv.edge*0.5)*10)/10,rival:ri}}
+    rivalId='rv'+ri;players[rivalId]={id:rivalId,name:rvName(rv),base:rvChar(rv),v:rv.v||null,nat:'RIV',style:rvStyle(rv),skill:rivalSkill(rv,ev),rival:ri}}
   // seeds go by ranking; unseeded players (and qualifiers) land in random unseeded spots, like a real draw
   const RK={};for(const e of rankingList(stage))RK[e.id]=e.rank;
   const order=Object.values(players).sort((a,b)=>(RK[a.id]||9999)-(RK[b.id]||9999));
@@ -105,7 +106,7 @@ function drawRecord(D,k,won,score){const E=entrantsAt(D,k),res=[];
 function drawSimAll(D){while(D.res.length<D.R){const k=D.res.length,E=entrantsAt(D,k),r=[];for(let i=0;i<E.length;i+=2){const m=simPair(D,E[i],E[i+1]);r.push({a:E[i],b:E[i+1],w:m.w,score:m.score})}D.res.push(r)}}
 /* the opponent object the match uses, from a draw player */
 function oppFrom(p,round,line){const skill=Math.round(clamp(p.skill,1,10)*10)/10;
-  return{id:p.base,name:p.name,skill,rival:p.rival!=null?p.rival:null,line:line||null,v:p.v||null,style:p.style,nat:p.nat,seed:null}}
+  return{id:p.base,fid:p.rival!=null?null:p.id,name:p.name,skill,rival:p.rival!=null?p.rival:null,line:line||null,v:p.v||null,style:p.style,nat:p.nat,seed:null}}
 
 /* ---- the bracket screen ---- */
 let drawBack=null;
@@ -126,11 +127,12 @@ function renderDraw(D,title){
   const champ=D.res[D.R-1]&&D.res[D.R-1][0]?D.res[D.R-1][0].w:null;
   cols+='<div class="dr-col"><p class="eyebrow">Champion</p><div class="dr-ms"><div class="dr-m champ">'+(champ?'<div class="dr-p w'+(champ==='me'?' me':'')+'"><span>'+nm(champ)+'</span></div>':'<div class="dr-p"><span class="muted">?</span></div>')+'</div></div></div>';
   $('drBody').innerHTML=q+'<div class="dr-scroll"><div class="dr-grid" style="--n:'+(D.size/2)+'">'+cols+'</div></div>';
-  const can=live&&!cur.done;$('drPlay').hidden=!can;if(can)$('drPlay').textContent='Play '+roundName(cur.round,cur.total,cur.qual).toLowerCase();
+  const can=live&&!cur.done;$('drPlay').hidden=!can;$('drSim').hidden=!can;if(can)$('drPlay').textContent='Play '+roundName(cur.round,cur.total,cur.qual).toLowerCase();
   // bring your match into view
   setTimeout(()=>{const m=document.querySelector('#drBody .dr-m.mine:last-of-type');if(m)m.scrollIntoView({block:'center',inline:'nearest'})},50)}
 $('drBack').onclick=()=>{const f=drawBack;drawBack=null;(f||renderHub)()};
 $('drPlay').onclick=()=>playNext();
+$('drSim').onclick=()=>simNow();
 
 /* ---- appearance variants: recolour the clothes, keep the skin ---- */
 function variantTexture(D,v){D._vmaps=D._vmaps||{};const key=v.h+'_'+v.t+'_'+v.a+'_'+v.l;if(D._vmaps[key])return D._vmaps[key];
