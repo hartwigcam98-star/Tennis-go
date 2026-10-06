@@ -107,6 +107,7 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 .board .lab{display:flex;justify-content:space-between;padding:4px 12px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
 .brow{display:grid;grid-template-columns:12px 1fr auto auto;gap:10px;align-items:center;padding:5px 12px;font-size:19px;font-weight:700}
 .brow + .brow{border-top:1px solid #16283A}
+.brow{position:relative}.brow .en{position:absolute;left:34px;right:72px;bottom:2px;height:3px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden}.brow .en i{display:block;height:100%;width:100%;background:#74D493;transition:width .3s}
 .brow .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .brow .sets{display:flex;gap:8px;color:var(--muted)}
 .brow .sets span.cur{color:var(--chalk)}
@@ -137,7 +138,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 15 · real rallies, safe saves</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 16 · stamina and timing</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card">
@@ -184,6 +185,8 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
       <b>Smash</b><span>At the net, a ball over your head becomes an overhead. Your player backs up under it and swings when you swipe.</span>
       <b>Lob</b><span>When they rush the net, a long, slow swipe floats a lob over their head.</span>
       <b>Pressure</b><span>Make them run and they miss, or float back a weak, short ball. When you're the one stretched, the hint says so: swipe safer to keep it in.</span>
+      <b>Stamina</b><span>Running drains the bar under each name; you get some back between points. Tired players move slower and spray shots. Make your opponent run.</span>
+      <b>Timing</b><span>The ball glows just before it reaches you. Swipe while it glows for a perfect hit: tighter and a little harder.</span>
       <b>Serve</b><span>Swipe up into the glowing box.</span>
     </div>
   </div>
@@ -226,8 +229,8 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hud top">
     <div class="board" id="board">
       <div class="lab"><span id="bLabel">Match</span><span id="bSurf">Hard</span></div>
-      <div class="brow"><i class="srv" id="srv0"></i><span class="nm" id="n0">You</span><span class="sets num" id="s0"></span><span class="pt num" id="p0">0</span></div>
-      <div class="brow"><i class="srv" id="srv1"></i><span class="nm" id="n1">Opponent</span><span class="sets num" id="s1"></span><span class="pt num" id="p1">0</span></div>
+      <div class="brow"><i class="srv" id="srv0"></i><span class="nm" id="n0">You</span><span class="sets num" id="s0"></span><span class="pt num" id="p0">0</span><b class="en" aria-hidden="true"><i id="e0"></i></b></div>
+      <div class="brow"><i class="srv" id="srv1"></i><span class="nm" id="n1">Opponent</span><span class="sets num" id="s1"></span><span class="pt num" id="p1">0</span><b class="en" aria-hidden="true"><i id="e1"></i></b></div>
     </div>
   </div>
   <div id="call"></div>
@@ -276,29 +279,29 @@ const now=()=>performance.now();
 
 /* ================= roster ================= */
 const ROSTER=[
- ['boss','The Boss','Club champion, 40 years running',6,5,5,6,6,5],
- ['granny','Coach Dot','Retired PE teacher, whistle included',2,10,5,7,8,1],
- ['brute','Brick','Strongman, all power',10,3,4,3,3,6],
- ['ch09','Scout','Junior club champ, age 12',3,5,10,6,6,3],
- ['ch43','El Chupacabra','Lucha libre legend, weekend hacker',8,3,5,4,3,10],
- ['ch06','Dex','College athlete, headphones on',8,8,5,3,3,6],
- ['remy','Remy','Twilight-league regular',5,6,5,6,8,3],
- ['ty','Ty','Sketchbook kid, scarf in July',1,5,8,8,5,6],
- ['vegas','Big Vegas','Lounge singer, plays in the jumpsuit',10,1,6,5,5,6],
- ['peasant','Farmer Hob','Grows hay, hits it low',8,6,3,5,5,6],
- ['ch01','Gary','Sales rep, Friday afternoons',5,8,5,6,6,3],
- ['ch08','Marco','Personal trainer, first lesson',8,5,8,3,3,6],
- ['ch12','Jordan','Ball kid turned player',5,6,5,8,7,2],
- ['ch17','Mack','Site foreman, plays in work boots',10,3,5,3,6,6],
- ['ch23','Preston','New racket every month',6,7,6,5,5,4],
- ['ch24','Shadow','Plays at dawn, never seen warming up',5,6,8,6,3,5],
- ['ch28','Andre','Club pro on his day off',8,8,5,3,5,4],
- ['ch31','Nina','College player, four-year starter',4,7,5,6,8,3],
- ['ch39','Master Ko','Ninety years old, still wins tiebreaks',1,7,6,8,8,3],
- ['ch42','Danny','Summer job stringing rackets',8,3,8,5,3,6]
-].map(([id,name,nick,pow,ctl,imp,sg,putt,spin])=>({id,name,nick,st:{power:pow,control:ctl,speed:Math.round((imp+sg)/2),serve:Math.round((pow+spin)/2)}}));
+ ['boss','The Boss','Club champion, 40 years running',6,5,5,6,6,5,6],
+ ['granny','Coach Dot','Retired PE teacher, whistle included',2,10,5,7,8,1,7],
+ ['brute','Brick','Strongman, all power',10,3,4,3,3,6,4],
+ ['ch09','Scout','Junior club champ, age 12',3,5,10,6,6,3,8],
+ ['ch43','El Chupacabra','Lucha libre legend, weekend hacker',8,3,5,4,3,10,6],
+ ['ch06','Dex','College athlete, headphones on',8,8,5,3,3,6,8],
+ ['remy','Remy','Twilight-league regular',5,6,5,6,8,3,5],
+ ['ty','Ty','Sketchbook kid, scarf in July',1,5,8,8,5,6,4],
+ ['vegas','Big Vegas','Lounge singer, plays in the jumpsuit',10,1,6,5,5,6,3],
+ ['peasant','Farmer Hob','Grows hay, hits it low',8,6,3,5,5,6,9],
+ ['ch01','Gary','Sales rep, Friday afternoons',5,8,5,6,6,3,3],
+ ['ch08','Marco','Personal trainer, first lesson',8,5,8,3,3,6,9],
+ ['ch12','Jordan','Ball kid turned player',5,6,5,8,7,2,8],
+ ['ch17','Mack','Site foreman, plays in work boots',10,3,5,3,6,6,7],
+ ['ch23','Preston','New racket every month',6,7,6,5,5,4,4],
+ ['ch24','Shadow','Plays at dawn, never seen warming up',5,6,8,6,3,5,7],
+ ['ch28','Andre','Club pro on his day off',8,8,5,3,5,4,6],
+ ['ch31','Nina','College player, four-year starter',4,7,5,6,8,3,8],
+ ['ch39','Master Ko','Ninety years old, still wins tiebreaks',1,7,6,8,8,3,2],
+ ['ch42','Danny','Summer job stringing rackets',8,3,8,5,3,6,6]
+].map(([id,name,nick,pow,ctl,imp,sg,putt,spin,sta])=>({id,name,nick,st:{power:pow,control:ctl,speed:Math.round((imp+sg)/2),serve:Math.round((pow+spin)/2),stamina:sta}}));
 const RBYID=Object.fromEntries(ROSTER.map(r=>[r.id,r]));
-const STATS=[['power','Power','Pace on drives'],['control','Control','Tighter stray circle'],['speed','Speed','Reach sharp angles'],['serve','Serve','Aces and serve pace']];
+const STATS=[['power','Power','Pace on drives'],['control','Control','Tighter stray circle'],['speed','Speed','Reach sharp angles'],['serve','Serve','Aces and serve pace'],['stamina','Stamina','Stay fresh in long rallies and long matches']];
 
 /* ================= career data ================= */
 /* bounce: restitution e (share of vertical speed kept) and friction mu (higher = slower court); clay ~0.85 and hard ~0.75 from bounce studies */
@@ -369,6 +372,7 @@ let save=null;
 function load(){try{const s=localStorage.getItem(KEY_V);return s?JSON.parse(s):null}catch(e){return null}}
 function store(){try{localStorage.setItem(KEY_V,JSON.stringify(save))}catch(e){}}
 save=load();
+if(save&&save.stats&&save.stats.stamina==null){const c=RBYID[save.char];save.stats.stamina=Math.max(1,Math.round(((c&&c.st.stamina)||5)*0.45));store()}
 const roll=k=>Math.round(save.pts[k].cur+0.5*save.pts[k].prev);
 function proRank(){return Math.max(1,Math.round(1500*Math.exp(-roll('pro')/500)))}
 function collegeRank(){return Math.max(1,Math.round(400*Math.exp(-roll('college')/300)))}
@@ -634,7 +638,7 @@ let resultNext=null;
 function showResult(won,score,st,text,lines,btn,next,champ){
   $('rBanner').textContent=champ?'Champion':won?'Match won':'Match lost';$('rBanner').className='banner '+(won?'w':'l');
   $('rScore').textContent=score;$('rText').textContent=text;
-  const all=[['Aces',st.aces],['Winners',st.winners],['Big hits',st.big]].concat(lines||[]);
+  const all=[['Aces',st.aces],['Winners',st.winners],['Perfect hits',st.perfect||0]].concat(lines||[]);
   $('rStats').innerHTML=all.map(([k,v])=>'<div><small>'+k+'</small><strong class="num" style="font-size:'+(String(v).length>10?'16px':'24px')+'">'+esc(v)+'</strong></div>').join('');
   $('rGo').textContent=btn;resultNext=next;show('result');
 }
@@ -1441,9 +1445,9 @@ function startMatch(cfg){
   loadChar(cfg.meId,D=>{got.me=D;done()});loadChar(cfg.opp.id,D=>{got.op=D;done()});
 }
 function beginMatch(cfg){
-  M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
+  M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,ostam:clamp(Math.round(((RBYID[cfg.opp.id]&&RBYID[cfg.opp.id].st.stamina)||5)*0.5+cfg.opp.skill*0.5),1,10),sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
     state:'between',shot:null,t0:0,me:{x:0.4,y:-0.05},op:{x:-0.4,y:1.08},fault:false,sw:null,preview:null,samples:[],land:null,aim:null,lock:false,commit:null,pending:null,
-    stat:{aces:0,winners:0,big:0},home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
+    stat:{aces:0,winners:0,big:0,perfect:0},en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
   $('quit').textContent='Retire';M.quitArm=false;
   renderBoard();say(cfg.intro||(M.server===0?'You win the toss and serve first.':cfg.opp.name+' serves first.'));
@@ -1466,12 +1470,14 @@ function pointTo(w,text,call){
     else if(call==='NET'||call==='DOUBLE FAULT'){crowdCheer(0.35,1.4);sndCrowdVoice('ooh',0.7);setTimeout(()=>sndApplause(0.3),600)}
     else{if(call==='OUT'&&rl>=4)sndCrowdVoice('ooh',0.6);crowdCheer(0.55,1.8);sndApplause(0.55)}}
   const pg=M.sets.reduce((a,x)=>a+x[0]+x[1],0),ps=M.sets.length;
+  for(let i=0;i<2;i++)recover(i,0.03);
   const o=1-w;
   if(call==='ACE'||call==='WINNER')P[w].startReact(pick(['nod','strut']));
   else if(call==='DOUBLE FAULT'||call==='NET'||call==='OUT')P[o].startReact(pick(['shake','slump']));
   if(M.tb){M.pts[w]++;if(M.pts[w]>=7&&M.pts[w]-M.pts[o]>=2)gameWon(w);else if((M.pts[0]+M.pts[1])%2===1)M.server=1-M.server}
   else{M.pts[w]++;if(M.pts[w]>=4&&M.pts[w]-M.pts[o]>=2)gameWon(w)}
-  renderBoard();setTimeout(()=>umpireScore(pg,ps),1000);
+  {const g2=M.sets.reduce((a,x)=>a+x[0]+x[1],0);if(M.sets.length!==ps)for(let i=0;i<2;i++)M.en[i]=Math.min(M.cap[i],M.en[i]+0.2);else if(g2!==pg&&g2%2===1)for(let i=0;i<2;i++)recover(i,0.07);}
+  renderEnergy();renderBoard();setTimeout(()=>umpireScore(pg,ps),1000);
   if(M.over){crowdCheer(1,6,6);sndApplause(1.2);sndCrowdVoice('cheer',1.2);P[M.winner].startReact(pick(['samba','uprock','robot']));P[1-M.winner].startReact('slump');setTimeout(endMatch,3200)}else setTimeout(nextPoint,1700);
 }
 function gameWon(w){
@@ -1491,7 +1497,13 @@ $('quit').onclick=()=>{
   M.over=true;M.winner=1;M.lock=true;M.state='between';say('You retire from the match.');setTimeout(endMatch,600);
 };
 function recvPos(i){const st=M.mv[i],hm=M.home[i],hz=toW(0,hm.y).z;return{x:st.x,z:Math.abs(hz)<Math.abs(st.z)?hz:st.z}}
-function vmaxOf(i){return i===0?4.4+M.S.speed*0.13+(hasPerk('baseliner',2)?0.35:0)+(hasPerk('counter',3)?0.45:0):4.2+M.os*0.13}
+function vmaxOf(i){return(i===0?4.4+M.S.speed*0.13+(hasPerk('baseliner',2)?0.35:0)+(hasPerk('counter',3)?0.45:0):4.2+M.os*0.13)*(0.8+0.2*(M.en?M.en[i]:1))}
+/* ---- stamina: running drains it (sprints cost more), hitting hard costs a little; it comes back between points,
+   more at changeovers and set breaks, but a slow "deep fatigue" ceiling falls over a long match ---- */
+function staOf(i){return i===0?(M.S.stamina||5):(M.ostam||5)}
+function tire(i,amt){M.en[i]=clamp(M.en[i]-amt*(1.35-staOf(i)*0.07),0,1)}
+function recover(i,amt){const st=staOf(i);M.cap[i]=clamp(M.cap[i]-M.run[i]*0.00012*(1.3-st*0.06),0.45,1);M.run[i]=0;M.en[i]=Math.min(M.cap[i],M.en[i]+amt*(0.6+st*0.08))}
+function renderEnergy(){for(let i=0;i<2;i++){const e=$('e'+i);if(!e)continue;const v=M.en[i];e.style.width=Math.round(v*100)+'%';e.style.background=v>0.6?'#74D493':v>0.35?'#F5A524':'#F28A78'}}
 /* reach: time the player needs to get to the ball (accelerating, top speed, a lunge at the end) against the time the ball
    gives them, less a reaction delay (longer when returning serve). The spare time becomes the shot's pressure. */
 function reachMargin(i,sh){const st=M.mv[i],dx=sh.hx*HW-st.x,dz=toW(0,sh.hy).z-st.z,back=sh.smash?Math.max(0,i===0?dz:-dz):0;const dist=Math.max(0,Math.hypot(dx,dz)+back*0.7-(sh.smash?0.5:1.2)),vm=vmaxOf(i);
@@ -1518,7 +1530,7 @@ function oppServeStart(){
 function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
   const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,C=P[1].tossC||P[1].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
-  const spd=30+s*2.2+rnd(-2,2);sndHit(Math.min(1.2,spd/45));
+  const spd=(30+s*2.2+rnd(-2,2))*(0.92+0.08*M.en[1]);tire(1,0.006);sndHit(Math.min(1.2,spd/45));
   if(Math.random()<0.06-s*0.004){
     M.shot=makeShot(from,{x:(lo+hi)/2,y:0.5},spd,120,{who:'op',err:true});M.t0=now();M.state='oppErr';
     setTimeout(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}
@@ -1535,8 +1547,8 @@ function oppHit(from){
   P[0].hop=0.15;
   const s=M.os;let bx,by,err=false;
   M.rally++;const prev=M.shot||{},pr=clamp(Math.max(M.oppPress||0,contactPress(1,prev,M.opSide)),0,1);M.oppPress=0;
-  const ue=Math.max(0.01,0.05-s*0.004)+Math.pow(pr,1.6)*(0.55-s*0.03)+(prev.bonus||0)+(hasPerk('counter',1)?0.03:0)+(hasPerk('counter',2)&&M.rally>=4?0.05:0);
-  let spd=19+s*1.6+rnd(0,3),w=170+s*12,kind='deep';const ovol=M.shot&&M.shot.volley,osm=M.shot&&M.shot.smash,meNet=M.me.y>0.2;if(ovol){spd=14+s*1.2;w=-70}if(osm){spd=(27+s*1.6+rnd(0,3))*(from.y>0.82?0.8:1);w=40;kind='smash'}
+  const ue=Math.max(0.01,0.05-s*0.004)+Math.pow(pr,1.6)*(0.55-s*0.03)+(prev.bonus||0)+0.08*(1-M.en[1])+(hasPerk('counter',1)?0.03:0)+(hasPerk('counter',2)&&M.rally>=4?0.05:0);
+  let spd=(19+s*1.6+rnd(0,3))*(0.93+0.07*M.en[1]),w=170+s*12,kind='deep';const ovol=M.shot&&M.shot.volley,osm=M.shot&&M.shot.smash,meNet=M.me.y>0.2;if(ovol){spd=14+s*1.2;w=-70}if(osm){spd=(27+s*1.6+rnd(0,3))*(from.y>0.82?0.8:1);w=40;kind='smash'}
   if(Math.random()<ue){err=true;if(Math.random()<0.5){bx=(Math.random()-0.5)*1.2;by=-0.12}else{bx=(Math.random()<0.5?-1:1)*rnd(1.08,1.2);by=rnd(0.15,0.3)}}
   else if(pr>0.72&&!ovol&&!osm&&Math.random()<0.65){// on the run: a defensive slice or a lob to buy time
     if(meNet){kind='lob';bx=(Math.random()*2-1)*0.4;by=rnd(0.08,0.25);w=140;spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.08}
@@ -1552,7 +1564,7 @@ function oppHit(from){
   for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(kind==='lob'?0.95:0.88,k),w,{who:'op',err,kind,lob:kind==='lob',recv:recvPos(0)});
     if(err)break;const L=sh.land;if(!sh.net&&Math.abs(L.x)<=1&&L.y>=0&&L.y<0.5)break}
   {const L=sh.land;sh.err=sh.net||Math.abs(L.x)>1.012||L.y<-0.004||L.y>0.5}  // the physics decides in or out
-  M.shot=sh;sh.kind=kind;sh.w=w;sndHit(Math.min(1.2,sh.speed/38));
+  M.shot=sh;sh.kind=kind;sh.w=w;tire(1,0.004+0.004*clamp((sh.speed-18)/20,0,1));sndHit(Math.min(1.2,sh.speed/38));
   {const oy=from.y;M.home[1]=(oy<0.9&&Math.random()<0.45+s*0.04)||ovol||osm?{x:0,y:0.72}:{x:0,y:1.08};if(osm)say(M.cfg.opp.name+' smashes it!');else if(kind==='defend'&&!err)say(M.cfg.opp.name+' is on the run and slices it back.');else if(pr>0.55&&!err&&kind==='deep')say('Weak reply. Go after it.');else if(kind==='lob'&&!err)say(M.cfg.opp.name+' throws up a lob.');else if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
   if(!sh.err)setReach(M.shot);
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);
@@ -1562,12 +1574,16 @@ function oppHit(from){
 function executeShot(){
   const sh=M.shot,S=M.S,c=M.commit;M.commit=null;
   const mp=clamp(Math.max(M.mePress||0,contactPress(0,sh,M.meSide)),0,1);M.mePress=0;
-  const bp=pos(sh,clamp((now()-M.t0)/1000/sh.T,0.9,1.0)),l=scatter(Object.assign({},c,{r:c.r*(sh.smash?0.6:1)*(1+1.6*mp)+0.05*mp}));let type=c.f<0.25?'drop':'drive';
+  // timing: seconds between the swipe and the moment of contact (negative = swiped after it)
+  const tc=M.t0+0.9*sh.T*1000,dts=((tc-(c.tSw||now()))/1000),tim=dts<0?'late':dts<=PERFECT[1]&&dts>=PERFECT[0]?'perfect':dts>0.8?'early':'ok';
+  if(tim==='perfect')M.stat.perfect++;
+  const tf=tim==='perfect'?0.68:tim==='late'?1.35:tim==='early'?1.12:1,E=M.en[0];
+  const bp=pos(sh,clamp((now()-M.t0)/1000/sh.T,0.9,1.0)),l=scatter(Object.assign({},c,{r:c.r*(sh.smash?0.6:1)*(1+1.6*mp)*tf*(1+0.55*(1-E))+0.05*mp}));let type=c.f<0.25?'drop':'drive';
   if(!P[0].swing)P[0].startSwing(M.meSide,SWINGS[M.meSide].dur*SWINGS[M.meSide].cf,yoFor(M.meSide,sh.hz));
-  const pw=Math.min(c.pw,1.2-0.55*mp),vol=sh.volley,smh=sh.smash,opNet=M.op.y<0.85||M.home[1].y<0.9;
+  const pw=Math.min(c.pw,1.2-0.55*mp-0.3*(1-E))*(tim==='perfect'?1.06:tim==='late'?0.88:1),vol=sh.volley,smh=sh.smash,opNet=M.op.y<0.85||M.home[1].y<0.9;
   if(smh)type='drive';else if(!vol&&type!=='drop'&&opNet&&c.pw<0.35&&c.f>=0.6)type='lob';
   const Dm=Math.hypot((l.x-bp.x)*HW,(l.y-bp.y)*CL),spd=smh?(24+16*pw+S.power*0.5)*(Math.abs(bp.y-0.5)>0.32?0.8:1):type==='lob'?Math.sqrt(9.81*Dm)*1.08:type==='drop'?Math.max((vol?6:9)+2.5*pw,Math.sqrt(9.81*Dm)*(vol?1.15:1.3)):vol?13+12*pw+S.power*0.3:14+18*pw+S.power*0.5,w=smh?40:type==='lob'?140:type==='drop'?-170:vol?-70:170+70*(1-Math.min(pw,1))+S.control*6;
-  const shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type,lob:type==='lob',recv:recvPos(1)});sndHit(Math.min(1.2,spd/38));
+  const shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type,lob:type==='lob',recv:recvPos(1)});sndHit(Math.min(1.2,spd/38));tire(0,0.004+0.004*Math.min(pw,1));if(tim==='perfect')perfectFlash();
   M.aim={x:c.x,y:c.y};M.land=shot.land;
   if(!landIn(shot,false)){
     const L=shot.land,why=shot.net?'Into the net. Swipe slower or a little longer.':Math.abs(L.x)>1?'Just wide.':'Long. Swipe a little shorter or slower.';
@@ -1579,13 +1595,13 @@ function executeShot(){
   M.shot=shot;M.t0=now();M.state='me';P[1].hop=0.15;
   fallbackHit(1,M.shot);M.returns=canReach(1,M.shot);M.oppPress=M.returns?pressureOf(1,M.shot):0;
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
-  say((mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*3.6)+' km/h':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h'));
+  say((tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*3.6)+' km/h':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h'));
 }
 function doServe(a){
   if(!M||M.state!=='serving')return;
   const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(a),C=P[0].tossC||P[0].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
   const pw=Math.min(a.pw,1.1),second=M.fault;
-  let spd=24+20*pw+S.serve*0.9+(hasPerk('server',3)?2.5:0),w=110;
+  let spd=(24+20*pw+S.serve*0.9+(hasPerk('server',3)?2.5:0))*(0.92+0.08*M.en[0]),w=110;tire(0,0.006);
   if(second){spd*=0.8;w=330}
   const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve'});sndHit(Math.min(1.2,spd/45));
   M.aim={x:a.x,y:a.y};M.land=shot.land;
@@ -1601,6 +1617,8 @@ function doServe(a){
   say((a.pw>=0.85?'Big serve! ':'Serve is in. ')+Math.round(spd*3.6)+' km/h');
 }
 
+const PERFECT=[0.1,0.42]; // seconds before contact
+function perfectFlash(){const b=W3.ball;b.scale.setScalar(1.8);setTimeout(()=>b.scale.setScalar(1),140);callOut('PERFECT')}
 const MAXL=190;
 function aimFromSwipe(dx,dy,serve,spd){
   const L0=Math.hypot(dx,dy);if(L0<20)return null;const fwd=Math.max(-dy,20);
@@ -1639,6 +1657,7 @@ cv.addEventListener('pointerup',e=>{
   if(!M||!M.sw)return;const q=lp(e);M.samples.push({x:q.x,y:q.y,t:now()});const dragLen=Math.hypot(q.x-M.sw.x,q.y-M.sw.y),dur=now()-M.samples[0].t;const a=aimFromSwipe(q.x-M.sw.x,q.y-M.sw.y,M.state==='serveMe',swipeSpeed());M.sw=null;M.preview=null;
   if(!a){if(dragLen<20&&dur<350&&M.state!=='serveMe'){moveTap(e);return}say('Swipe a little longer toward their court.');return}
   if(M.state==='serveMe'){M.state='serving';M.aim={x:a.x,y:a.y};P[0].startSwing('sv');M.serveT0=now();setTimeout(()=>doServe(a),SWINGS.sv.dur*SWINGS.sv.cf*1000);return}
+  a.tSw=now();
   if(M.state==='me'&&M.shot&&M.shot.type!=='serve'&&M.returns){M.pending=a;M.aim={x:a.x,y:a.y};say('Shot locked in early.');return}
   if(M.state!=='op')return;
   const sh=M.shot;if(sh.err){say('That one is going out. Let it go.');return}if(sh.unreach){say('You can’t get there in time.');return}
@@ -1692,6 +1711,9 @@ function step(dt){
       if(M.returns){x1=sh.hx*HW+({fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[M.opSide]);z1=hz-(sh.smash?0.29:sh.volley?0.55:0.5)}else{const sp=spotFor(1,sh,M.opSide);x1=sp.x;z1=sp.z}
       if(sh.type!=='serve'){x0=M.home[0].x*HW;z0=toW(0,M.home[0].y).z}}
     drive2(mv[0],x0,z0,vm0,dt);drive2(mv[1],x1,z1,vm1,dt);
+    for(let i=0;i<2;i++){const sp=Math.hypot(mv[i].v,mv[i].vz),d=sp*dt;M.run[i]+=d;tire(i,d*0.0022*(0.55+0.45*Math.min(1,sp/(i?vm1:vm0))))}
+    renderEnergy();
+    for(let i=0;i<2;i++)if(M.en[i]<0.35&&!M.tiredSaid[i]&&M.state!=='between'){M.tiredSaid[i]=true;if(i===1)say(M.cfg.opp.name+' is breathing hard. Keep making them run.')}
   }else{mv[0].v=mv[0].vz=0;mv[1].v=mv[1].vz=0}
   M.me.x=mv[0].x/HW;M.op.x=mv[1].x/HW;M.me.y=0.5-mv[0].z/CL;M.op.y=0.5-mv[1].z/CL;
   for(let i=0;i<2;i++){const pl=P[i],v=mv[i].v,vz=mv[i].vz,sp=Math.hypot(v,vz),want=(sp>3.6&&!pl.swing)?1:0;pl.runW+=(want-pl.runW)*Math.min(1,dt*(want?5:9));
@@ -1704,6 +1726,8 @@ function step(dt){
   else if(M.state==='serveMe'){bw=P[0].tossPos(0)}
   else if(M.state==='oppServe'){bw=P[1].tossPos(0)}
   else if(sh){const b=pos(sh,Math.min(p,1.3));bw=toW(b.x,b.y,b.z);bw.y+=0.075}
+  {const tcl=M.state==='op'&&sh&&!sh.err&&!sh.unreach&&!M.commit?(M.t0+0.9*sh.T*1000-t)/1000:-1,on=tcl>=PERFECT[0]&&tcl<=PERFECT[1];
+    W3.ball.material.emissive.setHex(on?0x9FE03A:0x4a5a10);W3.ball.material.emissiveIntensity=on?1.6:1}
   W3.ball.visible=W3.bshadow.visible=!!bw;
   if(bw){W3.ball.position.copy(bw);W3.bshadow.position.set(bw.x,0.012,bw.z);const sc=1/(1+bw.y*0.25);W3.bshadow.scale.setScalar(sc)}
   // serve box glow
@@ -1722,7 +1746,7 @@ function step(dt){
   const pw=$('power');
   if(M.sw){pw.hidden=false;const v=M.preview?M.preview.pw:0;const bar=pw.querySelector('i');bar.style.width=Math.min(100,v/1.25*100)+'%';bar.style.background=v>=0.85?'#F5A524':'#D3E86B'}else pw.hidden=true;
   if(M.state==='serveMe')ht=M.sw?'Pace: swipe faster for more':'Swipe up into the box. Faster swipe = more power';
-  else if(M.state==='op'&&sh){if(sh.err){ht='Going out, let it go';warn=true}else if(sh.unreach){ht='Out of reach';warn=true}else if(M.sw)ht='Pace: swipe faster for more';else if(M.commit)ht='Locked in. Swipe again to change';else if((M.mePress||0)>0.6&&!sh.smash)ht='Stretched: a safer swipe will keep it in';else ht=sh.smash?'Overhead! Swipe to smash it':sh.volley?'Volley! Swipe to punch it':'Swipe to hit · tap your court to move'}
+  else if(M.state==='op'&&sh){if(sh.err){ht='Going out, let it go';warn=true}else if(sh.unreach){ht='Out of reach';warn=true}else if(M.sw)ht='Pace: swipe faster for more';else if(M.commit)ht='Locked in. Swipe again to change';else if((M.mePress||0)>0.6&&!sh.smash)ht='Stretched: a safer swipe will keep it in';else ht=sh.smash?'Overhead! Swipe to smash it':sh.volley?'Volley! Swipe to punch it':M.en[0]<0.35?'Tired: keep the points short':'Swipe to hit · tap your court to move'}
   hint.textContent=ht;hint.className=warn?'warn':'';
 }
 function camera(dt){
