@@ -3,7 +3,7 @@ from playwright.async_api import async_playwright
 JS=r"""(lv)=>{window.__FREEZE=1;const T=__TG,D=T.dbg,M=T.M;M.state='between';M.lock=true;M.os=lv;M.surf=D.SURF.hard;
  const HW=4.115,CL=23.77,out={};
  const setOpp=(x,y)=>{M.mv[1]={x:x*HW,v:0,z:(0.5-y)*CL,vz:0}},setMe=(x,y)=>{M.mv[0]={x:x*HW,v:0,z:(0.5-y)*CL,vz:0}};
- const ue=(pr,s)=>Math.max(0.01,0.05-s*0.004)+Math.pow(pr,1.6)*(0.55-s*0.03);
+ const ue=(pr,s)=>window.__UE(pr,s);
  // 1) my first serves: random swipes as a player would make them (power 0.4-1.1, aimed around the box)
  let n=0,ace=0,err=0,inn=0,prs=0;
  for(let k=0;k<1500;k++){const deuce=k%2==0;M.pts=[deuce?0:1,0];M.fault=false;const ctr=deuce?-0.5:0.5;
@@ -41,8 +41,8 @@ async def main():
     for i in range(80):
       if await pg.evaluate("()=>!!(window.__TG&&__TG.M&&__TG.P()[0])"):break
       await pg.wait_for_timeout(200)
-    for lv,sv,pwr in [(2,3,3),(5,6,6),(8,10,10)]:
-      await pg.evaluate(f"()=>{{window.__SV={sv};window.__PW={pwr}}}")
+    for lv,sv,pwr in [(1,3,3),(2,3,3),(3,4,4),(5,6,6),(8,10,10)]:
+      await pg.evaluate(f"()=>{{window.__SV={sv};window.__PW={pwr};window.__UE=(pr,s)=>Math.max(0.01,0.07-s*0.0065)+Math.pow(pr,1.6)*(0.6-s*0.035)}}")
       r=await pg.evaluate(JS,lv);print('opp level',lv,'my serve/power',sv,json.dumps(r))
     print('errors',errs[:3])
     await b.close()
