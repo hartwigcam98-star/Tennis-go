@@ -1070,9 +1070,9 @@ function executeShot(){
   M.shot=shot;M.t0=now();M.state='me';P[1].hop=0.15;
   fallbackHit(1,M.shot);M.returns=canReach(1,M.shot);M.oppPress=M.returns?pressureOf(1,M.shot):0;if(!M.returns&&(pointWins(0)===2||M.rally>=8))slowMo(true);
   if(smh)M.stat.smashes++;if(vol)M.stat.volleys++;if(slc)M.stat.slices++;
-  if(M.drill){M.returns=false;M.oppPress=0;drillEvent({k:'hit',in:true,land:shot.land,kmh:Math.round(spd*3.6),tim,volley:vol,smash:smh,slice:slc})}
+  if(M.drill){M.returns=false;M.oppPress=0;drillEvent({k:'hit',in:true,land:shot.land,mph:Math.round(spd*2.237),tim,volley:vol,smash:smh,slice:slc})}
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
-  if(!M.drill)say((slc?'Slice. ':'')+(tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*3.6)+' km/h':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h'));
+  if(!M.drill)say((slc?'Slice. ':'')+(tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*2.237)+' mph':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*2.237)+' mph'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*2.237)+' mph':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*2.237)+' mph'));
 }
 function doServe(a){
   if(!M||M.state!=='serving')return;
@@ -1090,9 +1090,9 @@ function doServe(a){
     else{M.fault=true;callOut('FAULT');setTimeout(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null;say('Fault, '+why+'. Second serve: kick is the safe choice.')},1100)}
     return}
   if(a.pw>=0.85)M.stat.big++;
-  shot.second=second;shot.w=w;M.shot=shot;fallbackHit(1,shot);M.returns=canReach(1,shot);if(M.drill){M.returns=false;drillEvent({k:'serve',in:true,kmh:Math.round(spd*3.6),ty})}M.oppPress=M.returns?pressureOf(1,shot):0;M.t0=now();M.state='me';P[1].hop=0.15;
+  shot.second=second;shot.w=w;M.shot=shot;fallbackHit(1,shot);M.returns=canReach(1,shot);if(M.drill){M.returns=false;drillEvent({k:'serve',in:true,mph:Math.round(spd*2.237),ty})}M.oppPress=M.returns?pressureOf(1,shot):0;M.t0=now();M.state='me';P[1].hop=0.15;
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
-  if(!M.drill)say((a.pw>=0.85?'Big '+SV.name.toLowerCase()+' serve! ':SV.name+' serve in. ')+Math.round(spd*3.6)+' km/h');
+  if(!M.drill)say((a.pw>=0.85?'Big '+SV.name.toLowerCase()+' serve! ':SV.name+' serve in. ')+Math.round(spd*2.237)+' mph');
 }
 
 const PERFECT=[0.1,0.42]; // seconds before contact

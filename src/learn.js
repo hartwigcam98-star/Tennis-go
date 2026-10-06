@@ -12,8 +12,8 @@ const LESSONS=[
     judge:(e,z)=>!e.in?['no',e.why]:inZone(ZONE[z],e.land)?['ok','On target!']:['no','In, but missed the target. Tilt your swipe more to the '+ZONE[z].label+'.']},
   {id:'depth',t:'Depth',d:'The length of your swipe sets how deep it goes. Land 2 balls in the deep zone past the service line. Too long sails it out.',need:2,feed:'mix',zones:['deep','deep'],
     judge:(e,z)=>!e.in?['no',e.why]:inZone(ZONE.deep,e.land)?['ok','Deep!']:['no','A little short. Make your swipe longer.']},
-  {id:'pace',t:'Pace',d:'The speed of your swipe is your power. Flick it fast to hit one over 100 km/h and keep it in. Harder hits stray more.',need:1,feed:'mix',
-    judge:e=>!e.in?['no',e.why+' Power costs accuracy; flick fast but not too long.']:e.kmh>=100?['ok','Big hit: '+e.kmh+' km/h!']:['no',e.kmh+' km/h. Flick faster.']},
+  {id:'pace',t:'Pace',d:'The speed of your swipe is your power. Flick it fast to hit one over 60 mph and keep it in. Harder hits stray more.',need:1,feed:'mix',
+    judge:e=>!e.in?['no',e.why+' Power costs accuracy; flick fast but not too long.']:e.mph>=60?['ok','Big hit: '+e.mph+' mph!']:['no',e.mph+' mph. Flick faster.']},
   {id:'timing',t:'Timing',d:'Watch the ball: it glows green just before it reaches you. Swipe while it glows for a perfect hit, tighter and a little harder. Get 2 perfect hits.',need:2,feed:'mix',
     judge:e=>e.tim==='perfect'&&e.in?['ok','Perfect timing!']:e.tim==='perfect'?['no','Perfect timing, but it missed. Keep the swipe in the court.']:['no',e.tim==='early'?'Too early. Wait for the glow.':e.tim==='late'?'Too late. Swipe as soon as it glows.':'Close. Wait a beat longer, until the ball glows.']},
   {id:'slice',t:'Slice',d:'Curve your swipe like an arc, like drawing a C, to hit a slice: backspin that stays low and skids. It is slower but safer when you are stretched. Hit 2 slices in.',need:2,feed:'mix',
@@ -23,8 +23,8 @@ const LESSONS=[
   {id:'smash',t:'The smash',d:'At the net, a ball over your head becomes an overhead. Your player backs up under it; swipe to smash it in.',need:1,feed:'lob',
     judge:e=>!e.in?['no',e.why]:e.smash?['ok','Smash!']:['no','Stay near the net so the lob comes over your head.']},
   {id:'serve',t:'Serve',d:'Pick a serve with the buttons, then swipe up into the glowing box. Flat is fastest, Slice curves away, Kick is safest. Land one of each.',need:3,serve:true,
-    judge:e=>{const D=M.drill;D.types=D.types||{};if(D.practice&&e.in)return['ok',SVT[e.ty].name+' serve in, '+e.kmh+' km/h.'];if(!e.in)return['no','Fault, '+e.why+'. '+(e.ty==='flat'?'Flat serves need a calmer swipe.':'Aim for the middle of the box.')];
-      if(D.types[e.ty])return['no',SVT[e.ty].name+' is done. Pick a different serve with the buttons.'];D.types[e.ty]=1;return['ok',SVT[e.ty].name+' serve in, '+e.kmh+' km/h.']}}
+    judge:e=>{const D=M.drill;D.types=D.types||{};if(D.practice&&e.in)return['ok',SVT[e.ty].name+' serve in, '+e.mph+' mph.'];if(!e.in)return['no','Fault, '+e.why+'. '+(e.ty==='flat'?'Flat serves need a calmer swipe.':'Aim for the middle of the box.')];
+      if(D.types[e.ty])return['no',SVT[e.ty].name+' is done. Pick a different serve with the buttons.'];D.types[e.ty]=1;return['ok',SVT[e.ty].name+' serve in, '+e.mph+' mph.']}}
 ];
 const TIPS=[['Stamina','Running drains the bar under your name; you get some back between points. Tired players move slower and spray shots, so make your opponent run.'],
   ['Pressure','Balls you have to stretch for are harder to control. When the hint says Stretched, swipe safer.'],
@@ -65,7 +65,7 @@ function drillBegin(cfg){
     M.mv[0]={x:0,v:0,z:toW(0,hy).z,vz:0};M.mv[1]={x:0,v:0,z:toW(0,1.08).z,vz:0};P[0].pos.set(0,0,M.mv[0].z);P[1].pos.set(0,0,M.mv[1].z)}
   setTimeout(drillNext,1800)}
 function drillProgress(){const D=M.drill,L=D.L;
-  if(D.practice){const s=D.stats;$('dDots').innerHTML='<span class="chip num">'+s.in+' of '+s.hits+' in</span>'+(L.serve?'':'<span class="chip num">'+s.perfect+' perfect</span>')+'<span class="chip num">Best '+s.best+' km/h</span>';return}
+  if(D.practice){const s=D.stats;$('dDots').innerHTML='<span class="chip num">'+s.in+' of '+s.hits+' in</span>'+(L.serve?'':'<span class="chip num">'+s.perfect+' perfect</span>')+'<span class="chip num">Best '+s.best+' mph</span>';return}
   $('dDots').innerHTML=Array.from({length:L.need},(_,k)=>'<i class="'+(k<D.count?'on':'')+'"></i>').join('')}
 function drillZone(){const D=M.drill,z=D.L.zones&&D.L.zones[Math.min(D.count,D.L.zones.length-1)],mz=W3.zone||(W3.zone=(()=>{const g=new T.PlaneGeometry(1,1);g.rotateX(-Math.PI/2);
     const m=new T.Mesh(g,new T.MeshBasicMaterial({color:0x9BE15D,transparent:true,opacity:0.28,depthWrite:false}));m.renderOrder=2;W3.scene.add(m);return m})());
@@ -89,7 +89,7 @@ function drillFeed(from){
 /* judged events from the engine: every rally shot and serve you hit, and balls you never reached */
 function drillEvent(e){
   const D=M&&M.drill;if(!D||D.finished)return;const L=D.L;
-  if(e.k==='hit'||e.k==='serve'){D.stats.hits++;if(e.in)D.stats.in++;if(e.tim==='perfect'&&e.in)D.stats.perfect++;if(e.in)D.stats.best=Math.max(D.stats.best,e.kmh||0)}
+  if(e.k==='hit'||e.k==='serve'){D.stats.hits++;if(e.in)D.stats.in++;if(e.tim==='perfect'&&e.in)D.stats.perfect++;if(e.in)D.stats.best=Math.max(D.stats.best,e.mph||0)}
   if(!!L.serve!==(e.k==='serve')&&e.k!=='none')return;
   const [v,msg]=e.k==='none'?['no',e.why]:L.judge(e,D.zone);
   if(D.practice){say(msg);drillProgress();return}
