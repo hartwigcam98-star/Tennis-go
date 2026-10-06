@@ -129,7 +129,7 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 12 · net play and volleys</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 13 · overheads and lobs</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card">
@@ -161,6 +161,8 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
       <b>Preview</b><span>While you swipe, the target on their court shows where it will land. Green is in, red is out.</span>
       <b>Timing</b><span>None. Swipe any time once the ball is coming and your player swings when it arrives.</span>
       <b>Move</b><span>Tap anywhere on your side of the court to move there. Tap near the net after a good shot to come in and volley.</span>
+      <b>Smash</b><span>At the net, a ball over your head becomes an overhead. Your player backs up under it and swings when you swipe.</span>
+      <b>Lob</b><span>When they rush the net, a long, slow swipe floats a lob over their head.</span>
       <b>Serve</b><span>Swipe up into the glowing box.</span>
     </div>
   </div>
@@ -686,6 +688,14 @@ const SWINGS={
     K(0.5, {pel:5,  sh:22, pitch:0.12,roll:0,hand:[30,114,50], rd:[0.75,0.45,0.48], pole:[-0.1,-0.9,0.1], left:[6,112,8]}),
     K(0.75,{pel:0,  sh:10, pitch:0.1, roll:0,hand:[26,110,58], rd:[0.6,0.42,0.68],  pole:[-0.1,-0.9,0.2], left:[2,110,4]}),
     K(1,   {pel:0,  sh:0,  pitch:0.04,roll:0,hand:[-22,104,40],rd:[0.1,0.4,0.9],    pole:[-0.6,-0.6,-0.2],left:'throat'})]},
+  sm:{dur:0.9,cf:0.6,keys:[ // overhead smash: turn side-on, free hand tracks the ball, racket to the trophy, drop, hit up and in front, pronate
+    K(0,   {body:0,  pel:0,  sh:0,  pitch:0,    roll:0, hand:[-22,104,40], rd:[0.1,0.4,0.9],    pole:[-0.6,-0.6,-0.2],left:'throat'}),
+    K(0.22,{body:-60,pel:-10,sh:-30,pitch:-0.1, roll:12,hand:[-40,150,-8], rd:[0,0.9,-0.4],     pole:[-0.7,0,-0.5],   left:[24,182,32]}), // side-on, racket up, free hand points at the ball
+    K(0.44,{body:-70,pel:-15,sh:-42,pitch:-0.2, roll:20,hand:[-42,166,-22],rd:[-0.1,0.95,-0.25],pole:[-0.8,0.2,-0.4], left:[26,192,30]}), // trophy
+    K(0.53,{body:-58,pel:0,  sh:-20,pitch:-0.18,roll:18,hand:[-28,158,-22],rd:[0,-0.9,-0.4],    pole:[-0.6,0.6,-0.4], left:[22,150,26]}), // racket drops behind the back
+    K(0.60,{body:-28,pel:20, sh:22, pitch:0,    roll:6, hand:[-14,216,38], rd:[0.05,0.9,0.42],  pole:[-0.7,0,0],      left:[20,125,20]}), // contact up and in front
+    K(0.78,{body:-8, pel:35, sh:55, pitch:0.3,  roll:0, hand:[10,138,62],  rd:[0.35,-0.42,0.84],pole:[-0.3,-0.8,0.3], left:[22,112,14]}), // pronation, snap down through the ball
+    K(1,   {body:0,  pel:35, sh:65, pitch:0.12, roll:0, hand:[30,96,14],   rd:[0.6,-0.75,-0.25],pole:[0.2,-0.8,0.3],  left:[26,110,6]})]},
   sv:{dur:1.4,cf:0.66,keys:[ // body yaw: -80 = side-on, left shoulder to the net
     K(0,   {body:-75,pel:0,  sh:0,  pitch:0,    roll:0, hand:[-18,100,30], rd:[0.2,0.1,0.97],  pole:[-0.6,-0.6,-0.2],left:[8,100,32]}),  // side-on stance, ball against the strings
     K(0.18,{body:-80,pel:-10,sh:-15,pitch:0,    roll:5, hand:[-30,82,-6],  rd:[0,-0.9,-0.4],   pole:[-0.5,-0.8,0],   left:[18,84,24]}),  // arms drop together
@@ -878,7 +888,8 @@ class Player{
     // posture: low and wide, deeper as a stroke loads, extending up through contact
     let dT=this.react?0.1:this.relax?0.45:1;
     if(this.swing){const S=SWINGS[this.swing.type],sm=x=>x*x*(3-2*x);
-      if(this.swing.type==='sv')dT=u<0.52?0.4+0.9*sm(clamp(u/0.52,0,1)):u<0.66?1.3-1.2*sm((u-0.52)/0.14):0.1+0.5*sm(clamp((u-0.66)/0.34,0,1));
+      if(this.swing.type==='sm')dT=u<0.44?0.7+0.6*sm(clamp(u/0.44,0,1)):u<0.6?1.3-1.15*sm((u-0.44)/0.16):0.15+0.65*sm(clamp((u-0.6)/0.4,0,1));
+      else if(this.swing.type==='sv')dT=u<0.52?0.4+0.9*sm(clamp(u/0.52,0,1)):u<0.66?1.3-1.2*sm((u-0.52)/0.14):0.1+0.5*sm(clamp((u-0.66)/0.34,0,1));
       else dT=u<S.cf?1+0.45*sm(clamp(u/S.cf,0,1)):1.45-0.6*sm(clamp((u-S.cf)/0.15,0,1))+0.15*sm(clamp((u-S.cf-0.15)/0.2,0,1))}
     if(this.hop>0){const a=1-this.hop/0.15;dT=a<1?0.55:dT}
     if(this.land>0){this.land-=dt;dT+=0.35*Math.sin(Math.PI*clamp(1-this.land/0.25,0,1))}
@@ -1013,11 +1024,16 @@ function simulate(p0,v0,w,sf,maxT,firstBounceOnly){
   rec();out.T=t;return out;
 }
 /* aim: find the launch angle that lands the ball on the target at this speed and spin (lowest workable angle) */
-function launch(st,tgt,speed,w,sf){
+function launch(st,tgt,speed,w,sf,lob){
   const hx=tgt.x-st.x,hz=tgt.z-st.z,D=Math.hypot(hx,hz)||1,ux=hx/D,uz=hz/D;
   const range=th=>{const c=Math.cos(th),s=Math.sin(th),r=simulate(st,{x:ux*speed*c,y:speed*s,z:uz*speed*c},w,sf,4,true);
     if(r.net)return Math.hypot(r.net.x-st.x,0-st.z)*0.98;const b=r.bounces[0];if(!b)return 99;return (b.x-st.x)*ux+(b.z-st.z)*uz};
-  const deg=Math.PI/180;let lo=-32*deg,rlo=range(lo),th=null;
+  const deg=Math.PI/180;
+  if(lob){// lob: a fixed climb (~50 degrees, peaks 6-8 m) and the speed that carries it to the target
+    const th=50*deg,c=Math.cos(th),sn=Math.sin(th);const rng=v=>{const r=simulate(st,{x:ux*v*c,y:v*sn,z:uz*v*c},w,sf,6,true);const b=r.bounces[0];return b?(b.x-st.x)*ux+(b.z-st.z)*uz:99};
+    let L=4,H=45;if(rng(H)<D)return{x:ux*H*c,y:H*sn,z:uz*H*c,ok:false,short:false};for(let k=0;k<20;k++){const m=(L+H)/2;if(rng(m)<D)L=m;else H=m}const v=(L+H)/2;
+    return{x:ux*v*c,y:v*sn,z:uz*v*c,ok:true,short:false}}
+  let lo=-32*deg,rlo=range(lo),th=null;
   for(let a=-29;a<=58;a+=3){const hi=a*deg,rhi=range(hi);if(rlo<=D&&rhi>=D){let L=lo,H=hi;for(let k=0;k<16;k++){const m=(L+H)/2;if(range(m)<D)L=m;else H=m}th=(L+H)/2;break}lo=hi;rlo=rhi}
   const ok=th!=null;if(th==null)th=rlo<D?40*deg:-32*deg;
   const c=Math.cos(th),s=Math.sin(th);return{x:ux*speed*c,y:speed*s,z:uz*speed*c,ok,short:!ok&&rlo<D};
@@ -1027,8 +1043,8 @@ function makeShot(from,tgt,speed,w,o){
   o=o||{};const sf=M.surf;
   const st={x:from.x*HW,y:Math.max(0.25,(from.z!=null?from.z:0.5)*ZS),z:(0.5-from.y)*CL};
   const tw={x:tgt.x*HW,z:(0.5-tgt.y)*CL};
-  let v=launch(st,tw,speed,w,sf);
-  for(let k=0;k<5&&v.short;k++){speed*=1.15;v=launch(st,tw,speed,w,sf)}  // too slow to get there: the player swings a bit harder
+  let v=launch(st,tw,speed,w,sf,o.lob);
+  for(let k=0;k<5&&v.short;k++){speed*=1.15;v=launch(st,tw,speed,w,sf,o.lob)}  // too slow to get there: the player swings a bit harder
   const r=simulate(st,v,w,sf,5,false);
   const toMe=tw.z>0,b=r.bounces[0];
   const sh=Object.assign({S:r.S,n:r.S.length/3,dt:PDT*SAMPLE,who:o.who,net:!!r.net,speed},o);
@@ -1041,9 +1057,14 @@ function makeShot(from,tgt,speed,w,o){
    reaches them between knee and head height (a volley); otherwise after the bounce, dropping through waist height,
    or early if it would carry far behind the baseline */
 function chooseHit(sh,recv){
-  const r=sh.r,b=r.bounces[0],toMe=sh.toMe;let th=null;sh.volley=false;
-  if(recv&&!r.net&&Math.abs(recv.z)<7.5){const iEnd=b?Math.floor(b.t/sh.dt):sh.n-1;
-    for(let i=1;i<iEnd;i++){const z=r.S[i*3+2];if(toMe?z>=recv.z-0.2:z<=recv.z+0.2){const y=r.S[i*3+1];if(y>=0.3&&y<=2.5){th=i*sh.dt;sh.volley=true}break}}}
+  const r=sh.r,b=r.bounces[0],toMe=sh.toMe;let th=null;sh.volley=false;sh.smash=false;
+  if(recv&&!r.net&&Math.abs(recv.z)<9){const iEnd=b?Math.floor(b.t/sh.dt):sh.n-1;
+    let ym=0;for(let i=1;i<iEnd;i++){const z=r.S[i*3+2];ym=Math.max(ym,r.S[i*3+1]);if(toMe?z>=recv.z-0.2:z<=recv.z+0.2){const y=r.S[i*3+1];
+      if(y>=0.3&&y<=SMH-0.15&&ym<3.5&&Math.abs(recv.z)<7.5){th=i*sh.dt;sh.volley=true}
+      break}}
+    if(th==null){// a high ball (over their head, or a short lob in front): move under it and hit an overhead as it drops to smash height
+      let ymax=0;for(let j=1;j<iEnd;j++){const yj=r.S[j*3+1],zj=r.S[j*3+2];ymax=Math.max(ymax,yj);
+        if(yj<r.S[(j-1)*3+1]&&yj<=SMH){if(ymax>SMH+0.5&&(toMe?zj>1.5:zj<-1.5)&&Math.abs(zj-recv.z)<6.5){th=j*sh.dt;sh.smash=true}break}}}}
   if(th==null){
     if(b&&!r.net){const i0=Math.ceil(b.t/sh.dt),base=toMe?CL/2:-CL/2;let peak=i0;
       for(let i=i0+1;i<sh.n;i++){const y=r.S[i*3+1],z=r.S[i*3+2];if(y>r.S[peak*3+1])peak=i;
@@ -1122,11 +1143,13 @@ $('quit').onclick=()=>{
 };
 function recvPos(i){const st=M.mv[i],hm=M.home[i],hz=toW(0,hm.y).z;return{x:st.x,z:Math.abs(hz)<Math.abs(st.z)?hz:st.z}}
 function vmaxOf(i){return i===0?4.4+M.S.speed*0.13+(hasPerk('baseliner',2)?0.35:0)+(hasPerk('counter',3)?0.45:0):4.2+M.os*0.13}
-function canReach(i,sh){const st=M.mv[i],dx=sh.hx*HW-st.x,dz=toW(0,sh.hy).z-st.z;const dist=Math.max(0,Math.hypot(dx,dz)-1.2),vm=vmaxOf(i);
+function canReach(i,sh){const st=M.mv[i],dx=sh.hx*HW-st.x,dz=toW(0,sh.hy).z-st.z,back=sh.smash?Math.max(0,i===0?dz:-dz):0;const dist=Math.max(0,Math.hypot(dx,dz)+back*0.7-(sh.smash?0.5:1.2)),vm=vmaxOf(i);
   const tNeed=dist<=vm*vm/(2*ACC)?Math.sqrt(2*dist/ACC):dist/vm+vm/(2*ACC);return tNeed<=0.9*sh.T+0.18}
-function fallbackHit(i,sh){if(sh.volley&&!canReach(i,sh)){const st=M.mv[i];chooseHit(sh,{x:st.x,z:st.z})}}
+function fallbackHit(i,sh){if((sh.volley||sh.smash)&&!canReach(i,sh)){const st=M.mv[i];chooseHit(sh,{x:st.x,z:st.z});if((sh.volley||sh.smash)&&!canReach(i,sh))chooseHit(sh,null)}}
 function setReach(sh){fallbackHit(0,sh);if(!canReach(0,sh))sh.unreach=true}
-function sideFor(who,hx,volley){const f=who===0?hx>-0.12:hx<0.12;return volley?(f?'fv':'bv'):(f?'fh':'bh')}
+const SMH=1.95; // racket-centre height at smash contact
+function sideFor(who,hx,volley,smash){if(smash)return'sm';const f=who===0?hx>-0.12:hx<0.12;return volley?(f?'fv':'bv'):(f?'fh':'bh')}
+function yoFor(side,hz){return(side==='fv'||side==='bv')?clamp(((hz||1.05)-1.05)/(0.01*PSCALE),-45,95):side==='sm'?clamp(((hz||SMH)-SMH)/(0.01*PSCALE),-40,40):0}
 function oppServeStart(){
   if(!M||M.state!=='oppServe')return;
   M.state='oppServing';P[1].startSwing('sv');M.serveT0=now();M.server_who=1;
@@ -1146,36 +1169,39 @@ function oppServeLaunch(){
   M.shot=sh;
   {const L=sh.land,inBox=!sh.net&&L.x>=lo-0.01&&L.x<=hi+0.01&&L.y>=0.228&&L.y<=0.5;if(!inBox){sh.err=true;M.t0=now();M.state='oppErr';setTimeout(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
   if(Math.random()<0.03+s*0.012){M.shot.unreach=true;M.shot.ace=true}else setReach(M.shot);
-  M.meSide=sideFor(0,M.shot.hx,M.shot.volley);M.t0=now();M.state='op';P[0].hop=0.15;
+  M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);M.t0=now();M.state='op';P[0].hop=0.15;
 }
 function oppHit(from){
   P[0].hop=0.15;
   const s=M.os;let bx,by,err=false;
   M.rally++;const ue=Math.max(0.02,0.10-s*0.01)+(hasPerk('counter',1)?0.03:0)+(hasPerk('counter',2)&&M.rally>=4?0.05:0);
-  let spd=19+s*1.6+rnd(0,3),w=170+s*12,kind='deep';const ovol=M.shot&&M.shot.volley;if(ovol){spd=14+s*1.2;w=-70}
+  let spd=19+s*1.6+rnd(0,3),w=170+s*12,kind='deep';const ovol=M.shot&&M.shot.volley,osm=M.shot&&M.shot.smash,meNet=M.me.y>0.2;if(ovol){spd=14+s*1.2;w=-70}if(osm){spd=(27+s*1.6+rnd(0,3))*(from.y>0.82?0.8:1);w=40;kind='smash'}
   if(Math.random()<ue){err=true;if(Math.random()<0.5){bx=(Math.random()-0.5)*1.2;by=-0.12}else{bx=(Math.random()<0.5?-1:1)*rnd(1.08,1.2);by=rnd(0.15,0.3)}}
   else{const r=Math.random(),span=0.35+s*0.045;
-    if(r<0.05+s*0.008){kind='drop';bx=(Math.random()*2-1)*0.55;by=rnd(0.38,0.45);spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.3;w=-170}
+    if(osm){bx=(Math.random()<0.5?-1:1)*rnd(0.3,0.8);by=rnd(0.12,0.36)}
+    else if(meNet&&!ovol&&r<0.3+s*0.02){kind='lob';bx=(Math.random()*2-1)*0.55;by=rnd(0.05,0.2);w=140;spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.08}
+    else if(r<0.05+s*0.008){kind='drop';bx=(Math.random()*2-1)*0.55;by=rnd(0.38,0.45);spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.3;w=-170}
     else if(r<0.2+s*0.015){kind='angle';bx=(Math.random()<0.5?-1:1)*rnd(0.62,0.9);by=rnd(0.28,0.38);spd=17+s*1.1;w=300}
     else{bx=(Math.random()*2-1)*span;by=rnd(0.06,0.28)}}
   let sh=null;
-  for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),w,{who:'op',err,kind,recv:recvPos(0)});
+  for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(kind==='lob'?0.95:0.88,k),w,{who:'op',err,kind,lob:kind==='lob',recv:recvPos(0)});
     if(err)break;const L=sh.land;if(!sh.net&&Math.abs(L.x)<=1&&L.y>=0&&L.y<0.5)break}
   {const L=sh.land;sh.err=sh.net||Math.abs(L.x)>1.012||L.y<-0.004||L.y>0.5}  // the physics decides in or out
   M.shot=sh;
-  {const oy=from.y;M.home[1]=(oy<0.9&&Math.random()<0.45+s*0.04)||ovol?{x:0,y:0.72}:{x:0,y:1.08};if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
+  {const oy=from.y;M.home[1]=(oy<0.9&&Math.random()<0.45+s*0.04)||ovol||osm?{x:0,y:0.72}:{x:0,y:1.08};if(osm)say(M.cfg.opp.name+' smashes it!');else if(kind==='lob'&&!err)say(M.cfg.opp.name+' throws up a lob.');else if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
   if(!sh.err)setReach(M.shot);
-  M.meSide=sideFor(0,M.shot.hx,M.shot.volley);
+  M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);
   M.t0=now();M.state='op';M.land=null;M.aim=null;M.commit=null;
   if(M.pending&&!sh.err&&!M.shot.unreach){M.commit=M.pending;M.aim={x:M.pending.x,y:M.pending.y}}M.pending=null;
 }
 function executeShot(){
   const sh=M.shot,S=M.S,c=M.commit;M.commit=null;
-  const bp=pos(sh,clamp((now()-M.t0)/1000/sh.T,0.9,1.0)),l=scatter(c),type=c.f<0.25?'drop':'drive';
-  if(!P[0].swing)P[0].startSwing(M.meSide,SWINGS[M.meSide].dur*SWINGS[M.meSide].cf,(M.meSide==='fv'||M.meSide==='bv')?clamp(((sh.hz||1.05)-1.05)/(0.01*PSCALE),-45,95):0);
-  const pw=Math.min(c.pw,1.2),vol=sh.volley;
-  const Dm=Math.hypot((l.x-bp.x)*HW,(l.y-bp.y)*CL),spd=type==='drop'?Math.max((vol?6:9)+2.5*pw,Math.sqrt(9.81*Dm)*(vol?1.15:1.3)):vol?13+12*pw+S.power*0.3:14+18*pw+S.power*0.5,w=type==='drop'?-170:vol?-70:170+70*(1-Math.min(pw,1))+S.control*6;
-  const shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type,recv:recvPos(1)});
+  const bp=pos(sh,clamp((now()-M.t0)/1000/sh.T,0.9,1.0)),l=scatter(M.shot.smash?Object.assign({},c,{r:c.r*0.6}):c);let type=c.f<0.25?'drop':'drive';
+  if(!P[0].swing)P[0].startSwing(M.meSide,SWINGS[M.meSide].dur*SWINGS[M.meSide].cf,yoFor(M.meSide,sh.hz));
+  const pw=Math.min(c.pw,1.2),vol=sh.volley,smh=sh.smash,opNet=M.op.y<0.85||M.home[1].y<0.9;
+  if(smh)type='drive';else if(!vol&&type!=='drop'&&opNet&&c.pw<0.35&&c.f>=0.6)type='lob';
+  const Dm=Math.hypot((l.x-bp.x)*HW,(l.y-bp.y)*CL),spd=smh?(24+16*pw+S.power*0.5)*(Math.abs(bp.y-0.5)>0.32?0.8:1):type==='lob'?Math.sqrt(9.81*Dm)*1.08:type==='drop'?Math.max((vol?6:9)+2.5*pw,Math.sqrt(9.81*Dm)*(vol?1.15:1.3)):vol?13+12*pw+S.power*0.3:14+18*pw+S.power*0.5,w=smh?40:type==='lob'?140:type==='drop'?-170:vol?-70:170+70*(1-Math.min(pw,1))+S.control*6;
+  const shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type,lob:type==='lob',recv:recvPos(1)});
   M.aim={x:c.x,y:c.y};M.land=shot.land;
   if(!landIn(shot,false)){
     const L=shot.land,why=shot.net?'Into the net. Swipe slower or a little longer.':Math.abs(L.x)>1?'Just wide.':'Long. Swipe a little shorter or slower.';
@@ -1183,11 +1209,11 @@ function executeShot(){
     setTimeout(()=>pointTo(1,why,shot.net?'NET':'OUT'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
   if(c.pw>=0.85)M.stat.big++;
   const tx=shot.land.x,ty=shot.land.y,r=Math.abs(tx-M.op.x),s=M.os;
-  const miss=clamp(0.02+Math.min(c.pw,1)*0.12+(r>0.9?0.2:r>0.6?0.08:0)+(ty>0.92?0.05:0)+(type==='drop'?0.1:0)+(S.power-3)*0.01-(s-3)*0.03+(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0),0.02,0.65);
+  const miss=clamp(0.02+Math.min(c.pw,1)*0.12+(r>0.9?0.2:r>0.6?0.08:0)+(ty>0.92?0.05:0)+(type==='drop'?0.1:0)+(smh?0.3:0)+(type==='lob'?(ty>0.85?0.32:0.12):0)+(S.power-3)*0.01-(s-3)*0.03+(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0),0.02,0.65);
   M.shot=shot;M.t0=now();M.state='me';P[1].hop=0.15;
   fallbackHit(1,M.shot);M.returns=canReach(1,M.shot)&&Math.random()>miss;
-  M.opSide=sideFor(1,M.shot.hx,M.shot.volley);
-  say(vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h');
+  M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
+  say(smh?'Smash! '+Math.round(spd*3.6)+' km/h':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*3.6)+' km/h'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h');
 }
 function doServe(a){
   if(!M||M.state!=='serving')return;
@@ -1207,7 +1233,7 @@ function doServe(a){
   const ace=clamp(0.03+Math.min(a.pw,1)*0.14+S.serve*0.02+(edge<0.12?0.12:0)-M.os*0.025-(second?0.08:0)+(!second&&hasPerk('server',1)?0.06:0)+(!second&&hasPerk('server',3)?0.06:0),0.02,0.65);
   if(a.pw>=0.85)M.stat.big++;
   M.shot=shot;fallbackHit(1,shot);M.returns=Math.random()>ace;M.t0=now();M.state='me';P[1].hop=0.15;
-  M.opSide=sideFor(1,M.shot.hx,M.shot.volley);
+  M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
   say((a.pw>=0.85?'Big serve! ':'Serve is in. ')+Math.round(spd*3.6)+' km/h');
 }
 
@@ -1234,7 +1260,7 @@ function moveTap(e){
   if(Z<1.5){say('Tap your own side of the court to move.');return}
   const y=clamp(0.5-Z/CL,-0.2,0.43),x=clamp(X/HW,-1.1,1.1);M.home[0]={x,y};
   W3.homeMark.visible=true;W3.homeMark.position.set(x*HW,0.012,toW(0,y).z);
-  if(M.state==='op'&&M.shot&&!M.shot.err&&!M.commit){chooseHit(M.shot,recvPos(0));M.shot.unreach=false;setReach(M.shot);M.meSide=sideFor(0,M.shot.hx,M.shot.volley)}
+  if(M.state==='op'&&M.shot&&!M.shot.err&&!M.commit){chooseHit(M.shot,recvPos(0));M.shot.unreach=false;setReach(M.shot);M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash)}
   say(y>0.22?'Coming in to the net.':y<0.02?'Staying back on the baseline.':'Moving up.');
 }
 /* ---- input ---- */
@@ -1271,7 +1297,7 @@ function loop(t){
   camera(dt);
   W3.r.render(W3.scene,W3.cam);
 }
-function swingFor(pl,side,tHit,hz){const S=SWINGS[side];if(!pl.swing&&now()>=tHit-S.dur*S.cf*1000){const yo=(side==='fv'||side==='bv')?clamp(((hz||1.05)-1.05)/(0.01*PSCALE),-45,95):0;const off=Math.max(0,(now()-(tHit-S.dur*S.cf*1000))/1000);pl.startSwing(side,Math.min(off,S.dur*S.cf),yo)}}
+function swingFor(pl,side,tHit,hz){const S=SWINGS[side];if(!pl.swing&&now()>=tHit-S.dur*S.cf*1000){const yo=yoFor(side,hz);const off=Math.max(0,(now()-(tHit-S.dur*S.cf*1000))/1000);pl.startSwing(side,Math.min(off,S.dur*S.cf),yo)}}
 function step(dt){
   const t=now(),sh=M.shot;let p=0;
   if(sh){p=(t-M.t0)/1000/sh.T;
@@ -1295,9 +1321,9 @@ function step(dt){
   if(!fixed){
     const sh=M.shot;
     let x0=mv[0].x,z0=mv[0].z,x1=mv[1].x,z1=mv[1].z,vm0=vmaxOf(0),vm1=vmaxOf(1);
-    if(M.state==='op'&&sh){if(!sh.err){x0=sh.hx*HW+({fh:-0.75,bh:0.45,fv:-0.62,bv:0.55}[M.meSide]);z0=toW(0,sh.hy).z+(sh.volley?0.55:0.5)}x1=M.home[1].x*HW;z1=toW(0,M.home[1].y).z}
+    if(M.state==='op'&&sh){if(!sh.err){x0=sh.hx*HW+({fh:-0.75,bh:0.45,fv:-0.62,bv:0.55,sm:-0.31}[M.meSide]);z0=toW(0,sh.hy).z+(sh.smash?0.29:sh.volley?0.55:0.5)}x1=M.home[1].x*HW;z1=toW(0,M.home[1].y).z}
     else if(M.state==='me'&&sh){const hz=toW(0,sh.hy).z;
-      if(M.returns){x1=sh.hx*HW+({fh:0.75,bh:-0.45,fv:0.62,bv:-0.55}[M.opSide]);z1=hz-(sh.volley?0.55:0.5)}else{x1=mv[1].x+(sh.hx*HW-mv[1].x)*0.45;z1=mv[1].z+(hz-mv[1].z)*0.45;vm1*=0.6}
+      if(M.returns){x1=sh.hx*HW+({fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[M.opSide]);z1=hz-(sh.smash?0.29:sh.volley?0.55:0.5)}else{x1=mv[1].x+(sh.hx*HW-mv[1].x)*0.45;z1=mv[1].z+(hz-mv[1].z)*0.45;vm1*=0.6}
       if(sh.type!=='serve'){x0=M.home[0].x*HW;z0=toW(0,M.home[0].y).z}}
     drive2(mv[0],x0,z0,vm0,dt);drive2(mv[1],x1,z1,vm1,dt);
   }else{mv[0].v=mv[0].vz=0;mv[1].v=mv[1].vz=0}
@@ -1330,7 +1356,7 @@ function step(dt){
   const pw=$('power');
   if(M.sw){pw.hidden=false;const v=M.preview?M.preview.pw:0;const bar=pw.querySelector('i');bar.style.width=Math.min(100,v/1.25*100)+'%';bar.style.background=v>=0.85?'#F5A524':'#D3E86B'}else pw.hidden=true;
   if(M.state==='serveMe')ht=M.sw?'Pace: swipe faster for more':'Swipe up into the box. Faster swipe = more power';
-  else if(M.state==='op'&&sh){if(sh.err){ht='Going out, let it go';warn=true}else if(sh.unreach){ht='Out of reach';warn=true}else if(M.sw)ht='Pace: swipe faster for more';else if(M.commit)ht='Locked in. Swipe again to change';else ht=sh.volley?'Volley! Swipe to punch it':'Swipe to hit · tap your court to move'}
+  else if(M.state==='op'&&sh){if(sh.err){ht='Going out, let it go';warn=true}else if(sh.unreach){ht='Out of reach';warn=true}else if(M.sw)ht='Pace: swipe faster for more';else if(M.commit)ht='Locked in. Swipe again to change';else ht=sh.smash?'Overhead! Swipe to smash it':sh.volley?'Volley! Swipe to punch it':'Swipe to hit · tap your court to move'}
   hint.textContent=ht;hint.className=warn?'warn':'';
 }
 function camera(dt){
@@ -1339,7 +1365,7 @@ function camera(dt){
   const k=Math.min(1,dt*3);W3.camPos.lerp(tp,k);W3.camLook.lerp(tl,k);W3.cam.position.copy(W3.camPos);W3.cam.lookAt(W3.camLook);
   W3.sun.target.position.set(0,0,0);
 }
-window.__TG={get M(){return M},P:()=>P,pos,W3};
+window.__TG={get M(){return M},P:()=>P,pos,W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
 </script>
