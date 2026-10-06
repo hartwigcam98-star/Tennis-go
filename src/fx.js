@@ -3,8 +3,8 @@
 const CLK={rt:performance.now(),ts:1,hsUntil:0,slow:1,slowT:1};
 let GT=performance.now();
 function clockTick(){const r=performance.now(),d=Math.min(100,r-CLK.rt);CLK.rt=r;
-  CLK.slow+=(CLK.slowT-CLK.slow)*Math.min(1,d/120);CLK.ts=r<CLK.hsUntil?0.04:CLK.slow;GT+=d*CLK.ts}
-function hitStop(ms){CLK.hsUntil=Math.max(CLK.hsUntil,performance.now()+ms)}
+  CLK.slow+=(CLK.slowT-CLK.slow)*Math.min(1,d/120);CLK.ts=CLK.paused?0:r<CLK.hsUntil?0.04:CLK.slow;GT+=d*CLK.ts}
+function hitStop(ms){ms*=TUNE.hitstop;if(!ms)return;CLK.hsUntil=Math.max(CLK.hsUntil,performance.now()+ms)}
 function slowMo(on){CLK.slowT=on?0.3:1}
 
 /* ---- haptics: vibration where the phone supports it; on iPhone a system tick from a hidden switch, only inside a touch ---- */
@@ -100,5 +100,6 @@ function wantReplay(w,call){
   else if(call==='WINNER')want=sh.smash||M.rally>=5||big||sh.kind==='pass';
   else if(w===1&&sh.who==='op'&&sh.unreach)want=M.rally>=6||sh.kind==='pass'||sh.kind==='wrongfoot';
   if(!want)return false;
-  if(!momentous&&pt-REP.lastPt<3)return false;
+  const gap=REPLAY_GAP[TUNE.replays];if(gap===Infinity)return false;
+  if(!momentous&&pt-REP.lastPt<gap)return false;
   REP.lastPt=pt;return true}

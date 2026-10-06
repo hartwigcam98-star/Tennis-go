@@ -30,7 +30,7 @@ const GEAR=[
   {id:'grip',name:'Overgrip',stat:'serve',tiers:['Basic wrap','Tacky wrap','Pro wrap','Leather grip','Custom mould']},
   {id:'fitness',name:'Fitness',stat:'stamina',tiers:['Jogging club','Interval plan','Altitude block','Pro conditioning','Iron lungs']}];
 const GEAR_REQ=[1,3,6,10,15,21,28,36,45,54];
-const GEAR_STEP=0.15;
+let GEAR_STEP=0.15;
 const gearCost=n=>Math.round(100*Math.pow(1.45,n-1)/10)*10;
 function gearLv(id){return PROF.gear[id]||0}
 function gearName(g){const n=gearLv(g.id);return n?g.tiers[Math.min(4,Math.floor((n-1)/2))]:'Standard issue'}

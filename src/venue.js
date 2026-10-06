@@ -157,7 +157,7 @@ function venueLight(V){const s=W3.scene,night=!!V.night;
 
 function disposeTree(G){G.traverse(o=>{if(o.geometry)o.geometry.dispose();const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];for(const m of ms){if(m.map)m.map.dispose();m.dispose()}});while(G.children.length)G.remove(G.children[0])}
 function buildCourt(surf,cfg){
-  const G=W3.court;disposeTree(G);
+  const G=W3.court;disposeTree(G);W3.crowdMeshes=null;
   const V=W3.venue=venueFor(Object.assign({},cfg||{},{surf}));venueLight(V);
   const hz=CL/2,people=[];
   const stadium=V.kind==='tour'||V.kind==='major';
@@ -251,6 +251,8 @@ const SKINS=[0xF1C9A5,0xE6B48F,0xD19A72,0xA8714E,0x7D4E33,0x5A3826,0xF6D8C2];
 const HAIR=[0x1E1A18,0x3B2A1E,0x6B4A2A,0xC9A465,0x8A8A8A,0x2A2420];
 function buildCrowd(G,V,people){
   const n=people.length;if(!n)return;
+  // staff first, then the fans in random order so lowering crowd density thins every stand evenly
+  {const st=people.filter(p=>p.staff),fans=people.filter(p=>!p.staff);for(let i=fans.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[fans[i],fans[j]]=[fans[j],fans[i]]}people=st.concat(fans);W3.crowdStaff=st.length}
   const ph=new Float32Array(n),ex=new Float32Array(n),yw=new Float32Array(n);
   const body=personGeo(),head=new T.IcosahedronGeometry(0.11,0).translate(0,0.68,0),top=new T.SphereGeometry(0.118,6,2,0,Math.PI*2,0,Math.PI/2).translate(0,0.70,0);
   const mk=(geo,mat)=>{const g=geo.clone();g.setAttribute('aPh',new T.InstancedBufferAttribute(ph,1));g.setAttribute('aEx',new T.InstancedBufferAttribute(ex,1));g.setAttribute('aYaw',new T.InstancedBufferAttribute(yw,1));
@@ -264,7 +266,7 @@ function buildCrowd(G,V,people){
     c.set(pick(SKINS));H.setColorAt(i,c);
     const hat=!o.staff&&Math.random()<(sunny?0.35:0.12);c.set(hat?pick([0xF4F4F0,0xE8D9A8,0x2A3A5A,0xC8463E,V.acc]):pick(HAIR));Tp.setColorAt(i,c)});
   for(const im of[B,H,Tp]){im.instanceMatrix.needsUpdate=true;im.instanceColor.needsUpdate=true}
-  W3.crowdN=n;
+  W3.crowdN=n;W3.crowdMeshes=[B,H,Tp];if(typeof applyQuality==='function')applyQuality();
 }
 function crowdCheer(amp,dur,stand){const t=now();CROWD.clapAmp=Math.max(amp,t<CROWD.clapUntil?CROWD.clapAmp:0);CROWD.clapUntil=Math.max(CROWD.clapUntil,t+dur*1000);if(stand)CROWD.standUntil=Math.max(CROWD.standUntil,t+stand*1000)}
 function crowdTick(dt){const t=now(),U=CROWD_U;U.uT.value+=dt;

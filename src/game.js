@@ -413,8 +413,9 @@ function loadChar(id,cb){
   if(CH[id]){cb(CH[id]);return}
   if(WAIT[id]){WAIT[id].push(cb);return}
   WAIT[id]=[cb];
-  const names=['char_'+id+'.js','char%20'+id+'.js','char'+id+'.js','char-'+id+'.js'];let k=0;
-  const tryNext=()=>{const s=document.createElement('script');s.src=CHAR_BASE+names[k];
+  // our own copy first (works offline, no dependency on the golf site), then the golf game's site as a fallback
+  const names=['chars/char_'+id+'.js',CHAR_BASE+'char_'+id+'.js',CHAR_BASE+'char%20'+id+'.js',CHAR_BASE+'char'+id+'.js',CHAR_BASE+'char-'+id+'.js'];let k=0;
+  const tryNext=()=>{const s=document.createElement('script');s.src=names[k];
     s.onerror=()=>{s.remove();if(++k<names.length){tryNext();return}const w=WAIT[id];delete WAIT[id];if(w)w.forEach(f=>f(null))};
     document.head.appendChild(s)};
   tryNext();
@@ -737,7 +738,7 @@ function initGL(){
   W3.landMark=new T.Mesh(ringGeo,new T.MeshBasicMaterial({color:0x9BE15D,transparent:true,opacity:.9,depthWrite:false}));W3.landMark.renderOrder=3;s.add(W3.landMark);
   const boxGeo=new T.PlaneGeometry(1,1);boxGeo.rotateX(-Math.PI/2);
   W3.boxGlow=new T.Mesh(boxGeo,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.18,depthWrite:false}));W3.boxGlow.renderOrder=2;s.add(W3.boxGlow);
-  W3.camPos=new T.Vector3(0,4,20);W3.camLook=new T.Vector3(0,0,-4);
+  W3.camPos=new T.Vector3(0,4,20);W3.camLook=new T.Vector3(0,0,-4);applyQuality();
   window.addEventListener('resize',onResize);
   requestAnimationFrame(loop);
 }
@@ -878,7 +879,7 @@ function beginMatch(cfg){
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
   $('quit').textContent='Retire';M.quitArm=false;applyCosmetics();
   renderBoard();{const O=OSTYLE[M.ostyle];say(cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))}
-  REP.setsN=1;REP.lastPt=-9;REP.buf=[];W3.camPos.set(0,4,22);
+  REP.setsN=1;REP.lastPt=-9;REP.buf=[];perfReset();W3.camPos.set(0,4,22);
   if(cfg.drill){drillBegin(cfg);return}
   setTimeout(nextPoint,cfg.intro?2600:1100);
 }
@@ -1103,7 +1104,7 @@ function aimFromSwipe(dx,dy,serve,spd){
   if(serve&&M.fault&&hasPerk('server',2))r*=0.6;
   if(!serve&&ty>0.85&&hasPerk('baseliner',1))r*=0.75;
   if(hasPerk('allcourt',3))r*=0.9;
-  return{x:clamp(tx,-1.4,1.4),y:ty,f,pw,r,slice:!serve&&swipeCurve()>=SLICE_CURVE};
+  return{x:clamp(tx,-1.4,1.4),y:ty,f,pw,r,slice:!serve&&swipeCurve()>=TUNE.slice};
 }
 function swipeSpeed(){const sm=M.samples;if(!sm||sm.length<2)return 0;const last=sm[sm.length-1];let first=last;for(let i=sm.length-1;i>=0;i--){if(last.t-sm[i].t>90)break;first=sm[i]}const dt=last.t-first.t;return dt>0?Math.hypot(last.x-first.x,last.y-first.y)/dt:0}
 function inPlay(a,serve){if(serve){const d=side()==='deuce',lo=d?-1:0,hi=d?0:1;return a.x>=lo&&a.x<=hi&&a.y>=0.52&&a.y<=0.77}return Math.abs(a.x)<=1&&a.y>=0.52&&a.y<=1}
@@ -1145,7 +1146,8 @@ cv.addEventListener('pointercancel',()=>{if(M){M.sw=null;M.preview=null}});
 let lastT=0;
 function loop(t){
   requestAnimationFrame(loop);
-  const dtr=Math.min(0.05,(t-lastT)/1000||0.016);lastT=t;clockTick();
+  const rawMs=t-lastT,dtr=Math.min(0.05,rawMs/1000||0.016);lastT=t;clockTick();
+  if(rawMs>0&&rawMs<1000)perfFrame(rawMs,!!M&&!$('match').hidden&&!REP.on&&!CLK.paused);
   if($('match').hidden||!P[0])return;
   if(REP.on){replayTick(dtr);crowdTick(dtr);fxTick(dtr*0.55);W3.r.render(W3.scene,W3.cam);return}
   const dt=dtr*CLK.ts;
@@ -1188,7 +1190,7 @@ function step(dt){
       if(M.returns){x1=sh.hx*HW+({fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[M.opSide]);z1=hz-(sh.smash?0.29:sh.volley?0.55:0.5)}else if(M.drill){x1=M.home[1].x*HW;z1=toW(0,M.home[1].y).z}else{const sp=spotFor(1,sh,M.opSide);x1=sp.x;z1=sp.z}
       if(sh.type!=='serve'){x0=M.home[0].x*HW;z0=toW(0,M.home[0].y).z}}
     drive2(mv[0],x0,z0,vm0,dt);drive2(mv[1],x1,z1,vm1,dt);
-    for(let i=0;i<2;i++){const sp=Math.hypot(mv[i].v,mv[i].vz),d=sp*dt;M.run[i]+=d;tire(i,d*0.0022*(0.55+0.45*Math.min(1,sp/(i?vm1:vm0))))}
+    for(let i=0;i<2;i++){const sp=Math.hypot(mv[i].v,mv[i].vz),d=sp*dt;M.run[i]+=d;tire(i,d*0.0022*TUNE.drain*(0.55+0.45*Math.min(1,sp/(i?vm1:vm0))))}
     renderEnergy();
     for(let i=0;i<2;i++)if(M.en[i]<0.35&&!M.tiredSaid[i]&&M.state!=='between'){M.tiredSaid[i]=true;if(i===1)say(M.cfg.opp.name+' is breathing hard. Keep making them run.')}
   }else{mv[0].v=mv[0].vz=0;mv[1].v=mv[1].vz=0}
@@ -1235,6 +1237,7 @@ function camera(dt){
 }
 /*@LEARN*/
 /*@PROGRESS*/
+/*@TUNE*/
 document.addEventListener('pointerdown',sndResume,{passive:true});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
 window.__TG={dbg:{get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};

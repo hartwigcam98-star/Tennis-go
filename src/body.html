@@ -1,8 +1,15 @@
+<div id="tunePanel" hidden role="dialog" aria-label="Game settings"><div class="card">
+  <div class="row between"><h3>Game settings</h3><button class="ghost" id="tClose" style="padding:6px 12px;font-size:13px">Done</button></div>
+  <p class="muted" style="font-size:13px">The match is paused. Changes apply straight away and are saved on this device. Long-press the scoreboard to open this during a match.</p>
+  <div id="tBody" style="display:flex;flex-direction:column;gap:12px"></div>
+  <div class="row"><button id="tCopy">Copy settings</button><button class="ghost" id="tReset">Reset defaults</button></div>
+  <p class="note" id="tMsg" style="word-break:break-all"></p>
+</div></div>
 <section id="title" class="wrap">
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 21 · levels, gear and the locker room</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 22 · smoother on every phone</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="learnCard">
@@ -63,6 +70,7 @@
       <b>Timing</b><span>The ball glows just before it reaches you. Swipe while it glows for a perfect hit: tighter and a little harder.</span>
       <b>Serve</b><span>Swipe up into the glowing box.</span>
     </div>
+    <button class="ghost" id="btnTune" style="align-self:flex-start;padding:6px 12px;font-size:13px">Game settings</button>
   </div>
 </section>
 

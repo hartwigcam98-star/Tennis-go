@@ -16,6 +16,7 @@ Play it at https://hartwigcam98-star.github.io/Tennis-go/
 | `src/fx.js` | Game clock (hit-stop, slow motion), contact and bounce effects, haptics, replays. Inserted at `/*@FX*/` |
 | `src/learn.js` | Lessons with Coach Dot and the practice court. Inserted at `/*@LEARN*/` |
 | `src/progress.js` | Profile levels, coins, gear, mastery, cosmetics, achievements, daily challenges, locker room. Inserted at `/*@PROGRESS*/` |
+| `src/tune.js` | Automatic quality scaling and the Game settings panel (long-press the scoreboard). Inserted at `/*@TUNE*/` |
 | `src/audio.js` | Synthesised sound and officials' calls. Inserted at `/*@AUDIO*/` in game.js |
 | `src/vendor/three.js` | three.js r170 |
 | `src/assets/boss.js` | Fallback character (R3BOSS) |
@@ -24,7 +25,7 @@ Play it at https://hartwigcam98-star.github.io/Tennis-go/
 | `tools/convert.mjs` | Converts Mixamo FBX clips to `mclips.json` |
 | `tools/tests/` | Playwright scripts used to check strokes, alignment, volleys, smashes, venues and sound (paths inside point at a local checkout) |
 
-Player characters are loaded at match start from the golf game's site (`https://hartwigcam98-star.github.io/golf-go/`).
+Player characters live in `chars/` (copied from the golf game). The golf site is only a fallback if a file is missing.
 
 ## Build
 
