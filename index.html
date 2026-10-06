@@ -129,7 +129,7 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 9 · short balls and depth</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 10 · real ball physics</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card">
@@ -277,7 +277,8 @@ const RBYID=Object.fromEntries(ROSTER.map(r=>[r.id,r]));
 const STATS=[['power','Power','Pace on drives'],['control','Control','Tighter stray circle'],['speed','Speed','Reach sharp angles'],['serve','Serve','Aces and serve pace']];
 
 /* ================= career data ================= */
-const SURF={hard:{name:'Hard',sp:1,b:1},clay:{name:'Clay',sp:0.82,b:1.35},grass:{name:'Grass',sp:1.2,b:0.6}};
+/* bounce: restitution e (share of vertical speed kept) and friction mu (higher = slower court); clay ~0.85 and hard ~0.75 from bounce studies */
+const SURF={hard:{name:'Hard',sp:1,b:1,e:0.76,mu:0.58},clay:{name:'Clay',sp:0.82,b:1.35,e:0.84,mu:0.72},grass:{name:'Grass',sp:1.2,b:0.6,e:0.70,mu:0.46}};
 const KEY_V='tennis-go-v2';
 /* each week: a main event with an entry rule, and the alternate you play if you miss the cut */
 const EV=(n,tier,surf,rounds,sk,pts,extra)=>Object.assign({n,tier,surf,rounds,sk,pts},extra||{});
@@ -911,13 +912,81 @@ function side(){return(M.pts[0]+M.pts[1])%2===0?'deuce':'ad'}
 function hasPerk(style,lvl){return M&&M.style===style&&M.perks>=lvl}
 function reach(){return 1.1}
 const PB=2/3;
-function mk(a,bx,by,Tm,h1,h2,o){
-  o=o||{};const roll=o.roll!=null?o.roll:4.5,k=(0.9-PB)/(1-PB);
-  let dx=(bx-a.x)*HW,dy=(by-a.y)*CL;const L=Math.hypot(dx,dy)||1;dx/=L;dy/=L;
-  const H={x:bx+dx*roll/HW,y:by+dy*roll/CL};
-  const c={x:bx+(H.x-bx)/k,y:by+(H.y-by)/k};
-  return Object.assign({a:{x:a.x,y:a.y},b:{x:bx,y:by},c,T:Tm,h1,h2,h0:a.z!=null?clamp(a.z,0.3,1.7):0.45,hx:H.x,hy:H.y},o)}
-function pos(s,p){if(p<=PB){const t=p/PB;return{x:s.a.x+(s.b.x-s.a.x)*t,y:s.a.y+(s.b.y-s.a.y)*t,z:s.h0*(1-t)+s.h1*4*t*(1-t)}}const t=(p-PB)/(1-PB);return{x:s.b.x+(s.c.x-s.b.x)*t,y:s.b.y+(s.c.y-s.b.y)*t,z:Math.max(0,s.h2*4*t*(1-t))}}
+/* ---- ball physics, world metres: X across the court, Y up, Z along it (+Z toward your baseline) ----
+   gravity, air drag (CD ~0.6-0.7 for a fuzzy ball), Magnus lift from spin (CL = 1/(2 + 1/S), S = r*w/v),
+   and a bounce with the court's restitution and friction: the ball slides, or grips and rolls, depending on spin and angle */
+const BALL={m:0.057,r:0.0335,A:Math.PI*0.0335*0.0335,rho:1.21,alpha:0.55,g:9.81};
+const KAIR=0.5*BALL.rho*BALL.A/BALL.m;
+const PDT=1/240,SAMPLE=2;
+function netH(x){const a=Math.min(Math.abs(x)/6.4,1);return 0.914+(1.07-0.914)*a*a}
+function simulate(p0,v0,w,sf,maxT,firstBounceOnly){
+  let px=p0.x,py=p0.y,pz=p0.z,vx=v0.x,vy=v0.y,vz=v0.z,t=0,i=0;
+  const r=BALL.r,out={S:[],bounces:[],net:null,crossT:null};
+  const rec=()=>{out.S.push(px,py,pz)};rec();
+  while(t<maxT){
+    const s=Math.hypot(vx,vy,vz)||1e-6,S=Math.min(r*Math.abs(w)/s,1),CD=0.55+0.12*S,CL=S>0.001?1/(2+1/S):0;
+    let ax=-KAIR*CD*s*vx,ay=-KAIR*CD*s*vy-BALL.g,az=-KAIR*CD*s*vz;
+    if(w!==0){// lift acts perpendicular to the flight path in its vertical plane: down for topspin, up for backspin
+      const ux=vx/s,uy=vy/s,uz=vz/s;let nx=-uy*ux,ny=1-uy*uy,nz=-uy*uz;const nl=Math.hypot(nx,ny,nz)||1;nx/=nl;ny/=nl;nz/=nl;
+      const f=-Math.sign(w)*KAIR*CL*s*s;ax+=f*nx;ay+=f*ny;az+=f*nz}
+    vx+=ax*PDT;vy+=ay*PDT;vz+=az*PDT;
+    const ozPrev=pz;px+=vx*PDT;py+=vy*PDT;pz+=vz*PDT;t+=PDT;i++;
+    if(out.crossT==null&&Math.sign(ozPrev)!==Math.sign(pz)&&ozPrev!==0){const f=ozPrev/(ozPrev-pz),hy=py-vy*PDT*(1-f),hx=px-vx*PDT*(1-f);
+      out.crossT=t;out.netY=hy;
+      if(hy<netH(hx)+r){out.net={x:hx,y:hy,t};pz=Math.sign(ozPrev)*0.05;vz=-vz*0.12;vx*=0.3;vy=Math.min(vy,0)*0.5}}
+    if(py<=r&&vy<0){// bounce
+      const e=sf.e*(1-0.0025*Math.max(0,-vy-8)),h=Math.hypot(vx,vz),dx=h>1e-6?vx/h:0,dz=h>1e-6?vz/h:0;
+      const vc=h-r*w,jmax=sf.mu*(1+e)*(-vy),jroll=Math.abs(vc)/(1+1/BALL.alpha),j=Math.min(jmax,jroll),sg=Math.sign(vc);
+      const h2=Math.max(0,h-j*sg);w=w+j*sg/(BALL.alpha*r);vx=dx*h2;vz=dz*h2;vy=-vy*e;py=r;
+      out.bounces.push({t,x:px,z:pz,vy});if(firstBounceOnly)break;
+      if(out.bounces.length>=4)break}
+    if(i%SAMPLE===0)rec();
+    if(!firstBounceOnly&&(Math.abs(pz)>22||Math.abs(px)>14))break;
+  }
+  rec();out.T=t;return out;
+}
+/* aim: find the launch angle that lands the ball on the target at this speed and spin (lowest workable angle) */
+function launch(st,tgt,speed,w,sf){
+  const hx=tgt.x-st.x,hz=tgt.z-st.z,D=Math.hypot(hx,hz)||1,ux=hx/D,uz=hz/D;
+  const range=th=>{const c=Math.cos(th),s=Math.sin(th),r=simulate(st,{x:ux*speed*c,y:speed*s,z:uz*speed*c},w,sf,4,true);
+    if(r.net)return Math.hypot(r.net.x-st.x,0-st.z)*0.98;const b=r.bounces[0];if(!b)return 99;return (b.x-st.x)*ux+(b.z-st.z)*uz};
+  const deg=Math.PI/180;let lo=-14*deg,rlo=range(lo),th=null;
+  for(let a=-11;a<=58;a+=3){const hi=a*deg,rhi=range(hi);if(rlo<=D&&rhi>=D){let L=lo,H=hi;for(let k=0;k<16;k++){const m=(L+H)/2;if(range(m)<D)L=m;else H=m}th=(L+H)/2;break}lo=hi;rlo=rhi}
+  const ok=th!=null;if(th==null)th=rlo<D?40*deg:-14*deg;
+  const c=Math.cos(th),s=Math.sin(th);return{x:ux*speed*c,y:speed*s,z:uz*speed*c,ok,short:!ok&&rlo<D};
+}
+/* build a shot: from (court units) toward a landing target (court units), with speed m/s and spin rad/s (+ topspin) */
+function makeShot(from,tgt,speed,w,o){
+  o=o||{};const sf=M.surf;
+  const st={x:from.x*HW,y:Math.max(0.25,(from.z!=null?from.z:0.5)*ZS),z:(0.5-from.y)*CL};
+  const tw={x:tgt.x*HW,z:(0.5-tgt.y)*CL};
+  let v=launch(st,tw,speed,w,sf);
+  for(let k=0;k<5&&v.short;k++){speed*=1.15;v=launch(st,tw,speed,w,sf)}  // too slow to get there: the player swings a bit harder
+  const r=simulate(st,v,w,sf,5,false);
+  const toMe=tw.z>0,b=r.bounces[0];
+  const sh=Object.assign({S:r.S,n:r.S.length/3,dt:PDT*SAMPLE,who:o.who,net:!!r.net,speed},o);
+  if(b){sh.land={x:b.x/HW,y:0.5-b.z/CL};sh.tb=b.t}else{sh.land={x:tgt.x,y:tgt.y};sh.tb=r.T}
+  // where the receiver meets it: after the bounce, as it drops through waist height, or early if it would fly far behind the baseline
+  let th=null;
+  if(b&&!r.net){const i0=Math.ceil(b.t/sh.dt),base=toMe?CL/2:-CL/2;let peak=i0,lastOK=null;
+    for(let i=i0+1;i<sh.n;i++){const y=r.S[i*3+1],z=r.S[i*3+2];if(y>r.S[peak*3+1])peak=i;
+      const behind=toMe?z-base:base-z;if(behind>4.5){th=i*sh.dt;break}
+      if(i>peak&&y<=1.0){th=i*sh.dt;break}
+      if(r.bounces[1]&&i*sh.dt>=r.bounces[1].t-0.02){th=(peak+2)*sh.dt;break}}
+    if(th==null)th=Math.min((sh.n-2)*sh.dt,b.t+0.6)}
+  else th=Math.min((sh.n-2)*sh.dt,(r.net?r.net.t:sh.tb)+0.6);
+  sh.T=th/0.9;sh.pb=sh.tb/sh.T;
+  const H=pos(sh,0.9);sh.hx=H.x;sh.hy=H.y;
+  return sh;
+}
+function pos(s,p){
+  const t=Math.max(0,p*s.T),f=Math.min(t/s.dt,s.n-1.001),i=Math.floor(f),a=f-i,S=s.S,j=i*3,k=Math.min(i+1,s.n-1)*3;
+  const X=S[j]+(S[k]-S[j])*a,Y=S[j+1]+(S[k+1]-S[j+1])*a,Z=S[j+2]+(S[k+2]-S[j+2])*a;
+  return{x:X/HW,y:0.5-Z/CL,z:Math.max(0,Y-BALL.r)/ZS}
+}
+function landIn(sh,serve){if(sh.net)return false;const l=sh.land;if(serve){const d=side()==='deuce',lo=d?-1:0,hi=d?0:1;return l.x>=lo-0.01&&l.x<=hi+0.01&&l.y>=0.5&&l.y<=0.772}return Math.abs(l.x)<=1.012&&l.y>=0.5&&l.y<=1.004}
+
+
 
 function startMatch(cfg){
   if(window.__SIM){setTimeout(()=>cfg.onEnd(window.__SIM(cfg),'6–4',{aces:0,winners:0,big:0}),0);return}
@@ -988,13 +1057,16 @@ function oppServeStart(){
 function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
   const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,from={x:M.op.x,y:1.1,z:1.6};
+  const spd=30+s*2.2+rnd(-2,2);
   if(Math.random()<0.06-s*0.004){
-    M.shot=mk(from,(lo+hi)/2,0.56,0.9/M.surf.sp,0.15,0.3,{who:'op'});M.t0=now();M.state='oppErr';
+    M.shot=makeShot(from,{x:(lo+hi)/2,y:0.5},spd,120,{who:'op',err:true});M.t0=now();M.state='oppErr';
     setTimeout(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}
   const wide=Math.random()<0.3+s*0.04;
-  const bx=wide?(d?(Math.random()<0.5?0.1:0.9):(Math.random()<0.5?-0.1:-0.9)):lo+0.25+Math.random()*0.5;
-  const by=0.27+Math.random()*0.12;
-  M.shot=mk(from,bx,by,(1.2-s*0.03)/M.surf.sp,0.2,0.9*M.surf.b,{who:'op',serve:true,roll:rnd(7.5,9)});
+  const bx=wide?(d?(Math.random()<0.5?0.1:0.88):(Math.random()<0.5?-0.1:-0.88)):lo+0.25+Math.random()*0.5;
+  const by=0.24+Math.random()*0.1;
+  let sh=null;for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),120+k*70,{who:'op',serve:true});if(!sh.net&&sh.land.y>0.2&&sh.land.y<0.5)break}
+  M.shot=sh;
+  {const L=sh.land,inBox=!sh.net&&L.x>=lo-0.01&&L.x<=hi+0.01&&L.y>=0.228&&L.y<=0.5;if(!inBox){sh.err=true;M.t0=now();M.state='oppErr';setTimeout(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
   if(Math.random()<0.03+s*0.012){M.shot.unreach=true;M.shot.ace=true}else setReach(M.shot);
   M.meSide=sideFor(0,M.shot.hx);M.t0=now();M.state='op';P[0].hop=0.15;
 }
@@ -1002,18 +1074,64 @@ function oppHit(from){
   P[0].hop=0.15;
   const s=M.os;let bx,by,err=false;
   M.rally++;const ue=Math.max(0.02,0.10-s*0.01)+(hasPerk('counter',1)?0.03:0)+(hasPerk('counter',2)&&M.rally>=4?0.05:0);
-  if(Math.random()<ue){err=true;if(Math.random()<0.5){bx=(Math.random()-0.5)*1.2;by=-0.1}else{bx=(Math.random()<0.5?-1:1)*rnd(1.08,1.2);by=rnd(0.15,0.3)}}
-  let Tm=(1.6-s*0.04+Math.random()*0.25)/M.surf.sp,h1=0.65,h2=0.8*M.surf.b,roll=rnd(4.2,6),kind='deep';
-  if(!err){const r=Math.random(),span=0.35+s*0.045;
-    if(r<0.05+s*0.008){kind='drop';bx=(Math.random()*2-1)*0.55;by=rnd(0.37,0.45);Tm=2.0/M.surf.sp;h1=0.42;h2=0.42*M.surf.b;roll=rnd(1.6,2.4)}
-    else if(r<0.2+s*0.015){kind='angle';bx=(Math.random()<0.5?-1:1)*rnd(0.6,0.9);by=rnd(0.27,0.38);roll=rnd(2.6,3.4)}
-    else{bx=(Math.random()*2-1)*span;by=rnd(0.1,0.32)}}
-  M.shot=mk(from,bx,by,Tm,h1,h2,{who:'op',err,roll,kind});
-  if(!err)setReach(M.shot);
+  let spd=19+s*1.6+rnd(0,3),w=170+s*12,kind='deep';
+  if(Math.random()<ue){err=true;if(Math.random()<0.5){bx=(Math.random()-0.5)*1.2;by=-0.12}else{bx=(Math.random()<0.5?-1:1)*rnd(1.08,1.2);by=rnd(0.15,0.3)}}
+  else{const r=Math.random(),span=0.35+s*0.045;
+    if(r<0.05+s*0.008){kind='drop';bx=(Math.random()*2-1)*0.55;by=rnd(0.38,0.45);spd=Math.sqrt(9.81*Math.hypot((bx-from.x)*HW,(by-from.y)*CL))*1.3;w=-170}
+    else if(r<0.2+s*0.015){kind='angle';bx=(Math.random()<0.5?-1:1)*rnd(0.62,0.9);by=rnd(0.28,0.38);spd=17+s*1.1;w=300}
+    else{bx=(Math.random()*2-1)*span;by=rnd(0.06,0.28)}}
+  let sh=null;
+  for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),w,{who:'op',err,kind});
+    if(err)break;const L=sh.land;if(!sh.net&&Math.abs(L.x)<=1&&L.y>=0&&L.y<0.5)break}
+  {const L=sh.land;sh.err=sh.net||Math.abs(L.x)>1.012||L.y<-0.004||L.y>0.5}  // the physics decides in or out
+  M.shot=sh;
+  if(!sh.err)setReach(M.shot);
   M.meSide=sideFor(0,M.shot.hx);
   M.t0=now();M.state='op';M.land=null;M.aim=null;M.commit=null;
-  if(M.pending&&!err&&!M.shot.unreach){M.commit=M.pending;M.aim={x:M.pending.x,y:M.pending.y}}M.pending=null;
+  if(M.pending&&!sh.err&&!M.shot.unreach){M.commit=M.pending;M.aim={x:M.pending.x,y:M.pending.y}}M.pending=null;
 }
+function executeShot(){
+  const sh=M.shot,S=M.S,c=M.commit;M.commit=null;
+  const bp=pos(sh,clamp((now()-M.t0)/1000/sh.T,0.9,1.0)),l=scatter(c),type=c.f<0.25?'drop':'drive';
+  if(!P[0].swing)P[0].startSwing(M.meSide,SWINGS[M.meSide].dur*SWINGS[M.meSide].cf);
+  const pw=Math.min(c.pw,1.2);
+  const Dm=Math.hypot((l.x-bp.x)*HW,(l.y-bp.y)*CL),spd=type==='drop'?Math.max(9+2.5*pw,Math.sqrt(9.81*Dm)*1.3):14+18*pw+S.power*0.5,w=type==='drop'?-170:170+70*(1-Math.min(pw,1))+S.control*6;
+  const shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type});
+  M.aim={x:c.x,y:c.y};M.land=shot.land;
+  if(!landIn(shot,false)){
+    const L=shot.land,why=shot.net?'Into the net. Swipe slower or a little longer.':Math.abs(L.x)>1?'Just wide.':'Long. Swipe a little shorter or slower.';
+    shot.err=true;M.shot=shot;M.t0=now();M.state='err';
+    setTimeout(()=>pointTo(1,why,shot.net?'NET':'OUT'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
+  if(c.pw>=0.85)M.stat.big++;
+  const tx=shot.land.x,ty=shot.land.y,r=Math.abs(tx-M.op.x),s=M.os;
+  const miss=clamp(0.02+Math.min(c.pw,1)*0.12+(r>0.9?0.2:r>0.6?0.08:0)+(ty>0.92?0.05:0)+(type==='drop'?0.1:0)+(S.power-3)*0.01-(s-3)*0.03+(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0),0.02,0.65);
+  M.shot=shot;M.t0=now();M.state='me';P[1].hop=0.15;
+  M.returns=canReach(1,M.shot)&&Math.random()>miss;
+  M.opSide=sideFor(1,M.shot.hx);
+  say(type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*3.6)+' km/h':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*3.6)+' km/h');
+}
+function doServe(a){
+  if(!M||M.state!=='serving')return;
+  const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(a),from={x:M.me.x,y:-0.05,z:1.6};
+  const pw=Math.min(a.pw,1.1),second=M.fault;
+  let spd=24+20*pw+S.serve*0.9+(hasPerk('server',3)?2.5:0),w=110;
+  if(second){spd*=0.8;w=330}
+  const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve'});
+  M.aim={x:a.x,y:a.y};M.land=shot.land;
+  if(!landIn(shot,true)){
+    const L=shot.land,why=shot.net?'into the net':L.y>0.772?'long':'wide';
+    shot.err=true;M.shot=shot;M.t0=now();M.state='err';
+    if(M.fault)setTimeout(()=>pointTo(1,'Double fault, '+why+'.','DOUBLE FAULT'),900);
+    else{M.fault=true;callOut('FAULT');setTimeout(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null;say('Fault, '+why+'. Second serve: it gets extra topspin to drop in.')},1100)}
+    return}
+  const tx=shot.land.x,edge=Math.min(Math.abs(tx-lo),Math.abs(hi-tx));
+  const ace=clamp(0.03+Math.min(a.pw,1)*0.14+S.serve*0.02+(edge<0.12?0.12:0)-M.os*0.025-(second?0.08:0)+(!second&&hasPerk('server',1)?0.06:0)+(!second&&hasPerk('server',3)?0.06:0),0.02,0.65);
+  if(a.pw>=0.85)M.stat.big++;
+  M.shot=shot;M.returns=Math.random()>ace;M.t0=now();M.state='me';P[1].hop=0.15;
+  M.opSide=sideFor(1,M.shot.hx);
+  say((a.pw>=0.85?'Big serve! ':'Serve is in. ')+Math.round(spd*3.6)+' km/h');
+}
+
 const MAXL=190;
 function aimFromSwipe(dx,dy,serve,spd){
   const L0=Math.hypot(dx,dy);if(L0<20)return null;const fwd=Math.max(-dy,20);
@@ -1030,45 +1148,6 @@ function aimFromSwipe(dx,dy,serve,spd){
 function swipeSpeed(){const sm=M.samples;if(!sm||sm.length<2)return 0;const last=sm[sm.length-1];let first=last;for(let i=sm.length-1;i>=0;i--){if(last.t-sm[i].t>90)break;first=sm[i]}const dt=last.t-first.t;return dt>0?Math.hypot(last.x-first.x,last.y-first.y)/dt:0}
 function inPlay(a,serve){if(serve){const d=side()==='deuce',lo=d?-1:0,hi=d?0:1;return a.x>=lo&&a.x<=hi&&a.y>=0.52&&a.y<=0.77}return Math.abs(a.x)<=1&&a.y>=0.52&&a.y<=1}
 function scatter(a){const ang=Math.random()*Math.PI*2,m=Math.sqrt(Math.random());return{x:a.x+Math.cos(ang)*a.r*m,y:a.y+Math.sin(ang)*a.r*0.7*m}}
-function executeShot(){
-  const sh=M.shot,S=M.S,c=M.commit;M.commit=null;
-  const bp=pos(sh,clamp((now()-M.t0)/1000/sh.T,0.9,1.0)),l=scatter(c),tx=l.x,ty=l.y,type=c.f<0.25?'drop':'drive';
-  if(!P[0].swing)P[0].startSwing(M.meSide,SWINGS[M.meSide].dur*SWINGS[M.meSide].cf);
-  M.aim={x:c.x,y:c.y};M.land={x:tx,y:ty};
-  if(!inPlay(l,false)){
-    const why=ty<0.52?'Into the net. Swipe a little longer.':Math.abs(tx)>1?'Just wide.':'Long. Swipe a little shorter.';
-    M.shot=mk(bp,tx,ty,1.3/M.surf.sp,0.7,0.9*M.surf.b,{who:'me',err:true});M.t0=now();M.state='err';
-    setTimeout(()=>pointTo(1,why,ty<0.52?'NET':'OUT'),900);return}
-  let Tm,h1,h2=0.95*M.surf.b;
-  if(type==='drop'){Tm=2.1;h1=0.42;h2=0.4*M.surf.b}else{Tm=Math.max(0.8,1.85-Math.min(c.pw,1)*0.85-S.power*0.025);h1=0.8-Math.min(c.pw,1)*0.35}
-  const roll=type==='drop'?rnd(1.6,2.4):2.6+4*Math.min(c.pw,1)*clamp((ty-0.5)/0.4,0.35,1)+(ty>0.85?0.6:0);
-  if(c.pw>=0.85)M.stat.big++;
-  const r=Math.abs(tx-M.op.x),s=M.os;
-  const miss=clamp(0.02+Math.min(c.pw,1)*0.12+(r>0.9?0.2:r>0.6?0.08:0)+(ty>0.92?0.05:0)+(type==='drop'?0.1:0)+(S.power-3)*0.01-(s-3)*0.03+(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0),0.02,0.65);
-  M.shot=mk(bp,tx,ty,Tm/M.surf.sp,h1,h2,{who:'me',type,roll});M.t0=now();M.state='me';P[1].hop=0.15;
-  M.returns=canReach(1,M.shot)&&Math.random()>miss;
-  M.opSide=sideFor(1,pos(M.shot,0.9).x);
-  say(type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit!':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play.');
-}
-function doServe(a){
-  if(!M||M.state!=='serving')return;
-  const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(a),tx=l.x,ty=l.y,from={x:M.me.x,y:-0.05,z:1.6};
-  M.aim={x:a.x,y:a.y};M.land={x:tx,y:ty};
-  if(!inPlay(l,true)){
-    const why=ty<0.52?'into the net':ty>0.77?'long':'wide';
-    M.shot=mk(from,tx,ty,1/M.surf.sp,0.25,0.6*M.surf.b,{who:'me',err:true});M.t0=now();M.state='err';
-    if(M.fault)setTimeout(()=>pointTo(1,'Double fault, '+why+'.','DOUBLE FAULT'),900);
-    else{M.fault=true;callOut('FAULT');setTimeout(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null;say('Fault, '+why+'. Second serve. A slower swipe is safer.')},1100)}
-    return}
-  const edge=Math.min(Math.abs(tx-lo),Math.abs(hi-tx));
-  const ace=clamp(0.03+Math.min(a.pw,1)*0.14+S.serve*0.02+(edge<0.12?0.12:0)-M.os*0.025-(M.fault?0.08:0)+(!M.fault&&hasPerk('server',1)?0.06:0)+(!M.fault&&hasPerk('server',3)?0.06:0),0.02,0.65);
-  const Tm=(1.45-Math.min(a.pw,1)*0.45-S.serve*0.03-(hasPerk('server',3)?0.08:0))*(M.fault?1.15:1)/M.surf.sp;
-  if(a.pw>=0.85)M.stat.big++;
-  M.shot=mk(from,tx,ty,Tm,0.25,0.9*M.surf.b,{who:'me',type:'serve',roll:6.5+3*Math.min(a.pw,1)});M.returns=Math.random()>ace;M.t0=now();M.state='me';P[1].hop=0.15;
-  M.opSide=sideFor(1,pos(M.shot,0.9).x);
-  say(a.pw>=0.85?'Big serve!':'Serve is in.');
-}
-
 /* ---- input ---- */
 const cv=$('gl');
 function lp(e){const k=360/window.innerWidth;return{x:e.clientX*k,y:e.clientY*k}}
@@ -1108,8 +1187,8 @@ function step(dt){
     if(M.state==='op'){
       if(M.commit&&!sh.err&&!sh.unreach)swingFor(P[0],M.meSide,M.t0+0.9*sh.T*1000);
       if(M.commit&&p>=0.9){executeShot()}else{
-        if(sh.err&&p>0.68&&!sh.called){sh.called=true;callOut('OUT');say('Out!')}
-        if(sh.err&&p>1.0)pointTo(0,'Their shot was out.',null);
+        if(sh.err&&p>(sh.net?0.3:sh.pb+0.02)&&!sh.called){sh.called=true;callOut(sh.net?'NET':'OUT');say(sh.net?'Into the net!':'Out!')}
+        if(sh.err&&p>1.0)pointTo(0,sh.net?'Their shot found the net.':'Their shot was out.',null);
         else if(sh.unreach&&p>1.1){pointTo(1,sh.ace?'Ace from '+M.cfg.opp.name+'.':'Out of reach.',sh.ace?'ACE':null)}
         else if(!sh.err&&!sh.unreach&&p>1.0)pointTo(1,'You didn’t swipe in time.',null)}
     }
