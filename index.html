@@ -129,7 +129,7 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 7 · footwork update</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 8 · athletic stance</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card">
@@ -665,6 +665,7 @@ const SWINGS={
     {t:0.66,yaw:0.1,  ra:V(-0.12,0.98,0.15),rf:V(-0.05,1,0.12),la:V(0.4,-0.3,0.85),lf:V(0.3,-0.4,0.85)},
     {t:1,   yaw:0.75, ra:V(0.45,-0.6,0.6),rf:V(0.5,-0.75,0.4),la:V(0.4,-0.85,0.2),lf:V(0.3,-0.8,0.4)}]}
 };
+const READY={yaw:0,ra:V(-0.3,-0.6,0.74),rf:V(0.25,0.05,0.97),la:V(0.3,-0.6,0.74),lf:V(-0.3,0.1,0.95)};
 function sampleSwing(S,u){
   const K=S.keys;let i=0;while(i<K.length-2&&u>K[i+1].t)i++;
   const a=K[i],b=K[i+1],f=clamp((u-a.t)/(b.t-a.t),0,1),s=f*f*(3-2*f);
@@ -711,6 +712,9 @@ class Player{
     const ch=(a,b)=>{const i=this.idx[a],j=this.idx[b];return i!=null&&j!=null?new T.Vector3().copy(bones[j].position).normalize():null};
     this.dirArm={RightArm:ch('RightArm','RightForeArm'),RightForeArm:ch('RightForeArm','RightHand'),LeftArm:ch('LeftArm','LeftForeArm'),LeftForeArm:ch('LeftForeArm','LeftHand')};
     this.spine=['Spine','Spine1','Spine2'].map(s=>this.idx[s]).filter(v=>v!=null);
+    this.PP=[];for(let k=0;k<nb;k++)this.PP.push(new T.Vector3());this._t=new T.Quaternion();this._v=new T.Vector3();
+    const LG=(u,l,f,sx)=>{const I=this.idx;if(I[u]==null||I[l]==null||I[f]==null)return null;return[I[u],I[l],I[f],sx,bones[I[l]].position.length(),bones[I[f]].position.length()]};
+    const lL=LG('LeftUpLeg','LeftLeg','LeftFoot',1),lR=LG('RightUpLeg','RightLeg','RightFoot',-1);this.legs=lL&&lR?[lL,lR]:null;this.depth=1;this.land=0;this.relax=false;
     this.racket=makeRacket();const hand=bones[this.idx.RightHand],mid=bones[this.idx.RightHandMiddle1];
     if(hand){const d=mid?mid.position.clone().normalize():new T.Vector3(0,1,0);this.racket.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d);
       if(mid)this.racket.position.copy(mid.position).multiplyScalar(0.55);this.racket.rotateY(Math.PI/2);hand.add(this.racket)}
@@ -734,6 +738,35 @@ class Player{
     ha[1]=ha[1]*(1-w)+hb[1]*w}
   startSwing(type,offset){this.swing={type,t:offset||0}}
   startReact(name){const c=this.clips[name];if(c)this.react={name,t:0,dur:c.dur}}
+  fk(q,h){const nb=this.nb,D=this.D,W=this.W,PP=this.PP,B=this.bones,v=this._v;
+    for(let k=0;k<nb;k++){this.L[k].set(q[k*4],q[k*4+1],q[k*4+2],q[k*4+3]);const p=D.parent[k];
+      if(p>=0){W[k].copy(W[p]).multiply(this.L[k]);PP[k].copy(B[k].position).applyQuaternion(W[p]).add(PP[p])}else{W[k].copy(this.L[k]);PP[k].set(h[0],h[1],h[2])}}}
+  setLocal(q,k,Wnew,Wparent){const t=this._t.copy(Wparent).invert().multiply(Wnew).normalize();q[k*4]=t.x;q[k*4+1]=t.y;q[k*4+2]=t.z;q[k*4+3]=t.w}
+  athletic(q,h,depth,widen){
+    if(!this.legs||depth<=0.01)return;
+    const W=this.W,PP=this.PP,D=this.D;this.fk(q,h);
+    const foot=[],footW=[],hint=[];
+    for(const s of this.legs){const [u,l,f,sx]=s;foot.push(PP[f].clone().add(new T.Vector3(sx*widen,0,0)));footW.push(W[f].clone());hint.push(PP[l].clone().sub(PP[u]))}
+    h[1]-=13*depth;
+    // lean the chest forward over the knees
+    const sp=this.spine,ax=new T.Vector3(1,0,0),r=new T.Quaternion();let prev=null;
+    for(let i=0;i<sp.length;i++){const k=sp[i],p=D.parent[k];r.setFromAxisAngle(ax,0.26*depth*(i+1)/sp.length);const Wd=r.clone().multiply(W[k]);this.setLocal(q,k,Wd,prev||W[p]);prev=Wd}
+    this.fk(q,h);
+    const v=new T.Vector3(),dHT=new T.Vector3(),n=new T.Vector3(),K=new T.Vector3(),rq=new T.Quaternion();
+    this.legs.forEach((s,j)=>{const [u,l,f,sx,a,b]=s,hip=PP[u],Tg=foot[j];
+      dHT.copy(Tg).sub(hip);let d=dHT.length();d=clamp(d,Math.abs(a-b)+0.5,a+b-0.3);dHT.normalize();
+      const cosA=clamp((a*a+d*d-b*b)/(2*a*d),-1,1),sinA=Math.sqrt(1-cosA*cosA);
+      n.copy(hint[j]).add(new T.Vector3(sx*4,0,14));n.sub(v.copy(dHT).multiplyScalar(n.dot(dHT)));if(n.lengthSq()<1e-6)n.set(0,0,1);n.normalize();
+      K.copy(hip).add(v.copy(dHT).multiplyScalar(a*cosA)).add(n.multiplyScalar(a*sinA));
+      // thigh toward the knee
+      const cur=v.copy(PP[l]).sub(hip).normalize(),des=K.clone().sub(hip).normalize();rq.setFromUnitVectors(cur,des);
+      const Wu=rq.clone().multiply(W[u]);this.setLocal(q,u,Wu,W[D.parent[u]]);
+      // shin toward the foot
+      const Wl=Wu.clone().multiply(this.L[l]);const c2=this.bones[f].position.clone().normalize().applyQuaternion(Wl);
+      const d2=Tg.clone().sub(K).normalize();rq.setFromUnitVectors(c2,d2);const Wl2=rq.clone().multiply(Wl);this.setLocal(q,l,Wl2,Wu);
+      // foot keeps its angle to the ground
+      this.setLocal(q,f,footW[j],Wl2)});
+  }
   applySwing(q,S,w){
     const nb=this.nb,D=this.D,L=this.L,W=this.W,Wd=this.Wd;
     for(let k=0;k<nb;k++){L[k].set(q[k*4],q[k*4+1],q[k*4+2],q[k*4+3]);const p=D.parent[k];if(p>=0)W[k].copy(W[p]).multiply(L[k]);else W[k].copy(L[k])}
@@ -769,8 +802,20 @@ class Player{
       if(this.runW>0.01&&this.clips.run){const R=this.clips.run;this.phR=(this.phR+dt*sp/Math.max(0.3,(R.spd||3.8)*R.dur*PSCALE))%1;this.sample('run',this.phR*R.dur,qc,hc,true);this.blend(qb,hb,qc,hc,this.runW)}
       this.blend(q,h,qb,hb,this.wLoco)}
     if(this.react){this.react.t+=dt;const r=this.react,w=Math.min(1,r.t/0.2,(r.dur-r.t)/0.3);if(r.t>=r.dur)this.react=null;else if(this.sample(r.name,r.t,qb,hb,false))this.blend(q,h,qb,hb,clamp(w,0,1))}
+    // athletic posture: low and wide, deeper as a stroke loads, extending up through contact
+    let dT=this.react?0.1:this.relax?0.45:1;
+    if(this.swing){const S=SWINGS[this.swing.type],u=this.swing.t/S.dur,sm=x=>x*x*(3-2*x);
+      if(this.swing.type==='sv')dT=u<0.52?0.4+0.9*sm(clamp(u/0.52,0,1)):u<0.66?1.3-1.2*sm((u-0.52)/0.14):0.1+0.5*sm(clamp((u-0.66)/0.34,0,1));
+      else dT=u<S.cf?1+0.45*sm(clamp(u/S.cf,0,1)):1.45-0.6*sm(clamp((u-S.cf)/0.15,0,1))+0.15*sm(clamp((u-S.cf-0.15)/0.2,0,1))}
+    if(this.hop>0){const a=1-this.hop/0.15;dT=a<1?0.55:dT}
+    if(this.land>0){this.land-=dt;dT+=0.35*Math.sin(Math.PI*clamp(1-this.land/0.25,0,1))}
+    this.depth+=(dT-this.depth)*Math.min(1,dt*(this.swing?18:9));
+    this.athletic(q,h,this.depth,9*this.depth*(1-this.wLoco));
+    // racket held out in front, free hand on the throat
+    const wReady=(this.swing||this.react)?0:(1-0.55*this.wLoco)*(this.relax?0.5:1);
+    if(wReady>0.01)this.applySwing(q,READY,wReady);
     if(this.swing){const s=this.swing,S=SWINGS[s.type];s.t+=dt;const u=s.t/S.dur;if(u>=1)this.swing=null;else{const w=Math.min(1,u/0.12,(1-u)/0.15);this.applySwing(q,sampleSwing(S,u),clamp(w,0,1))}}
-    let hopY=0;if(this.hop>0){this.hop-=dt;hopY=Math.sin(Math.PI*clamp(1-this.hop/0.3,0,1))*0.06}
+    let hopY=0;if(this.hop>0){this.hop-=dt;hopY=Math.sin(Math.PI*clamp(1-this.hop/0.15,0,1))*0.05;if(this.hop<=0)this.land=0.25}
     const B=this.bones;for(let k=0;k<this.nb;k++)B[k].quaternion.set(q[k*4],q[k*4+1],q[k*4+2],q[k*4+3]);B[0].position.set(0,h[1],0);
     const m=this.root.matrix;m.makeRotationY(this.yaw+this.yawOff);m.scale(new T.Vector3(.01*PSCALE,.01*PSCALE,.01*PSCALE));m.setPosition(this.pos.x,this.pos.y+hopY,this.pos.z);this.root.matrixWorldNeedsUpdate=true;
   }
@@ -926,7 +971,7 @@ function setReach(sh){const hx=pos(sh,0.9).x;sh.hx=hx;if(Math.abs(hx)>reach())sh
 function sideFor(who,hx){return who===0?(hx>-0.12?'fh':'bh'):(hx<0.12?'fh':'bh')}
 function oppServeStart(){
   if(!M||M.state!=='oppServe')return;
-  M.state='oppServing';P[1].startSwing('sv');setTimeout(()=>{if(P[0])P[0].hop=0.3},SWINGS.sv.dur*SWINGS.sv.cf*1000-300);M.serveT0=now();M.server_who=1;
+  M.state='oppServing';P[1].startSwing('sv');M.serveT0=now();M.server_who=1;
   setTimeout(oppServeLaunch,SWINGS.sv.dur*SWINGS.sv.cf*1000);
 }
 function oppServeLaunch(){
@@ -940,9 +985,10 @@ function oppServeLaunch(){
   const by=0.27+Math.random()*0.12;
   M.shot=mk(from,bx,by,(1.2-s*0.03)/M.surf.sp,0.2,0.9*M.surf.b,{who:'op',serve:true});
   if(Math.random()<0.03+s*0.012){M.shot.unreach=true;M.shot.ace=true;M.shot.hx=pos(M.shot,0.9).x}else setReach(M.shot);
-  M.meSide=sideFor(0,M.shot.hx);M.t0=now();M.state='op';
+  M.meSide=sideFor(0,M.shot.hx);M.t0=now();M.state='op';P[0].hop=0.15;
 }
 function oppHit(from){
+  P[0].hop=0.15;
   const s=M.os;let bx,by,err=false;
   M.rally++;const ue=Math.max(0.02,0.10-s*0.01)+(hasPerk('counter',1)?0.03:0)+(hasPerk('counter',2)&&M.rally>=4?0.05:0);
   if(Math.random()<ue){err=true;if(Math.random()<0.5){bx=(Math.random()-0.5)*1.2;by=-0.1}else{bx=(Math.random()<0.5?-1:1)*rnd(1.08,1.2);by=rnd(0.15,0.3)}}
@@ -984,7 +1030,7 @@ function executeShot(){
   const r=Math.abs(tx-M.op.x),s=M.os;
   const miss=clamp(0.02+Math.min(c.pw,1)*0.12+(r>0.9?0.2:r>0.6?0.08:0)+(ty>0.92?0.05:0)+(type==='drop'?0.1:0)+(S.power-3)*0.01-(s-3)*0.03+(type==='drop'&&hasPerk('allcourt',1)?0.12:0)+(Math.abs(tx)>0.7&&hasPerk('allcourt',2)?0.08:0)+(ty>0.85&&hasPerk('baseliner',3)?0.06:0),0.02,0.65);
   M.returns=Math.random()>miss;
-  M.shot=mk(bp,tx,ty,Tm/M.surf.sp,h1,h2,{who:'me',type});M.t0=now();M.state='me';
+  M.shot=mk(bp,tx,ty,Tm/M.surf.sp,h1,h2,{who:'me',type});M.t0=now();M.state='me';P[1].hop=0.15;
   M.opSide=sideFor(1,pos(M.shot,0.9).x);
   say(type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit!':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play.');
 }
@@ -1002,7 +1048,7 @@ function doServe(a){
   const ace=clamp(0.03+Math.min(a.pw,1)*0.14+S.serve*0.02+(edge<0.12?0.12:0)-M.os*0.025-(M.fault?0.08:0)+(!M.fault&&hasPerk('server',1)?0.06:0)+(!M.fault&&hasPerk('server',3)?0.06:0),0.02,0.65);
   const Tm=(1.45-Math.min(a.pw,1)*0.45-S.serve*0.03-(hasPerk('server',3)?0.08:0))*(M.fault?1.15:1)/M.surf.sp;
   if(a.pw>=0.85)M.stat.big++;
-  M.shot=mk(from,tx,ty,Tm,0.25,0.9*M.surf.b,{who:'me',type:'serve'});M.returns=Math.random()>ace;M.t0=now();M.state='me';
+  M.shot=mk(from,tx,ty,Tm,0.25,0.9*M.surf.b,{who:'me',type:'serve'});M.returns=Math.random()>ace;M.t0=now();M.state='me';P[1].hop=0.15;
   M.opSide=sideFor(1,pos(M.shot,0.9).x);
   say(a.pw>=0.85?'Big serve!':'Serve is in.');
 }
@@ -1018,7 +1064,7 @@ cv.addEventListener('pointermove',e=>{if(!M||!M.sw)return;const q=lp(e);M.sample
 cv.addEventListener('pointerup',e=>{
   if(!M||!M.sw)return;const q=lp(e);M.samples.push({x:q.x,y:q.y,t:now()});const a=aimFromSwipe(q.x-M.sw.x,q.y-M.sw.y,M.state==='serveMe',swipeSpeed());M.sw=null;M.preview=null;
   if(!a){say('Swipe a little longer toward their court.');return}
-  if(M.state==='serveMe'){M.state='serving';M.aim={x:a.x,y:a.y};P[0].startSwing('sv');setTimeout(()=>{if(P[1])P[1].hop=0.3},SWINGS.sv.dur*SWINGS.sv.cf*1000-300);M.serveT0=now();setTimeout(()=>doServe(a),SWINGS.sv.dur*SWINGS.sv.cf*1000);return}
+  if(M.state==='serveMe'){M.state='serving';M.aim={x:a.x,y:a.y};P[0].startSwing('sv');M.serveT0=now();setTimeout(()=>doServe(a),SWINGS.sv.dur*SWINGS.sv.cf*1000);return}
   if(M.state==='me'&&M.shot&&M.shot.type!=='serve'&&M.returns){M.pending=a;M.aim={x:a.x,y:a.y};say('Shot locked in early.');return}
   if(M.state!=='op')return;
   const sh=M.shot;if(sh.err){say('That one is going out. Let it go.');return}if(sh.unreach){say('You can’t get there in time.');return}
@@ -1034,11 +1080,12 @@ function loop(t){
   const dt=Math.min(0.05,(t-lastT)/1000||0.016);lastT=t;
   if($('match').hidden||!P[0])return;
   if(M)step(dt);
+  const rlx=!M||M.state==='between';P[0].relax=rlx;P[1].relax=rlx||(M&&(M.state==='serveMe'));
   P[0].update(dt,1,M?M.mv[0].v:0);P[1].update(dt,-1,M?M.mv[1].v:0);
   camera(dt);
   W3.r.render(W3.scene,W3.cam);
 }
-function swingFor(pl,side,tHit){const S=SWINGS[side];if(!pl.swing&&now()>=tHit-S.dur*S.cf*1000){const other=P[0]===pl?P[1]:P[0];if(other.hop<=0)other.hop=0.3;const off=Math.max(0,(now()-(tHit-S.dur*S.cf*1000))/1000);pl.startSwing(side,Math.min(off,S.dur*S.cf))}}
+function swingFor(pl,side,tHit){const S=SWINGS[side];if(!pl.swing&&now()>=tHit-S.dur*S.cf*1000){const off=Math.max(0,(now()-(tHit-S.dur*S.cf*1000))/1000);pl.startSwing(side,Math.min(off,S.dur*S.cf))}}
 function step(dt){
   const t=now(),sh=M.shot;let p=0;
   if(sh){p=(t-M.t0)/1000/sh.T;
