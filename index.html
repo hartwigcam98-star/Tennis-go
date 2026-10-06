@@ -129,7 +129,7 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 10 · real ball physics</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 11 · real strokes</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card">
@@ -647,32 +647,57 @@ function clipsFor(D,isBoss){
 }
 
 /* ---- rig-space swing keys: forward +z, the player's right is -x, up +y ---- */
+/* ---- stroke animation ----
+   Rig space, centimetres: +z toward the net, the player's right is -x, y up; hand heights are relative to a 96 cm hip height.
+   The racket hand follows the stroke path (two-bone arm IK), the wrist points the racket, hips and shoulders turn separately
+   (shoulders past the hips on the takeback), and the serve turns the whole body sideways for the toss.
+   Phases from coaching and biomechanics sources: unit turn, takeback above ball height, racket drop below the ball,
+   contact out in front, extension, finish; serve: sideways stance, toss release, trophy (trunk tilted ~25 deg, knees bent),
+   racket drop, contact at full reach, pronation, finish across the body. */
 const V=(x,y,z)=>new T.Vector3(x,y,z).normalize();
+const K=(t,o)=>Object.assign({t},o);
 const SWINGS={
-  fh:{dur:0.75,cf:0.62,keys:[
-    {t:0,   yaw:-0.15,ra:V(-0.35,-0.85,0.35),rf:V(-0.15,-0.5,0.85),la:V(0.3,-0.85,0.4),lf:V(0.2,-0.3,0.9)},
-    {t:0.42,yaw:-1.0, ra:V(-0.55,-0.2,-0.8),rf:V(-0.6,0.15,-0.78),la:V(-0.3,-0.3,0.9),lf:V(-0.5,0.1,0.85)},
-    {t:0.62,yaw:-0.1, ra:V(-0.8,-0.3,0.52),rf:V(-0.55,-0.1,0.83),la:V(0.5,-0.7,0.3),lf:V(0.6,-0.5,0.5)},
-    {t:1,   yaw:0.85, ra:V(0.45,0.5,0.74),rf:V(0.75,0.6,0.25),la:V(0.4,-0.85,-0.2),lf:V(0.4,-0.6,0.6)}]},
-  bh:{dur:0.75,cf:0.62,keys:[
-    {t:0,   yaw:0.15, ra:V(-0.2,-0.85,0.45),rf:V(0,-0.4,0.9),la:V(0.3,-0.85,0.4),lf:V(0.1,-0.35,0.93)},
-    {t:0.42,yaw:1.15, ra:V(0.55,-0.4,-0.7),rf:V(0.7,-0.2,-0.6),la:V(0.4,-0.5,-0.7),lf:V(0.5,-0.2,-0.8)},
-    {t:0.62,yaw:0.15, ra:V(0.35,-0.3,0.88),rf:V(0.45,-0.2,0.86),la:V(0.6,-0.7,-0.3),lf:V(0.7,-0.5,0)},
-    {t:1,   yaw:-0.7, ra:V(-0.6,0.5,0.6),rf:V(-0.75,0.55,0.3),la:V(0.7,-0.5,-0.4),lf:V(0.6,-0.6,0.3)}]},
-  sv:{dur:1.15,cf:0.66,keys:[
-    {t:0,   yaw:0,    ra:V(-0.35,-0.85,0.35),rf:V(-0.1,-0.5,0.85),la:V(0.3,-0.85,0.4),lf:V(0.2,-0.3,0.9)},
-    {t:0.35,yaw:-0.5, ra:V(-0.4,-0.8,-0.4),rf:V(-0.3,-0.6,-0.7),la:V(0.15,0.97,0.15),lf:V(0.1,1,0.1)},
-    {t:0.52,yaw:-0.6, ra:V(-0.75,0.35,-0.35),rf:V(-0.2,0.6,-0.75),la:V(0.25,0.9,0.3),lf:V(0.2,0.95,0.2)},
-    {t:0.66,yaw:0.1,  ra:V(-0.12,0.98,0.15),rf:V(-0.05,1,0.12),la:V(0.4,-0.3,0.85),lf:V(0.3,-0.4,0.85)},
-    {t:1,   yaw:0.75, ra:V(0.45,-0.6,0.6),rf:V(0.5,-0.75,0.4),la:V(0.4,-0.85,0.2),lf:V(0.3,-0.8,0.4)}]}
+  fh:{dur:0.8,cf:0.6,keys:[
+    K(0,   {pel:0,  sh:0,   pitch:0,   roll:0,hand:[-22,100,38],rd:[0.1,0.35,0.93],  pole:[-0.6,-0.6,-0.2],left:'throat'}),
+    K(0.16,{pel:-35,sh:-75, pitch:0.05,roll:0,hand:[-40,122,2], rd:[0,1,-0.15],      pole:[-0.5,-0.7,-0.3],left:[-14,122,40]}), // unit turn, racket up, free arm across toward the ball
+    K(0.38,{pel:-50,sh:-105,pitch:0.08,roll:0,hand:[-48,118,-40],rd:[0.1,0.5,-0.86], pole:[-0.3,-0.8,-0.5],left:[-22,120,44]}), // takeback above ball height
+    K(0.50,{pel:-30,sh:-70, pitch:0.1, roll:0,hand:[-46,84,-26],rd:[0,-0.85,-0.5],   pole:[-0.4,-0.8,-0.3],left:[2,112,36]}),   // racket drops below the ball
+    K(0.60,{pel:10, sh:-5,  pitch:0.06,roll:0,hand:[-42,105,42],rd:[-0.92,0.12,0.37],pole:[-0.3,-0.9,0.1], left:[22,108,24]}),  // contact out in front
+    K(0.76,{pel:30, sh:45,  pitch:0.04,roll:0,hand:[-2,128,62], rd:[-0.25,0.65,0.72],pole:[-0.2,-0.6,0.5], left:[28,108,8]}),   // extend through the ball
+    K(1,   {pel:40, sh:80,  pitch:0.04,roll:0,hand:[30,140,8],  rd:[0.35,0.35,-0.87],pole:[0.3,-0.6,0.3],  left:[28,112,0]})]}, // finish over the opposite shoulder
+  bh:{dur:0.8,cf:0.6,keys:[ // two-handed backhand: both hands on the grip the whole way
+    K(0,   {pel:0,  sh:0,   pitch:0,   roll:0,hand:[-22,100,38],rd:[0.1,0.35,0.93],  pole:[-0.6,-0.6,-0.2],left:'grip'}),
+    K(0.16,{pel:35, sh:85,  pitch:0.05,roll:0,hand:[18,122,2],  rd:[0,1,-0.15],      pole:[-0.2,-0.8,-0.3],left:'grip'}),   // unit turn, shoulders past the hips
+    K(0.38,{pel:50, sh:115, pitch:0.08,roll:0,hand:[36,118,-36],rd:[-0.1,0.5,-0.86], pole:[0.1,-0.8,-0.5], left:'grip'}),   // takeback above ball height
+    K(0.50,{pel:30, sh:75,  pitch:0.1, roll:0,hand:[36,84,-20], rd:[0,-0.85,-0.5],   pole:[0.1,-0.9,-0.2], left:'grip'}),   // racket drops below the ball
+    K(0.60,{pel:-5, sh:-8,  pitch:0.06,roll:0,hand:[18,105,46], rd:[0.92,0.12,0.37], pole:[-0.3,-0.9,0.1], left:'grip'}),   // contact in front, both elbows slightly bent
+    K(0.76,{pel:-25,sh:-45, pitch:0.04,roll:0,hand:[-4,128,60], rd:[0.25,0.65,0.72], pole:[-0.4,-0.6,0.3], left:'grip'}),   // arms extend toward the target
+    K(1,   {pel:-35,sh:-85, pitch:0.04,roll:0,hand:[-30,142,6], rd:[-0.35,0.35,-0.87],pole:[-0.6,-0.3,0.2], left:'grip'})]}, // elbows finish high
+  sv:{dur:1.4,cf:0.66,keys:[ // body yaw: -80 = side-on, left shoulder to the net
+    K(0,   {body:-75,pel:0,  sh:0,  pitch:0,    roll:0, hand:[-18,100,30], rd:[0.2,0.1,0.97],  pole:[-0.6,-0.6,-0.2],left:[8,100,32]}),  // side-on stance, ball against the strings
+    K(0.18,{body:-80,pel:-10,sh:-15,pitch:0,    roll:5, hand:[-30,82,-6],  rd:[0,-0.9,-0.4],   pole:[-0.5,-0.8,0],   left:[18,84,24]}),  // arms drop together
+    K(0.38,{body:-80,pel:-20,sh:-40,pitch:-0.15,roll:18,hand:[-50,118,-38],rd:[0.1,0.55,-0.83],pole:[-0.6,-0.4,-0.6],left:[28,180,22]}), // toss released, racket rising behind
+    K(0.52,{body:-80,pel:-15,sh:-45,pitch:-0.25,roll:25,hand:[-42,168,-22],rd:[-0.1,0.95,-0.25],pole:[-0.8,0.2,-0.4],left:[26,190,24]}), // trophy: knees bent, trunk tilted
+    K(0.60,{body:-70,pel:0,  sh:-20,pitch:-0.2, roll:20,hand:[-28,158,-22],rd:[0,-0.9,-0.4],   pole:[-0.6,0.6,-0.4], left:[22,150,26]}), // racket drops behind the back
+    K(0.66,{body:-35,pel:20, sh:20, pitch:-0.05,roll:8, hand:[-14,222,30], rd:[0.05,0.95,0.3], pole:[-0.7,0,0],      left:[20,125,20]}), // contact at full reach
+    K(0.80,{body:-10,pel:35, sh:55, pitch:0.25, roll:0, hand:[10,145,62],  rd:[0.35,-0.35,0.87],pole:[-0.3,-0.8,0.3],left:[22,112,14]}), // pronation, chest to the net
+    K(1,   {body:0,  pel:40, sh:75, pitch:0.15, roll:0, hand:[32,92,12],   rd:[0.6,-0.75,-0.25],pole:[0.2,-0.8,0.3], left:[26,110,6]})]}  // racket finishes past the left leg
 };
-const READY={yaw:0,ra:V(-0.3,-0.6,0.74),rf:V(0.25,0.05,0.97),la:V(0.3,-0.6,0.74),lf:V(-0.3,0.1,0.95)};
-function sampleSwing(S,u){
-  const K=S.keys;let i=0;while(i<K.length-2&&u>K[i+1].t)i++;
-  const a=K[i],b=K[i+1],f=clamp((u-a.t)/(b.t-a.t),0,1),s=f*f*(3-2*f);
-  const lv=(p,q)=>new T.Vector3().copy(p).lerp(q,s).normalize();
-  return{yaw:a.yaw+(b.yaw-a.yaw)*s,ra:lv(a.ra,b.ra),rf:lv(a.rf,b.rf),la:lv(a.la,b.la),lf:lv(a.lf,b.lf)};
-}
+const READYP={body:0,pel:0,sh:0,pitch:0,roll:0,hand:[-22,100,38],rd:[0.1,0.35,0.93],pole:[-0.6,-0.6,-0.2],left:'throat'};
+// resolve 'throat' / 'grip' to positions so every key is numeric; keep a grip weight to lock the hands together at runtime
+function prepKey(k){const h=k.hand,r=V(...k.rd),off=k.left==='grip'?10:k.left==='throat'?28:0;
+  k.L=Array.isArray(k.left)?k.left.slice():[h[0]+r.x*off+3,h[1]+r.y*off,h[2]+r.z*off];k.gw=k.left==='grip'?1:k.left==='throat'?0.6:0;if(k.body==null)k.body=0;return k}
+for(const s in SWINGS)SWINGS[s].keys.forEach(prepKey);prepKey(READYP);
+const NUM=['body','pel','sh','pitch','roll','gw'],VEC=['hand','rd','pole','L'];
+function hermite(K,u,get){// cubic Hermite through keys with finite-difference tangents (smooth racket loops)
+  let i=0;while(i<K.length-2&&u>K[i+1].t)i++;const a=K[i],b=K[i+1],h=b.t-a.t,s=clamp((u-a.t)/h,0,1);
+  const pa=get(a),pb=get(b),ma=i>0?(pb-get(K[i-1]))/(b.t-K[i-1].t):0,mb=i+2<K.length?(get(K[i+2])-pa)/(K[i+2].t-a.t):0;
+  const s2=s*s,s3=s2*s;return(2*s3-3*s2+1)*pa+(s3-2*s2+s)*h*ma+(-2*s3+3*s2)*pb+(s3-s2)*h*mb}
+function sampleSwing(S,u){const K=S.keys,o={};
+  for(const n of NUM)o[n]=hermite(K,u,k=>k[n]);
+  for(const n of VEC)o[n]=[0,1,2].map(j=>hermite(K,u,k=>k[n][j]));return o}
+function mixP(a,b,w){const o={};for(const n of NUM)o[n]=a[n]+(b[n]-a[n])*w;for(const n of VEC)o[n]=[0,1,2].map(j=>a[n][j]+(b[n][j]-a[n][j])*w);return o}
+const READYS=mixP(READYP,READYP,0);
 
 function makeRacket(){
   const g=new T.Group();
@@ -716,8 +741,13 @@ class Player{
     this.PP=[];for(let k=0;k<nb;k++)this.PP.push(new T.Vector3());this._t=new T.Quaternion();this._v=new T.Vector3();
     const LG=(u,l,f,sx)=>{const I=this.idx;if(I[u]==null||I[l]==null||I[f]==null)return null;return[I[u],I[l],I[f],sx,bones[I[l]].position.length(),bones[I[f]].position.length()]};
     const lL=LG('LeftUpLeg','LeftLeg','LeftFoot',1),lR=LG('RightUpLeg','RightLeg','RightFoot',-1);this.legs=lL&&lR?[lL,lR]:null;this.depth=1;this.land=0;this.relax=false;
+    const AR=(u,l,f)=>{const I=this.idx;if(I[u]==null||I[l]==null||I[f]==null)return null;return[I[u],I[l],I[f],bones[I[l]].position.length(),bones[I[f]].position.length()]};
+    this.armR=AR('RightArm','RightForeArm','RightHand');this.armL=AR('LeftArm','LeftForeArm','LeftHand');
+    this.armBones=['RightShoulder','RightArm','RightForeArm','RightHand','LeftShoulder','LeftArm','LeftForeArm','LeftHand'].map(n=>this.idx[n]).filter(v=>v!=null);
+    this.sz=Math.max(0.7,Math.min(1.35,bones[0].position.y/96));this.qx=new Float32Array(nb*4);this.bodyYaw=0;this.post=null;this.lastP=null;
     this.racket=makeRacket();const hand=bones[this.idx.RightHand],mid=bones[this.idx.RightHandMiddle1];
-    if(hand){const d=mid?mid.position.clone().normalize():new T.Vector3(0,1,0);this.racket.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d);
+    this.aH=mid?mid.position.clone().normalize():new T.Vector3(0,1,0);
+    if(hand){const d=this.aH.clone();this.racket.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d);
       if(mid)this.racket.position.copy(mid.position).multiplyScalar(0.55);this.racket.rotateY(Math.PI/2);hand.add(this.racket)}
     this.loco={t:0,clip:'ready'};this.tReady=Math.random()*3;this.swing=null;this.react=null;this.wLoco=0;this.locoClip='walkR';
     this.pos=new T.Vector3();this.yaw=0;this.vx=0;this.prevX=null;
@@ -737,21 +767,25 @@ class Player{
     for(let k=0;k<nb;k++){let d=0;for(let e=0;e<4;e++)d+=qa[k*4+e]*qb[k*4+e];const s=d<0?-1:1;let l=0;
       for(let e=0;e<4;e++){qa[k*4+e]=qa[k*4+e]*(1-w)+qb[k*4+e]*s*w;l+=qa[k*4+e]*qa[k*4+e]}l=Math.sqrt(l)||1;for(let e=0;e<4;e++)qa[k*4+e]/=l}
     ha[1]=ha[1]*(1-w)+hb[1]*w}
-  startSwing(type,offset){this.swing={type,t:offset||0}}
+  startSwing(type,offset){this.swing={type,t:offset||0};this.post=null;if(type==='sv'){this.tossR=null;this.tossC=null}}
   startReact(name){const c=this.clips[name];if(c)this.react={name,t:0,dur:c.dur}}
   fk(q,h){const nb=this.nb,D=this.D,W=this.W,PP=this.PP,B=this.bones,v=this._v;
     for(let k=0;k<nb;k++){this.L[k].set(q[k*4],q[k*4+1],q[k*4+2],q[k*4+3]);const p=D.parent[k];
       if(p>=0){W[k].copy(W[p]).multiply(this.L[k]);PP[k].copy(B[k].position).applyQuaternion(W[p]).add(PP[p])}else{W[k].copy(this.L[k]);PP[k].set(h[0],h[1],h[2])}}}
   setLocal(q,k,Wnew,Wparent){const t=this._t.copy(Wparent).invert().multiply(Wnew).normalize();q[k*4]=t.x;q[k*4+1]=t.y;q[k*4+2]=t.z;q[k*4+3]=t.w}
-  athletic(q,h,depth,widen){
-    if(!this.legs||depth<=0.01)return;
+  athletic(q,h,depth,widen,P,wT){
+    if(!this.legs)return;
     const W=this.W,PP=this.PP,D=this.D;this.fk(q,h);
     const foot=[],footW=[],hint=[];
     for(const s of this.legs){const [u,l,f,sx]=s;foot.push(PP[f].clone().add(new T.Vector3(sx*widen,0,0)));footW.push(W[f].clone());hint.push(PP[l].clone().sub(PP[u]))}
     h[1]-=13*depth;
-    // lean the chest forward over the knees
-    const sp=this.spine,ax=new T.Vector3(1,0,0),r=new T.Quaternion();let prev=null;
-    for(let i=0;i<sp.length;i++){const k=sp[i],p=D.parent[k];r.setFromAxisAngle(ax,0.26*depth*(i+1)/sp.length);const Wd=r.clone().multiply(W[k]);this.setLocal(q,k,Wd,prev||W[p]);prev=Wd}
+    const d2r=Math.PI/180,pel=(P?P.pel:0)*wT*d2r,shY=(P?P.sh:0)*wT*d2r,pit=0.26*depth+(P?P.pitch:0)*wT,rol=(P?P.roll:0)*wT*d2r;
+    const Y=new T.Vector3(0,1,0),X=new T.Vector3(1,0,0),Z=new T.Vector3(0,0,1);
+    const W0=new T.Quaternion().setFromAxisAngle(Y,pel).multiply(W[0]);q[0]=W0.x;q[1]=W0.y;q[2]=W0.z;q[3]=W0.w;
+    const sp=this.spine;let prev=W0;
+    for(let i=0;i<sp.length;i++){const k=sp[i],f=(i+1)/sp.length;
+      const R=new T.Quaternion().setFromAxisAngle(Y,pel+(shY-pel)*f).multiply(new T.Quaternion().setFromAxisAngle(X,pit*f)).multiply(new T.Quaternion().setFromAxisAngle(Z,rol*f));
+      const Wd=R.multiply(W[k]);this.setLocal(q,k,Wd,prev);prev=Wd}
     this.fk(q,h);
     const v=new T.Vector3(),dHT=new T.Vector3(),n=new T.Vector3(),K=new T.Vector3(),rq=new T.Quaternion();
     this.legs.forEach((s,j)=>{const [u,l,f,sx,a,b]=s,hip=PP[u],Tg=foot[j];
@@ -768,27 +802,39 @@ class Player{
       // foot keeps its angle to the ground
       this.setLocal(q,f,footW[j],Wl2)});
   }
-  applySwing(q,S,w){
-    const nb=this.nb,D=this.D,L=this.L,W=this.W,Wd=this.Wd;
-    for(let k=0;k<nb;k++){L[k].set(q[k*4],q[k*4+1],q[k*4+2],q[k*4+3]);const p=D.parent[k];if(p>=0)W[k].copy(W[p]).multiply(L[k]);else W[k].copy(L[k])}
-    const ry=new T.Quaternion(),tmp=new T.Quaternion(),v=new T.Vector3(),r=new T.Quaternion();
-    const sp=this.spine,aim={};
-    const I=this.idx;aim[I.RightArm]=['RightArm',S.ra];aim[I.RightForeArm]=['RightForeArm',S.rf];aim[I.LeftArm]=['LeftArm',S.la];aim[I.LeftForeArm]=['LeftForeArm',S.lf];
-    for(let k=0;k<nb;k++){const p=D.parent[k];
-      const si=sp.indexOf(k);
-      if(si>=0){ry.setFromAxisAngle(new T.Vector3(0,1,0),S.yaw*(si+1)/sp.length);Wd[k].copy(ry).multiply(W[k]);
-        if(p>=0){tmp.copy(W[p]).invert().multiply(W[k]);} // unused but keeps intent clear
-        continue}
-      if(p>=0)Wd[k].copy(Wd[p]).multiply(L[k]);else Wd[k].copy(L[k]);
-      if(sp.length&&k===sp[sp.length-1])continue;
-      const a=aim[k];
-      if(a&&this.dirArm[a[0]]){v.copy(this.dirArm[a[0]]).applyQuaternion(Wd[k]);r.setFromUnitVectors(v,a[1]);Wd[k].premultiply(r)}
-    }
-    for(let k=0;k<nb;k++){const p=D.parent[k];if(p>=0)tmp.copy(Wd[p]).invert().multiply(Wd[k]);else tmp.copy(Wd[k]);
-      let d=L[k].x*tmp.x+L[k].y*tmp.y+L[k].z*tmp.z+L[k].w*tmp.w;const s=d<0?-1:1;
-      L[k].set(L[k].x*(1-w)+tmp.x*s*w,L[k].y*(1-w)+tmp.y*s*w,L[k].z*(1-w)+tmp.z*s*w,L[k].w*(1-w)+tmp.w*s*w).normalize();
-      q[k*4]=L[k].x;q[k*4+1]=L[k].y;q[k*4+2]=L[k].z;q[k*4+3]=L[k].w}
+  ik2(q,u,l,f,a,b,Tg,pole){// two-bone IK: joint u (shoulder), l (elbow), f (wrist) to target Tg; pole = direction the elbow points
+    const W=this.W,PP=this.PP,D=this.D,v=new T.Vector3(),dHT=Tg.clone().sub(PP[u]);let d=dHT.length();d=clamp(d,Math.abs(a-b)+0.5,a+b-0.2);dHT.normalize();
+    const cosA=clamp((a*a+d*d-b*b)/(2*a*d),-1,1),sinA=Math.sqrt(1-cosA*cosA);
+    const n=pole.clone();n.sub(v.copy(dHT).multiplyScalar(n.dot(dHT)));if(n.lengthSq()<1e-6)n.set(0,-1,0);n.normalize();
+    const Kp=PP[u].clone().add(v.copy(dHT).multiplyScalar(a*cosA)).add(n.multiplyScalar(a*sinA));
+    const rq=new T.Quaternion().setFromUnitVectors(PP[l].clone().sub(PP[u]).normalize(),Kp.clone().sub(PP[u]).normalize());
+    const Wu=rq.multiply(W[u].clone());this.setLocal(q,u,Wu,W[D.parent[u]]);
+    const Wl=Wu.clone().multiply(this.L[l]),c2=this.bones[f].position.clone().normalize().applyQuaternion(Wl),d2=Tg.clone().sub(Kp).normalize();
+    const Wl2=new T.Quaternion().setFromUnitVectors(c2,d2).multiply(Wl);this.setLocal(q,l,Wl2,Wu);return Wl2}
+  arms(q,h,P,w){
+    if(w<=0.01||!this.armR||!this.armL)return;
+    const qa=this.qx;qa.set(q);this.fk(qa,h);
+    const s=this.sz,hy=this.PP[0].y,tg=a=>new T.Vector3(a[0]*s,hy+(a[1]-96)*s,a[2]*s);
+    const [ru,rl,rf,ra,rb]=this.armR,rd=V(...P.rd);
+    const Wl=this.ik2(qa,ru,rl,rf,ra,rb,tg(P.hand),V(...P.pole));
+    // wrist points the racket along the stroke direction
+    const Wh=Wl.clone().multiply(this.L[rf]),cur=this.aH.clone().applyQuaternion(Wh);
+    this.setLocal(qa,rf,new T.Quaternion().setFromUnitVectors(cur,rd).multiply(Wh),Wl);
+    // free hand: its own path, or locked onto the grip (two-hander) / throat (ready)
+    this.fk(qa,h);let Lt=tg(P.L);
+    if(P.gw>0.01){const g=this.PP[rf].clone().add(rd.clone().multiplyScalar((P.gw>0.8?10:28)*s)).add(new T.Vector3(2*s,0,0));Lt.lerp(g,clamp(P.gw,0,1))}
+    const [lu,ll,lf,la,lb]=this.armL;this.ik2(qa,lu,ll,lf,la,lb,Lt,new T.Vector3(0.6,-0.6,-0.25));
+    for(const k of this.armBones){let d=0;for(let e=0;e<4;e++)d+=q[k*4+e]*qa[k*4+e];const sg=d<0?-1:1;let l=0;
+      for(let e=0;e<4;e++){q[k*4+e]=q[k*4+e]*(1-w)+qa[k*4+e]*sg*w;l+=q[k*4+e]*q[k*4+e]}l=Math.sqrt(l)||1;for(let e=0;e<4;e++)q[k*4+e]/=l}
   }
+  /* serve toss: in the tossing hand until release, then a parabola that peaks above and drops into the contact point */
+  contactWorld(){const S=SWINGS.sv,k=S.keys.find(k=>Math.abs(k.t-S.cf)<1e-6),s=this.sz,r=V(...k.rd),hb=this.bones[0].position.y*0.985;
+    const v=new T.Vector3(k.hand[0]*s+r.x*44*s,hb+(k.hand[1]-96)*s+r.y*44*s,k.hand[2]*s+r.z*44*s);
+    const m=new T.Matrix4().makeRotationY(this.yaw+(k.body||0)*Math.PI/180).scale(new T.Vector3(.01*PSCALE,.01*PSCALE,.01*PSCALE)).setPosition(this.pos.x,this.pos.y,this.pos.z);return v.applyMatrix4(m)}
+  tossPos(u){const rel=0.38,cf=SWINGS.sv.cf;this.root.updateMatrixWorld(true);
+    if(u<rel||!this.tossR){const hb=this.bones[this.idx.LeftHand];const p=hb?hb.getWorldPosition(new T.Vector3()):this.pos.clone().setY(1);if(u>=rel){this.tossR=p.clone();this.tossC=this.contactWorld()}return p}
+    const R=this.tossR,C=this.tossC,s=clamp((u-rel)/(cf-rel),0,1.3),peak=C.y+0.45,hA=peak-(R.y+C.y)/2;
+    return new T.Vector3(R.x+(C.x-R.x)*s,R.y+(C.y-R.y)*s+4*hA*s*(1-s),R.z+(C.z-R.z)*s)}
   update(dt,facing,vx,vz){
     const q=this.qa,h=this.ha,qb=this.qb,hb=this.hb,qc=this.qc,hc=this.hc;
     vx=vx||0;vz=vz||0;this.vx=vx;const side=vx*facing,fwd=-vz*facing,sp=Math.hypot(vx,vz),wF=sp>0.05?Math.abs(fwd)/(Math.abs(side)+Math.abs(fwd)):0;
@@ -806,22 +852,29 @@ class Player{
       if(this.runW>0.01&&this.clips.run){const R=this.clips.run;this.phR=(this.phR+dt*sp/Math.max(0.3,(R.spd||3.8)*R.dur*PSCALE))%1;this.sample('run',this.phR*R.dur,qc,hc,true);this.blend(qb,hb,qc,hc,this.runW)}
       this.blend(q,h,qb,hb,this.wLoco)}
     if(this.react){this.react.t+=dt;const r=this.react,w=Math.min(1,r.t/0.2,(r.dur-r.t)/0.3);if(r.t>=r.dur)this.react=null;else if(this.sample(r.name,r.t,qb,hb,false))this.blend(q,h,qb,hb,clamp(w,0,1))}
-    // athletic posture: low and wide, deeper as a stroke loads, extending up through contact
+    // stroke parameters: swing keys, or the ready position; blended in, and eased back to ready after the finish
+    let P=null,wT=0,wA=0,u=0;const base=this.react?0:(1-0.55*this.wLoco)*(this.relax?0.5:1);
+    if(this.swing){const s=this.swing,S=SWINGS[s.type];s.t+=dt;u=s.t/S.dur;
+      if(u>=1){this.post={P:this.lastP||READYS,t:0};this.swing=null}
+      else{let Pk=sampleSwing(S,u);const wi=s.type==='sv'?1:Math.min(1,u/0.08);if(wi<1)Pk=mixP(READYS,Pk,wi);P=Pk;this.lastP=Pk;wT=1;wA=1}}
+    if(!P){if(this.post){this.post.t+=dt;const a=clamp(this.post.t/0.4,0,1),e=a*a*(3-2*a);P=mixP(this.post.P,READYS,e);wT=1-e;wA=Math.max(base,1-e);if(a>=1)this.post=null}
+      else if(this.serveReady){this._sv0=this._sv0||sampleSwing(SWINGS.sv,0);this.ssW=Math.min(1,(this.ssW||0)+dt*4);P=mixP(READYS,this._sv0,this.ssW);wT=1;wA=1}
+      else{P=READYS;wT=0;wA=base}}
+    if(!this.serveReady)this.ssW=0;
+    this.bodyYaw=(P.body||0)*Math.PI/180;
+    // posture: low and wide, deeper as a stroke loads, extending up through contact
     let dT=this.react?0.1:this.relax?0.45:1;
-    if(this.swing){const S=SWINGS[this.swing.type],u=this.swing.t/S.dur,sm=x=>x*x*(3-2*x);
+    if(this.swing){const S=SWINGS[this.swing.type],sm=x=>x*x*(3-2*x);
       if(this.swing.type==='sv')dT=u<0.52?0.4+0.9*sm(clamp(u/0.52,0,1)):u<0.66?1.3-1.2*sm((u-0.52)/0.14):0.1+0.5*sm(clamp((u-0.66)/0.34,0,1));
       else dT=u<S.cf?1+0.45*sm(clamp(u/S.cf,0,1)):1.45-0.6*sm(clamp((u-S.cf)/0.15,0,1))+0.15*sm(clamp((u-S.cf-0.15)/0.2,0,1))}
     if(this.hop>0){const a=1-this.hop/0.15;dT=a<1?0.55:dT}
     if(this.land>0){this.land-=dt;dT+=0.35*Math.sin(Math.PI*clamp(1-this.land/0.25,0,1))}
     this.depth+=(dT-this.depth)*Math.min(1,dt*(this.swing?18:9));
-    this.athletic(q,h,this.depth,9*this.depth*(1-this.wLoco));
-    // racket held out in front, free hand on the throat
-    const wReady=(this.swing||this.react)?0:(1-0.55*this.wLoco)*(this.relax?0.5:1);
-    if(wReady>0.01)this.applySwing(q,READY,wReady);
-    if(this.swing){const s=this.swing,S=SWINGS[s.type];s.t+=dt;const u=s.t/S.dur;if(u>=1)this.swing=null;else{const w=Math.min(1,u/0.12,(1-u)/0.15);this.applySwing(q,sampleSwing(S,u),clamp(w,0,1))}}
+    this.athletic(q,h,this.depth,9*this.depth*(1-this.wLoco),P,wT);
+    this.arms(q,h,P,wA);
     let hopY=0;if(this.hop>0){this.hop-=dt;hopY=Math.sin(Math.PI*clamp(1-this.hop/0.15,0,1))*0.05;if(this.hop<=0)this.land=0.25}
     const B=this.bones;for(let k=0;k<this.nb;k++)B[k].quaternion.set(q[k*4],q[k*4+1],q[k*4+2],q[k*4+3]);B[0].position.set(0,h[1],0);
-    const m=this.root.matrix;m.makeRotationY(this.yaw+this.yawOff);m.scale(new T.Vector3(.01*PSCALE,.01*PSCALE,.01*PSCALE));m.setPosition(this.pos.x,this.pos.y+hopY,this.pos.z);this.root.matrixWorldNeedsUpdate=true;
+    const m=this.root.matrix;m.makeRotationY(this.yaw+this.yawOff+this.bodyYaw);m.scale(new T.Vector3(.01*PSCALE,.01*PSCALE,.01*PSCALE));m.setPosition(this.pos.x,this.pos.y+hopY,this.pos.z);this.root.matrixWorldNeedsUpdate=true;
   }
 }
 
@@ -971,7 +1024,7 @@ function makeShot(from,tgt,speed,w,o){
   if(b&&!r.net){const i0=Math.ceil(b.t/sh.dt),base=toMe?CL/2:-CL/2;let peak=i0,lastOK=null;
     for(let i=i0+1;i<sh.n;i++){const y=r.S[i*3+1],z=r.S[i*3+2];if(y>r.S[peak*3+1])peak=i;
       const behind=toMe?z-base:base-z;if(behind>4.5){th=i*sh.dt;break}
-      if(i>peak&&y<=1.0){th=i*sh.dt;break}
+      if(i>peak&&y<=0.9){th=i*sh.dt;break}
       if(r.bounces[1]&&i*sh.dt>=r.bounces[1].t-0.02){th=(peak+2)*sh.dt;break}}
     if(th==null)th=Math.min((sh.n-2)*sh.dt,b.t+0.6)}
   else th=Math.min((sh.n-2)*sh.dt,(r.net?r.net.t:sh.tb)+0.6);
@@ -1056,7 +1109,7 @@ function oppServeStart(){
 }
 function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
-  const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,from={x:M.op.x,y:1.1,z:1.6};
+  const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,C=P[1].tossC||P[1].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
   const spd=30+s*2.2+rnd(-2,2);
   if(Math.random()<0.06-s*0.004){
     M.shot=makeShot(from,{x:(lo+hi)/2,y:0.5},spd,120,{who:'op',err:true});M.t0=now();M.state='oppErr';
@@ -1112,7 +1165,7 @@ function executeShot(){
 }
 function doServe(a){
   if(!M||M.state!=='serving')return;
-  const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(a),from={x:M.me.x,y:-0.05,z:1.6};
+  const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(a),C=P[0].tossC||P[0].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
   const pw=Math.min(a.pw,1.1),second=M.fault;
   let spd=24+20*pw+S.serve*0.9+(hasPerk('server',3)?2.5:0),w=110;
   if(second){spd*=0.8;w=330}
@@ -1174,7 +1227,9 @@ function loop(t){
   requestAnimationFrame(loop);
   const dt=Math.min(0.05,(t-lastT)/1000||0.016);lastT=t;
   if($('match').hidden||!P[0])return;
-  if(M)step(dt);
+  if(M&&!window.__FREEZE)step(dt);
+  if(window.__POSE&&P[0]){const Q=window.__POSE,S=SWINGS[Q.type];P[0].swing={type:Q.type,t:Q.u*S.dur-dt};P[0].post=null;if(Q.type==='sv'&&Q.u<0.38){P[0].tossR=null}}
+  if(P[0]){P[0].serveReady=!!M&&M.state==='serveMe';P[1].serveReady=!!M&&M.state==='oppServe'}
   const rlx=!M||M.state==='between';P[0].relax=rlx;P[1].relax=rlx||(M&&(M.state==='serveMe'));
   P[0].update(dt,1,M?M.mv[0].v:0,M?M.mv[0].vz:0);P[1].update(dt,-1,M?M.mv[1].v:0,M?M.mv[1].vz:0);
   camera(dt);
@@ -1204,9 +1259,9 @@ function step(dt){
   if(!fixed){
     const sh=M.shot;
     let x0=mv[0].x,z0=mv[0].z,x1=mv[1].x,z1=mv[1].z,vm0=vmaxOf(0),vm1=vmaxOf(1);
-    if(M.state==='op'&&sh){if(!sh.err){x0=sh.hx*HW+(M.meSide==='fh'?-0.62:0.62);z0=toW(0,sh.hy).z}x1=0;z1=zOp}
+    if(M.state==='op'&&sh){if(!sh.err){x0=sh.hx*HW+(M.meSide==='fh'?-0.75:0.45);z0=toW(0,sh.hy).z+0.5}x1=0;z1=zOp}
     else if(M.state==='me'&&sh){const hz=toW(0,sh.hy).z;
-      if(M.returns){x1=sh.hx*HW+(M.opSide==='fh'?0.62:-0.62);z1=hz}else{x1=mv[1].x+(sh.hx*HW-mv[1].x)*0.45;z1=mv[1].z+(hz-mv[1].z)*0.45;vm1*=0.6}
+      if(M.returns){x1=sh.hx*HW+(M.opSide==='fh'?0.75:-0.45);z1=hz-0.5}else{x1=mv[1].x+(sh.hx*HW-mv[1].x)*0.45;z1=mv[1].z+(hz-mv[1].z)*0.45;vm1*=0.6}
       if(sh.type!=='serve'){x0=0;z0=zMe}}
     drive2(mv[0],x0,z0,vm0,dt);drive2(mv[1],x1,z1,vm1,dt);
   }else{mv[0].v=mv[0].vz=0;mv[1].v=mv[1].vz=0}
@@ -1217,10 +1272,9 @@ function step(dt){
   P[1].pos.set(mv[1].x,0,mv[1].z);P[1].yaw=0;
   // ball
   let bw=null;
-  if(M.state==='serving'||M.state==='oppServing'){const pl=M.state==='serving'?P[0]:P[1],u=clamp((t-M.serveT0)/1000/(SWINGS.sv.dur*SWINGS.sv.cf),0,1);
-    const fwd=M.state==='serving'?-1:1,rightX=M.state==='serving'?1:-1;bw=new T.Vector3(pl.pos.x+rightX*0.15,1.0+u*(2.9-1.0)-Math.pow(Math.max(0,u-0.75),2)*2,pl.pos.z+fwd*0.35)}
-  else if(M.state==='serveMe'){bw=new T.Vector3(P[0].pos.x-0.25,1.0,P[0].pos.z-0.3)}
-  else if(M.state==='oppServe'){bw=new T.Vector3(P[1].pos.x+0.25,1.0,P[1].pos.z+0.3)}
+  if(M.state==='serving'||M.state==='oppServing'){const pl=M.state==='serving'?P[0]:P[1];bw=pl.swing&&pl.swing.type==='sv'?pl.tossPos(pl.swing.t/SWINGS.sv.dur):pl.tossPos(0)}
+  else if(M.state==='serveMe'){bw=P[0].tossPos(0)}
+  else if(M.state==='oppServe'){bw=P[1].tossPos(0)}
   else if(sh){const b=pos(sh,Math.min(p,1.3));bw=toW(b.x,b.y,b.z);bw.y+=0.075}
   W3.ball.visible=W3.bshadow.visible=!!bw;
   if(bw){W3.ball.position.copy(bw);W3.bshadow.position.set(bw.x,0.012,bw.z);const sc=1/(1+bw.y*0.25);W3.bshadow.scale.setScalar(sc)}
@@ -1244,11 +1298,12 @@ function step(dt){
   hint.textContent=ht;hint.className=warn?'warn':'';
 }
 function camera(dt){
+  if(window.__CAM){const c=window.__CAM,me=P[0].pos;W3.cam.position.set(me.x+c[0],c[1],me.z+c[2]);W3.cam.lookAt(me.x,c[3],me.z);return}
   const me=P[0].pos;const tp=new T.Vector3(me.x*0.75,11.5,me.z+12.5),tl=new T.Vector3(me.x*0.4,0,0.5);
   const k=Math.min(1,dt*3);W3.camPos.lerp(tp,k);W3.camLook.lerp(tl,k);W3.cam.position.copy(W3.camPos);W3.cam.lookAt(W3.camLook);
   W3.sun.target.position.set(0,0,0);
 }
-window.__TG={get M(){return M},P:()=>P,pos};
+window.__TG={get M(){return M},P:()=>P,pos,W3};
 renderTitle();
 })();
 </script>
