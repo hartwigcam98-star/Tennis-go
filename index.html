@@ -761,22 +761,22 @@ class Player{
     const moving=sp>0.12;this.wLoco+=((moving?1:0)-this.wLoco)*Math.min(1,dt*(moving?16:10));
     if(this.wLoco>0.01&&this.clips.walkR&&this.clips.strafeR){
       const r=side>=0,Wk=r?'walkR':'walkL',Sk=r?'strafeR':'strafeL',W=this.clips[Wk],S=this.clips[Sk];
-      const fast=clamp((sp-1.3)/1.4,0,1),sW=Math.max(0.3,(W.spd||1.5)*W.dur),sS=Math.max(0.3,(S.spd||3.9)*S.dur);
+      const fast=clamp((sp-3.1)/1.1,0,1),sW=Math.max(0.3,(W.spd||1.5)*W.dur*PSCALE),sS=Math.max(0.3,(S.spd||3.9)*S.dur*PSCALE);
       // one shared stride phase so feet land where the body actually travels
       this.ph=(this.ph+dt*sp/(sW*(1-fast)+sS*fast))%1;
       this.sample(Wk,this.ph*W.dur,qb,hb,true);this.sample(Sk,this.ph*S.dur,qc,hc,true);this.blend(qb,hb,qc,hc,fast);
-      if(this.runW>0.01&&this.clips.run){const R=this.clips.run;this.phR=(this.phR+dt*sp/Math.max(0.3,(R.spd||3.8)*R.dur))%1;this.sample('run',this.phR*R.dur,qc,hc,true);this.blend(qb,hb,qc,hc,this.runW)}
+      if(this.runW>0.01&&this.clips.run){const R=this.clips.run;this.phR=(this.phR+dt*sp/Math.max(0.3,(R.spd||3.8)*R.dur*PSCALE))%1;this.sample('run',this.phR*R.dur,qc,hc,true);this.blend(qb,hb,qc,hc,this.runW)}
       this.blend(q,h,qb,hb,this.wLoco)}
     if(this.react){this.react.t+=dt;const r=this.react,w=Math.min(1,r.t/0.2,(r.dur-r.t)/0.3);if(r.t>=r.dur)this.react=null;else if(this.sample(r.name,r.t,qb,hb,false))this.blend(q,h,qb,hb,clamp(w,0,1))}
     if(this.swing){const s=this.swing,S=SWINGS[s.type];s.t+=dt;const u=s.t/S.dur;if(u>=1)this.swing=null;else{const w=Math.min(1,u/0.12,(1-u)/0.15);this.applySwing(q,sampleSwing(S,u),clamp(w,0,1))}}
-    let hopY=0;if(this.hop>0){this.hop-=dt;hopY=Math.sin(Math.PI*clamp(1-this.hop/0.3,0,1))*0.07}
+    let hopY=0;if(this.hop>0){this.hop-=dt;hopY=Math.sin(Math.PI*clamp(1-this.hop/0.3,0,1))*0.06}
     const B=this.bones;for(let k=0;k<this.nb;k++)B[k].quaternion.set(q[k*4],q[k*4+1],q[k*4+2],q[k*4+3]);B[0].position.set(0,h[1],0);
-    const m=this.root.matrix;m.makeRotationY(this.yaw+this.yawOff);m.scale(new T.Vector3(.01,.01,.01));m.setPosition(this.pos.x,this.pos.y+hopY,this.pos.z);this.root.matrixWorldNeedsUpdate=true;
+    const m=this.root.matrix;m.makeRotationY(this.yaw+this.yawOff);m.scale(new T.Vector3(.01*PSCALE,.01*PSCALE,.01*PSCALE));m.setPosition(this.pos.x,this.pos.y+hopY,this.pos.z);this.root.matrixWorldNeedsUpdate=true;
   }
 }
 
 /* ================= 3D scene ================= */
-const HW=4.115,CL=23.77,ZS=1.7;
+const HW=4.115,CL=23.77,ZS=1.7,PSCALE=0.88;
 const W3={};
 function toW(x,y,z){return new T.Vector3(x*HW,(z||0)*ZS,(0.5-y)*CL)}
 function initGL(){
@@ -851,7 +851,7 @@ function buildCourt(surf){
 /* ================= match engine (court units: x -1..1 singles, y 0 = your baseline, 1 = theirs) ================= */
 let M=null,P=[null,null];
 const ACC=16,DEC=10;
-function drive(st,target,vmax,dt){const d=target-st.x,vd=Math.sign(d)*Math.min(vmax,Math.sqrt(2*DEC*Math.abs(d))),a=ACC*dt;st.v+=clamp(vd-st.v,-a,a);if(Math.abs(d)<0.03&&Math.abs(st.v)<0.25)st.v=0;st.x+=st.v*dt}
+function drive(st,target,vmax,dt){if(!isFinite(target))target=st.x;if(!isFinite(st.x)){st.x=0;st.v=0}const d=target-st.x,vd=Math.sign(d)*Math.min(vmax,Math.sqrt(2*DEC*Math.abs(d))),a=ACC*dt;st.v+=clamp(vd-st.v,-a,a);if(Math.abs(d)<0.03&&Math.abs(st.v)<0.25)st.v=0;st.x+=st.v*dt}
 function say(t){$('msg').textContent=t}
 let callTimer=0;
 function callOut(t){const c=$('call');c.textContent=t;c.classList.add('on');clearTimeout(callTimer);callTimer=setTimeout(()=>c.classList.remove('on'),900)}
@@ -1058,14 +1058,15 @@ function step(dt){
   // players: accelerate and brake like people; the body ends up beside the ball so the racket meets it
   const mv=M.mv,fixed=M.state==='serveMe'||M.state==='serving'||M.state==='oppServe'||M.state==='oppServing';
   if(!fixed){
+    const sh=M.shot;
     let t0=null,t1=null,vm0=4.2+M.S.speed*0.12,vm1=4.0+M.os*0.12;
-    if(M.state==='op'&&sh){t0=sh.err?mv[0].x:sh.unreach?Math.sign(sh.hx)*reach()*0.95*HW:sh.hx*HW+(M.meSide==='fh'?-0.7:0.7);t1=0}
-    else if(M.state==='me'&&sh){const hx=pos(sh,0.9).x;t1=M.returns?hx*HW*0.97+(M.opSide==='fh'?0.7:-0.7):hx*HW*0.45;if(!M.returns)vm1*=0.6;t0=sh.type==='serve'?mv[0].x:0}
+    if(M.state==='op'&&sh){t0=sh.err?mv[0].x:sh.unreach?Math.sign(sh.hx)*reach()*0.95*HW:sh.hx*HW+(M.meSide==='fh'?-0.62:0.62);t1=0}
+    else if(M.state==='me'&&sh){const hx=pos(sh,0.9).x;t1=M.returns?hx*HW*0.97+(M.opSide==='fh'?0.62:-0.62):hx*HW*0.45;if(!M.returns)vm1*=0.6;t0=sh.type==='serve'?mv[0].x:0}
     else{t0=mv[0].x;t1=mv[1].x}
     drive(mv[0],t0,vm0,dt);drive(mv[1],t1,vm1,dt);
   }else{mv[0].v=0;mv[1].v=0}
   M.me.x=mv[0].x/HW;M.op.x=mv[1].x/HW;
-  for(let i=0;i<2;i++){const pl=P[i],v=mv[i].v,want=(Math.abs(v)>3&&!pl.swing)?1:0;pl.runW+=(want-pl.runW)*Math.min(1,dt*(want?5:9));
+  for(let i=0;i<2;i++){const pl=P[i],v=mv[i].v,want=(Math.abs(v)>3.6&&!pl.swing)?1:0;pl.runW+=(want-pl.runW)*Math.min(1,dt*(want?5:9));
     const base=i===0?Math.PI:0;let d=Math.sign(v||1)*Math.PI/2-base;d=Math.atan2(Math.sin(d),Math.cos(d));pl.yawOff=d*pl.runW}
   P[0].pos.set(mv[0].x,0,toW(0,M.me.y).z);P[0].yaw=Math.PI;
   P[1].pos.set(mv[1].x,0,toW(0,M.op.y).z);P[1].yaw=0;
