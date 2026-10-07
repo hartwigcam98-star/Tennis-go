@@ -738,10 +738,13 @@ let selMode='career',selId=null,styleId=null;
 /* every career starts from the same 14 points: 2 in each stat, plus 4 more shared out by the character's shape
    (weighted toward what they are best at), so players keep their personality without anyone starting behind */
 const START_TOTAL=14,START_FLOOR=2;
-function careerStart(c){const keys=STATS.map(s=>s[0]),full=keys.map(k=>c.st[k]),mn=Math.min(...full),w=full.map(v=>Math.pow(v-mn+1,1.5)),sw=w.reduce((a,b)=>a+b,0);
-  const extra=START_TOTAL-START_FLOOR*keys.length,raw=w.map(x=>extra*x/sw),got=raw.map(Math.floor);let left=extra-got.reduce((a,b)=>a+b,0);
+function careerStart(c,total){total=total||START_TOTAL;const floor=Math.max(START_FLOOR,Math.round(total/5)-2),keys=STATS.map(s=>s[0]),full=keys.map(k=>c.st[k]),mn=Math.min(...full),w=full.map(v=>Math.pow(v-mn+1,1.5)),sw=w.reduce((a,b)=>a+b,0);
+  const extra=total-floor*keys.length,raw=w.map(x=>extra*x/sw),got=raw.map(Math.floor);let left=extra-got.reduce((a,b)=>a+b,0);
   raw.map((v,i)=>[v-Math.floor(v),full[i],i]).sort((a,b)=>b[0]-a[0]||b[1]-a[1]).forEach(([,,i])=>{if(left>0){got[i]++;left--}});
-  const st={};keys.forEach((k,i)=>st[k]=START_FLOOR+got[i]);return st}
+  const st={};keys.forEach((k,i)=>st[k]=floor+got[i]);
+  let spill=0;for(const k of keys)if(st[k]>10){spill+=st[k]-10;st[k]=10}while(spill>0){const k=keys.filter(x=>st[x]<10).sort((a,b)=>st[a]-st[b])[0];if(!k)break;st[k]++;spill--}return st}
+/* where a new career can start: later starts begin stronger, but short of what playing through those years builds (about 28 at college, 46 on tour) */
+const START_AT={junior:{age:16,total:14,l:'Juniors',d:'Age 16 · the full journey'},college:{age:18,total:23,l:'College',d:'Age 18 · a head start'},pro:{age:21,total:36,l:'Pro tour',d:'Age 21 · straight to the tour'}};
 function openSelect(mode){
   selMode=mode;selId=mode==='quick'&&save?save.char:null;
   $('selEyebrow').textContent=mode==='career'?'New career':'Quick match';
@@ -764,17 +767,20 @@ $('selGo').onclick=()=>{
 /* your own player: name, country, outfit colours and handedness (the body comes from the character you picked) */
 const OUTFITS=[['Original',null,'#9aa6b2'],['Navy',{h:210,t:220,a:0.5,l:0.85},'#2b4a8b'],['Crimson',{h:330,t:0,a:0.55,l:0.95},'#b5333d'],['Forest',{h:120,t:130,a:0.5,l:0.9},'#2f7a46'],
   ['Sunset',{h:30,t:30,a:0.55,l:1.05},'#e08a2e'],['Violet',{h:270,t:280,a:0.5,l:0.95},'#7a4bc2'],['Teal',{h:170,t:180,a:0.5,l:0.95},'#1f9a9a'],['Charcoal',{h:0,t:200,a:0.15,l:0.75},'#3a3f47']];
-let CUST={name:'',nat:'USA',outfit:0,lefty:false};
+let CUST={name:'',nat:'USA',outfit:0,lefty:false,start:'junior'};
 function renderCustom(){const c=RBYID[selId];if(!CUST.name)CUST.name=c?c.name:'';
   $('custom').innerHTML='<p class="eyebrow">Your player</p><label class="cf">Name<input id="cuName" maxlength="18" value="'+esc(CUST.name)+'"></label>'+
     '<label class="cf">Country<select id="cuNat">'+NATS.slice().sort().map(n=>'<option'+(n===CUST.nat?' selected':'')+'>'+n+'</option>').join('')+'</select></label>'+
     '<div class="cf"><span>Outfit</span><div class="swatches">'+OUTFITS.map((o,i)=>'<button class="sw" data-o="'+i+'" aria-pressed="'+(i===CUST.outfit)+'" title="'+o[0]+'" style="background:'+o[2]+'"></button>').join('')+'</div></div>'+
+    '<div class="cf"><span>Start in</span><div class="row" style="gap:6px;justify-content:flex-end">'+Object.keys(START_AT).map(k=>'<button class="pc hand st" data-s="'+k+'" aria-pressed="'+(CUST.start===k)+'" title="'+START_AT[k].d+'">'+START_AT[k].l+'</button>').join('')+'</div></div>'+
+    '<p class="muted" style="font-size:13px;margin:-4px 0 0;text-align:right">'+START_AT[CUST.start||'junior'].d+' · '+START_AT[CUST.start||'junior'].total+' rating points</p>'+
     '<div class="cf"><span>Plays</span><div class="row" style="gap:6px"><button class="pc hand" data-h="0" aria-pressed="'+!CUST.lefty+'">Right-handed</button><button class="pc hand" data-h="1" aria-pressed="'+CUST.lefty+'">Left-handed</button></div></div>';
   $('cuName').oninput=e=>{CUST.name=e.target.value};$('cuNat').onchange=e=>{CUST.nat=e.target.value};
   $('custom').querySelectorAll('.sw').forEach(b=>b.onclick=()=>{CUST.outfit=+b.dataset.o;renderCustom()});
-  $('custom').querySelectorAll('.hand').forEach(b=>b.onclick=()=>{CUST.lefty=b.dataset.h==='1';renderCustom()})}
+  $('custom').querySelectorAll('.hand:not(.st)').forEach(b=>b.onclick=()=>{CUST.lefty=b.dataset.h==='1';renderCustom()});
+  $('custom').querySelectorAll('.st').forEach(b=>b.onclick=()=>{CUST.start=b.dataset.s;renderCustom()})}
 function openStyle(){
-  CUST={name:RBYID[selId]?RBYID[selId].name:'',nat:'USA',outfit:0,lefty:!!(RBYID[selId]&&RBYID[selId].lefty)};renderCustom();
+  CUST={name:RBYID[selId]?RBYID[selId].name:'',nat:'USA',outfit:0,lefty:!!(RBYID[selId]&&RBYID[selId].lefty),start:'junior'};renderCustom();
   styleId=null;
   $('styles').innerHTML=STYLES.map(s=>'<button class="pc" data-id="'+s.id+'" aria-pressed="false"><strong>'+s.name+'</strong><small>'+s.d+'</small><ol class="perks">'+s.perks.map((p,i)=>'<li><span class="muted">'+(i===0?'Start':PERK_AT[i]+' wins')+'</span> '+p+'</li>').join('')+'</ol></button>').join('');
   $('styles').querySelectorAll('.pc').forEach(b=>b.onclick=()=>{styleId=b.dataset.id;$('styles').querySelectorAll('.pc').forEach(x=>x.setAttribute('aria-pressed',x===b));$('styleGo').disabled=false;$('styleGo').textContent='Start career as a '+STYLES.find(s=>s.id===styleId).name});
@@ -783,7 +789,7 @@ function openStyle(){
 $('styleBack').onclick=()=>openSelect('career');
 $('styleGo').onclick=()=>{
   if(!styleId)return;
-  const c=RBYID[selId],st=careerStart(c);
+  const A=START_AT[CUST.start||'junior'],c=RBYID[selId],st=careerStart(c,A.total);
   const pool=ROSTER.filter(r=>r.id!==selId).sort(()=>Math.random()-0.5).slice(0,3);
   const nm=(CUST.name||'').trim().slice(0,18)||c.name;
   save={char:selId,name:nm,nat:CUST.nat,v:OUTFITS[CUST.outfit][1],lefty:CUST.lefty,style:styleId,stats:st,xp:0,stage:'junior',season:1,week:0,age:16,
@@ -792,6 +798,10 @@ $('styleGo').onclick=()=>{
     rec:{titles:0,majors:0,masters:0,weeks1:0,best:9999},
     rivals:pool.map((r,i)=>({id:r.id,edge:[0.6,0.9,1.2][i],type:i,w:0,l:0,last:null})),
     college:null,collegeSeasons:0,cur:null,careerW:0,careerL:0,retireAsked:false,retired:false};
+  const sa=CUST.start||'junior';save.startAt=sa;
+  if(sa==='college'){save.age=A.age-1;save.juniorTotal=520;store();renderRecruit();return}   // offers from North Star and Driftless; picking one moves to college at 18
+  if(sa==='pro'){save.stage='pro';save.age=A.age;save.pts.pro={cur:450,prev:0};save.money=25000;store();
+    seasonScreen('Welcome to the tour','Pro season 1',myName()+' turns pro at '+A.age+' and starts ranked #'+proRank()+'. Majors need a top-100 ranking for direct entry and top-200 for qualifying. Below that you play Challengers or Futures to climb.',[['Start pro season 1','go',()=>renderHub()]]);return}
   store();renderHub();
 };
 
@@ -987,7 +997,7 @@ function turnPro(){save.stage='pro';save.season=1;save.week=0;save.age++;save.pt
   seasonScreen('Welcome to the tour','Pro season 1','You start ranked #'+proRank()+'. Majors need a top-100 ranking for direct entry and top-200 for qualifying. Below that you play Challengers or Futures to climb.',[['Start pro season 1','go',()=>renderHub()]])}
 function renderRecruit(){
   const p=save.juniorTotal;
-  $('recruitIntro').textContent='You finished juniors with '+p+' junior points across two seasons. Pick where you play college tennis.';
+  $('recruitIntro').textContent=save.startAt==='college'?'You are starting your career in college. Your junior results earned offers from these programs; pick where you play.':'You finished juniors with '+p+' junior points across two seasons. Pick where you play college tennis.';
   $('offers').innerHTML=PROGRAMS.map(pr=>{const ok=p>=pr.need;return'<button class="offer card" data-id="'+pr.id+'" '+(ok?'':'disabled')+'><span class="eyebrow">'+(ok?'Offer':'Needs '+pr.need+' junior points')+'</span><strong>'+pr.name+'</strong><span class="muted">'+pr.blurb+'</span></button>'}).join('');
   $('offers').querySelectorAll('button').forEach(b=>b.onclick=()=>{save.college=b.dataset.id;save.stage='college';save.season=1;save.week=0;save.age++;save.pts.college={cur:program().start,prev:0};save.cur=null;store();renderHub()});
   show('recruit');
