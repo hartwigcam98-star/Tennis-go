@@ -186,4 +186,4 @@ function simEvent(o){const ev=o.ev,f=fmt(save.stage,ev),field=fieldFor(save.stag
   let ids=Object.keys(players).sort((a,b)=>(RK[a]||999)-(RK[b]||999));const size=1<<Math.ceil(Math.log2(Math.max(2,ids.length)));if(ids.length<size)return;
   const slots=new Array(size);seedOrder(size).forEach((k,pos)=>{slots[pos]=ids[k-1]});
   const D={size,R:Math.log2(size),f:{bo:f.bo,g:f.g},players,slots,seeds:{},res:[],ev:ev.n};drawSimAll(D);awardDrawPoints(D,ev)}
-function simOtherEvents(list){for(const o of list||[])try{simEvent(o)}catch(e){console.error(e)}}
+function simOtherEvents(list){const t0=performance.now();for(const o of list||[])try{simEvent(o)}catch(e){console.error(e)}(window.__SIMT=window.__SIMT||[]).push(Math.round(performance.now()-t0))}

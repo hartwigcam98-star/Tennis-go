@@ -23,10 +23,11 @@ Play it at https://hartwigcam98-star.github.io/Tennis-go/
 | `src/stats.js` | Match statistics for you and every generated player (kept per league) and the Records screen. Inserted at `/*@STATS*/` |
 | `src/moments.js` | Match-point replay, title ceremony (trophy, confetti), changeover stats card, night sessions, wind and heat. Inserted at `/*@MOMENTS*/` |
 | `src/audio.js` | Synthesised sound and officials' calls. Inserted at `/*@AUDIO*/` in game.js |
+| `sounds/` | Optional real crowd recordings (see `sounds/README.md`); the game falls back to its generated sounds |
 | `src/vendor/three.js` | three.js r170 |
 | `src/assets/boss.js` | Fallback character (R3BOSS) |
 | `src/assets/mclips.json` | Mixamo locomotion clips converted for the rig |
-| `tools/build.py` | Builds `index.html` from `src/` |
+| `tools/build.py` | Builds `index.html` from `src/` (also embeds the sound code for the background worker) |
 | `tools/convert.mjs` | Converts Mixamo FBX clips to `mclips.json` |
 | `tools/tests/` | Playwright scripts used to check strokes, alignment, volleys, smashes, venues and sound (paths inside point at a local checkout) |
 

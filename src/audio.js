@@ -7,6 +7,8 @@
    stereo, quieter and wetter on the far side, through a venue echo sized from a club court up to a major stadium. */
 const SND={ctx:null,on:true,amb:null,ambG:null,level:0,buf:{},bank:{},ready:false};
 try{SND.on=localStorage.getItem('tennis-go-sound')!=='off'}catch(e){}
+function mkBuf(L,R){const c=SND.ctx,b=c.createBuffer(R?2:1,L.length,SR());b.getChannelData(0).set(L);if(R)b.getChannelData(1).set(R);return b}
+/*DSP{*/
 const SR=()=>SND.srO||SND.ctx.sampleRate,rng=(a,b)=>a+Math.random()*(b-a),pickA=a=>a[Math.floor(Math.random()*a.length)];
 
 /* ---- offline DSP helpers ---- */
@@ -26,7 +28,6 @@ function nz(out,type,f,Q,tau,amp,t0,attack,mod){const sr=SR(),s0=Math.floor((t0|
   for(let i=0;i<n;i++){const e=i<a?i/a:Math.exp(-(i-a)/(tau*sr));out[s0+i]+=amp*e*x[i]*(mod?mod(i/sr):1)}}
 function crackle(p){return()=>Math.random()<p?1:0.12}
 function norm(o,peak){let m=0;for(let i=0;i<o.length;i++)m=Math.max(m,Math.abs(o[i]));const k=(peak||0.9)/(m||1);for(let i=0;i<o.length;i++)o[i]*=k;return o}
-function mkBuf(L,R){const c=SND.ctx,b=c.createBuffer(R?2:1,L.length,SR());b.getChannelData(0).set(L);if(R)b.getChannelData(1).set(R);return b}
 
 /* ---- the sound bank ---- */
 function mkHit(kind){const o=arr(0.25),soft=kind==='slice'||kind==='drop',vol=kind==='volley',f0=rng(470,600);
@@ -149,6 +150,31 @@ function mkRoomTone(z,room,outdoor){const sr=SR(),len=6,n=Math.floor(sr*len),L=n
       for(let i=0;i<d;i++){const e=Math.sin(Math.PI*i/d);(c?r:l)[s0+i]+=rs[c][s0+i]*g*e}}}
   const fade=Math.floor(sr*0.4);for(const a of [l,r])for(let i=0;i<fade;i++){const q=i/fade;a[i]=a[i]*q+a[n-fade+i]*(1-q)}   // seamless loop
   scale2(l,r,0.8);return mkBuf(l,r)}
+/* what the background worker builds: the shot and footwork sounds, and a venue's crowd */
+function genBank(){const B={};B.hit={};for(const k of ['top','slice','volley','smash','serve','drop'])B.hit[k]=[0,1,2,3].map(()=>mkHit(k));
+  B.ping=[0,1,2].map(mkPing);B.frame=[0,1,2].map(mkFrame);B.net=[0,1].map(mkNet);B.bounce={};for(const s of ['hard','clay','grass'])B.bounce[s]=[0,1,2,3].map(()=>mkBounce(s));
+  B.whoosh=[0,1,2].map(mkWhoosh);B.squeak=[0,1,2,3].map(mkSqueak);B.slide=[0,1].map(mkSlide);B.scuff=[0,1].map(mkScuff);
+  B.step={};for(const s of ['hard','clay','grass'])B.step[s]=[0,1,2].map(()=>mkStep(s));B.grunt={m:[0,1,2].map(()=>mkGrunt(rng(105,140))),f:[0,1,2].map(()=>mkGrunt(rng(200,240)))};return B}
+function genVenue(C){if(!SND.bank.kern)SND.bank.kern=mkClapKernelsLR();const V={clap:mkApplauseLR(C.claps,C.clapLen,C.room[0],C.room[1],C.room[2])};
+  if(C.voices){V.ooh=mkCrowdVoiceLR('ooh',C.voices,C.room);V.cheer=mkCrowdVoiceLR('cheer',C.voices,C.room)}V.babble=mkRoomToneLR(C.z,C.room,C.outdoor);return V}
+/*}DSP*/
+/*@DSPSRC*/
+/* sound building runs on a background thread (a Web Worker made from the code above) so the game never stutters;
+   without workers it falls back to building here */
+function rawToBuf(o){if(!o||(typeof AudioBuffer!=='undefined'&&o instanceof AudioBuffer))return o;
+  if(o.L instanceof Float32Array){const b=SND.ctx.createBuffer(o.R?2:1,o.L.length,o.sr);b.getChannelData(0).set(o.L);if(o.R)b.getChannelData(1).set(o.R);return b}
+  if(Array.isArray(o))return o.map(rawToBuf);if(typeof o==='object'){const r={};for(const k in o)r[k]=rawToBuf(o[k]);return r}return o}
+let DSPW=null,DSPN=0;const DSPCB={};
+function dspWorker(){if(DSPW!==null)return DSPW;DSPW=false;if(!window.Worker||typeof DSP_SRC!=='string')return false;
+  try{const pre="const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));const SND={srO:0,bank:{},ctx:{sampleRate:44100}};function mkBuf(L,R){return{L,R,sr:SR()}}\n";
+    const post="\nonmessage=e=>{const d=e.data;SND.ctx.sampleRate=d.sr;let out;try{out=d.job==='bank'?genBank():genVenue(d.arg)}catch(err){postMessage({id:d.id,err:String(err)});return}const tr=[];(function walk(o){if(!o)return;if(o.L instanceof Float32Array){tr.push(o.L.buffer);if(o.R)tr.push(o.R.buffer);return}if(typeof o==='object')for(const k in o)walk(o[k])})(out);postMessage({id:d.id,out},tr)}";
+    const w=new Worker(URL.createObjectURL(new Blob([pre+DSP_SRC+post],{type:'text/javascript'})));
+    w.onmessage=e=>{const f=DSPCB[e.data.id];delete DSPCB[e.data.id];if(f)f(e.data.err?null:e.data.out)};
+    w.onerror=e=>{e.preventDefault&&e.preventDefault();DSPW=false;for(const k in DSPCB){const f=DSPCB[k];delete DSPCB[k];f(null)}};DSPW=w}catch(e){DSPW=false}
+  return DSPW}
+function dsp(job,arg,cb){const inline=()=>job==='bank'?genBank():genVenue(arg),w=dspWorker();
+  if(w){const id=++DSPN,t0=performance.now();DSPCB[id]=out=>{(SND.tm=SND.tm||[]).push(job+' '+Math.round(performance.now()-t0)+'ms (background)');cb(out?rawToBuf(out):inline())};w.postMessage({id,job,arg,sr:SND.ctx.sampleRate});return}
+  const t0=performance.now();const r=inline();(SND.tm=SND.tm||[]).push(job+' '+Math.round(performance.now()-t0)+'ms (inline)');cb(r)}
 /* venue echo: a short decaying noise tail with a couple of early reflections */
 const VERB={club:[0.5,0.09],college:[0.9,0.13],tour:[1.4,0.17],masters:[1.6,0.19],major:[1.9,0.22]};
 function mkIR(sec){const sr=SR(),n=Math.floor(sr*sec),b=SND.ctx.createBuffer(2,n,sr);
@@ -165,18 +191,9 @@ function sndInit(){
   const comp=c.createDynamicsCompressor();comp.threshold.value=-10;comp.knee.value=8;comp.ratio.value=4;comp.attack.value=0.003;comp.release.value=0.2;
   SND.master.connect(comp);comp.connect(c.destination);
   SND.dry=c.createGain();SND.dry.connect(SND.master);SND.send=c.createGain();SND.send.gain.value=0.1;SND.conv=c.createConvolver();SND.send.connect(SND.conv);SND.conv.connect(SND.master);
-  const B=SND.bank;
-  // the sounds a rally needs, right away
-  B.hit={};for(const k of ['top','slice','volley','smash','serve','drop'])B.hit[k]=[0,1,2,3].map(()=>mkHit(k));
-  B.ping=[0,1,2].map(mkPing);B.frame=[0,1,2].map(mkFrame);B.net=[0,1].map(mkNet);
-  B.bounce={};for(const s of ['hard','clay','grass'])B.bounce[s]=[0,1,2,3].map(()=>mkBounce(s));
-  B.whoosh=[0,1,2].map(mkWhoosh);setVerb();SND.ready=true;
-  // the rest a moment later, in small pieces so the first tap stays smooth
-  const later=[()=>{B.squeak=[0,1,2,3].map(mkSqueak);B.slide=[0,1].map(mkSlide);B.scuff=[0,1].map(mkScuff)},
-    ()=>{B.step={};for(const s of ['hard','clay','grass'])B.step[s]=[0,1,2].map(()=>mkStep(s))},
-    ()=>{B.grunt={m:[0,1,2].map(()=>mkGrunt(rng(105,140))),f:[0,1,2].map(()=>mkGrunt(rng(200,240)))}},
-    ()=>{B.kern=mkClapKernelsLR();const g=SND.ambG=c.createGain();g.gain.value=0;g.connect(SND.dry);SND.kernOK=true;sndVenue()}];
-  let i=0;SND.tm=[];const step=()=>{if(i<later.length){const t0=performance.now();try{later[i++]()}catch(e){console.error(e)}SND.tm.push(Math.round(performance.now()-t0));setTimeout(step,30)}};setTimeout(step,60);
+  const g=SND.ambG=c.createGain();g.gain.value=0;g.connect(SND.dry);
+  loadRecordings();
+  dsp('bank',null,B=>{Object.assign(SND.bank,B);SND.ready=true;SND.kernOK=true;setVerb();sndVenue()});
   return true}
 /* iPhones play web audio as "ambient" sound, which the silent switch mutes. Asking for the playback session (newer iOS)
    and running a silent media loop (older iOS) makes the game sound like any video or music app instead. */
@@ -208,12 +225,8 @@ function crowdProfile(V){V=V||W3.venue||{kind:'club',fill:0.5};const f=V.fill||0
 function crowdSize(){return crowdProfile().z}
 SND.profile=()=>crowdProfile();
 /* build this venue's applause, shouts and murmur (at the start of each match, a little at a time) */
-function sndVenue(){if(!SND.ctx||!SND.kernOK)return;const C=crowdProfile();if(SND.vKey===C.key)return;SND.vKey=C.key;const key=C.key,V={};
-  const jobs=[()=>{V.clap=mkApplauseLR(C.claps,C.clapLen,C.room[0],C.room[1],C.room[2])},
-    ()=>{if(C.voices)V.ooh=mkCrowdVoiceLR('ooh',C.voices,C.room)},()=>{if(C.voices)V.cheer=mkCrowdVoiceLR('cheer',C.voices,C.room)},
-    ()=>{V.babble=mkRoomToneLR(C.z,C.room,C.outdoor)},
-    ()=>{if(SND.vKey!==key)return;SND.vb=V;try{if(SND.ambSrc)SND.ambSrc.stop()}catch(e){}const s=SND.ambSrc=SND.ctx.createBufferSource();s.buffer=V.babble;s.loop=true;s.connect(SND.ambG);s.start()}];
-  let i=0;SND.vtm=[];const step=()=>{if(SND.vKey!==key)return;if(i<jobs.length){const t0=performance.now();try{jobs[i++]()}catch(e){console.error(e)}SND.vtm.push(Math.round(performance.now()-t0));setTimeout(step,20)}};setTimeout(step,0)}
+function sndVenue(){if(!SND.ctx||!SND.kernOK)return;const C=crowdProfile();if(SND.vKey===C.key)return;SND.vKey=C.key;const key=C.key;
+  dsp('venue',C,V=>{if(SND.vKey!==key)return;SND.vb=V;try{if(SND.ambSrc)SND.ambSrc.stop()}catch(e){}const s=SND.ambSrc=SND.ctx.createBufferSource();s.buffer=RECS.buf['crowd-ambience']||V.babble;s.loop=true;s.connect(SND.ambG);s.start()})}
 
 /* ---- shots ---- */
 function voiceOf(who){if(!M||!M.cfg)return'm';const id=who==='me'?M.cfg.meId:M.cfg.opp&&M.cfg.opp.id;return typeof FEMALE_BASE!=='undefined'&&FEMALE_BASE[id]?'f':'m'}
@@ -245,9 +258,20 @@ function sndMove(i,st,dt){if(!sndReady()||!SND.bank.squeak||!dt)return;const m=M
   m.v=st.v;m.vz=st.vz}
 
 /* ---- the crowd ---- */
-function sndApplause(amp){if(!sndReady()||!SND.vb)return;const z=crowdSize(),b=SND.vb.clap;if(!b)return;
+/* ---- real recordings (optional) ----
+   If sounds/sounds.json exists it lists recordings to use instead of the generated crowd, e.g.
+   {"applause-small":"applause-small.mp3","applause-medium":"...","applause-large":"...","cheer":"...","ooh":"...","crowd-ambience":"..."}
+   Anything not listed keeps the generated sound. Recordings still get each venue's size (which clip, how loud) and echo. */
+const RECS={buf:{},tried:false};
+function loadRecordings(){if(RECS.tried||!SND.ctx||typeof fetch!=='function'||location.protocol==='file:')return;RECS.tried=true;
+  fetch('sounds/sounds.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(list=>{if(!list)return;
+    for(const k in list)fetch('sounds/'+list[k]).then(r=>r.ok?r.arrayBuffer():null).then(a=>a&&SND.ctx.decodeAudioData(a)).then(b=>{if(b){RECS.buf[k]=b;if(k==='crowd-ambience')SND.vKey=null}}).catch(()=>{})}).catch(()=>{})}
+function recClap(z){const R=RECS.buf;return z>0.6?R['applause-large']||R['applause-medium']:z>0.3?R['applause-medium']||R['applause-large']||R['applause-small']:R['applause-small']||R['applause-medium']}
+function sndApplause(amp){if(!sndReady()||!SND.vb)return;const z=crowdSize(),rec=recClap(z);
+  if(rec){play(rec,{gain:clamp(amp,0,1.2)*(0.35+0.6*z),rate:rng(0.97,1.03),wet:0.6});return}
+  const b=SND.vb.clap;if(!b)return;
   play(b,{gain:clamp(amp,0,1.2)*(0.3+0.5*z)*1.6,rate:rng(0.96,1.04),wet:1})}
-function sndCrowdVoice(kind,amp){if(!sndReady()||!SND.vb)return;const z=crowdSize();if(z<0.3)return;const b=kind==='ooh'?SND.vb.ooh:SND.vb.cheer;if(!b)return;
+function sndCrowdVoice(kind,amp){if(!sndReady()||!SND.vb)return;const z=crowdSize();if(z<0.3)return;const b=RECS.buf[kind]||(kind==='ooh'?SND.vb.ooh:SND.vb.cheer);if(!b)return;
   play(b,{gain:amp*z*(kind==='ooh'?0.7:0.6),rate:rng(0.94,1.06),wet:1.4})}
 /* the murmur between points, hushed during them */
 function sndAmbience(live){if(!SND.ctx)return;setVerb();
