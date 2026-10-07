@@ -1003,7 +1003,9 @@ function bigPoint(){if(!M||M.over||M.drill)return null;let best=null;
   if(!best)return null;
   // how many in a row: "Triple match point" at 40-0 / 6-3 in a tiebreak
   const a=M.pts[best.w],b=M.pts[1-best.w],n=M.tb?a-b:(a>=3&&b<3?a-b:1);best.n=Math.max(1,Math.min(3,n));return best}
-function showBigPoint(){const el=$('ptBadge');const B=bigPoint();if(!B){el.hidden=true;return}
+/* the break/set/match point badge fades away once the serve is struck, so it doesn't sit over the rally */
+let badgeT=0;function fadeBadge(){const el=$('ptBadge');if(el.hidden)return;el.classList.add('fade');clearTimeout(badgeT);badgeT=setTimeout(()=>{el.hidden=true;el.classList.remove('fade')},450)}
+function showBigPoint(){const el=$('ptBadge');clearTimeout(badgeT);el.classList.remove('fade');const B=bigPoint();if(!B){el.hidden=true;return}
   const mult=B.n===3?'Triple ':B.n===2?'Double ':'';el.textContent=(mult?mult+B.kind.toLowerCase():B.kind)+' · '+(B.w===0?'You':M.cfg.opp.name);
   el.className='ptbadge '+(B.w===0?'mine':'theirs')+(B.rank>=2?' big':'');el.hidden=false;el.style.animation='none';void el.offsetWidth;el.style.animation='';
   if(B.rank>=3&&hasOfficials())after(()=>speak(B.kind+'.',{rate:0.95}),1400)}
@@ -1105,7 +1107,7 @@ function oppServeStart(){
 function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
   const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,C=P[1].tossC||P[1].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
-  const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);radarShow(spd,1,sec);tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:sec?'top':'serve',who:'op',x:C.x,z:C.z});
+  const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);radarShow(spd,1,sec);fadeBadge();tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:sec?'top':'serve',who:'op',x:C.x,z:C.z});
   const oppFault=()=>{M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('FAULT');const go=()=>{say('Fault. Second serve.');M.oFault=true;M.shot=null;M.state='oppServe';after(oppServeStart,1000)};if(!(sh0&&sh0.hawk&&hawkFault(sh0,1,go)))go()},sh0.net?600:900)};let sh0=null;
   // first serves miss about a third of the time (less for better players); double faults only happen on the second
   if(!sec&&!M.drill&&Math.random()<clamp(0.4-s*0.022,0.18,0.4)){// a missed first serve that really is a fault: into the net, long or wide, checked so it never lands in the box
@@ -1218,7 +1220,7 @@ function doServe(a){
   const second=M.fault,ty=M.svType[second?1:0],SV=SVT[ty];
   const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(Object.assign({},a,{r:(a.r+(a.rp||0))*SV.r})),C=P[0].tossC||P[0].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
   const pw=Math.min(a.pw,1.1);
-  let spd=(12.8+20*pw+S.serve*2.0+(hasPerk('server',3)?1.5:0))*(0.92+0.08*M.en[0])*SV.spd,w=SV.w;tire(0,0.006);radarShow(spd,0,second);
+  let spd=(12.8+20*pw+S.serve*2.0+(hasPerk('server',3)?1.5:0))*(0.92+0.08*M.en[0])*SV.spd,w=SV.w;tire(0,0.006);radarShow(spd,0,second);fadeBadge();
   const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss*(P[0].lefty?-1:1)});shot.svType=ty;onContact('me',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:second?'top':'serve',who:'me',x:C.x,z:C.z});
   M.aim={x:a.x,y:a.y};M.land=shot.land;
   if(!M.drill&&!shot.net&&lineMargin(shot,true,true).d>0.02&&Math.random()<LET_P[second?1:0]){const lt=tryLet(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss*(P[0].lefty?-1:1)},true);
