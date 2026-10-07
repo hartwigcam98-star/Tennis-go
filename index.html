@@ -258,7 +258,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 60 · real applause</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 61 · real hits and bounces</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -1909,10 +1909,15 @@ function sndVenue(){if(!SND.ctx||!SND.kernOK)return;const C=crowdProfile();if(SN
 /* ---- shots ---- */
 function voiceOf(who){if(!M||!M.cfg)return'm';const id=who==='me'?M.cfg.meId:M.cfg.opp&&M.cfg.opp.id;return typeof FEMALE_BASE!=='undefined'&&FEMALE_BASE[id]?'f':'m'}
 /* o: {pw 0..1.2, kind top|slice|volley|smash|serve|drop, q ok|perfect|frame, who me|op, x, z} */
+/* recorded variations (hit-1, hit-2... in sounds.json) as a list */
+function recList(p){const R=RECS.buf,L=[];for(const k in R)if(k.startsWith(p+'-'))L.push(R[k]);return L}
 function sndShot(o){if(!sndReady())return;const B=SND.bank,pw=clamp(o.pw==null?0.6:o.pw,0.15,1.2),P_=place(o.x,o.z);
   if(o.q==='frame'){play(pickA(B.frame),Object.assign({},P_,{gain:P_.gain*(0.5+0.4*pw),rate:rng(0.92,1.08)}));return}
-  const kind=B.hit[o.kind]?o.kind:'top',lvl={top:0.75,slice:0.6,volley:0.7,smash:1.05,serve:0.95,drop:0.4}[kind]*(0.45+0.55*pw);
-  play(pickA(B.hit[kind]),Object.assign({},P_,{gain:P_.gain*lvl,rate:rng(0.95,1.05)*(0.94+0.08*pw)}));
+  const kind=B.hit[o.kind]?o.kind:'top',lvl={top:0.75,slice:0.6,volley:0.7,smash:1.05,serve:0.95,drop:0.4}[kind]*(0.45+0.55*pw),RH=recList('hit');
+  if(RH.length){// a real racket-on-ball recording; the big swings are pitched down a touch and get some of the generated body under them for weight
+    const heavy=kind==='top'||kind==='serve'||kind==='smash',rate={top:0.9,serve:0.86,smash:0.84,slice:0.97,volley:1,drop:1.04}[kind]*rng(0.96,1.04)*(1.02-0.05*pw);
+    play(pickA(RH),Object.assign({},P_,{gain:P_.gain*lvl*0.95,rate}));if(heavy)play(pickA(B.hit[kind]),Object.assign({},P_,{gain:P_.gain*lvl*0.4,rate:rng(0.95,1.05)*(0.94+0.08*pw)}))}
+  else play(pickA(B.hit[kind]),Object.assign({},P_,{gain:P_.gain*lvl,rate:rng(0.95,1.05)*(0.94+0.08*pw)}));
   if(o.q==='perfect')play(pickA(B.ping),Object.assign({},P_,{gain:P_.gain*0.5}));
   // a grunt on the big ones
   const big=kind==='smash'||(kind==='serve'&&pw>0.75)||pw>0.92;
@@ -1921,7 +1926,8 @@ function sndHit(pw){sndShot({pw})}   // kept for the lessons
 /* the racket through the air, timed to peak at contact */
 function sndSwing(pl,type,offset){if(!sndReady()||!SND.bank.whoosh||!P||!SWINGS[type])return;const who=pl===P[0]?'me':'op',S=SWINGS[type],toHit=S.dur*S.cf-(offset||0);if(toHit<0.06)return;
   const p=pl.pos||{x:0,z:0},P_=place(p.x,p.z);play(pickA(SND.bank.whoosh),Object.assign({},P_,{gain:P_.gain*0.22*(type==='sv'||type==='sm'?1.3:1),rate:rng(0.9,1.15),when:Math.max(0,toHit-0.13),wet:P_.wet*0.5}))}
-function sndBounce(v,x,z){if(!sndReady())return;const s=surfNow(),k=clamp(v/12,0.2,1),P_=place(x,z);
+function sndBounce(v,x,z){if(!sndReady())return;const s=surfNow(),k=clamp(v/12,0.2,1),P_=place(x,z),RB=recList('bounce');
+  if(RB.length&&s!=='grass'){play(pickA(RB),Object.assign({},P_,{gain:P_.gain*0.5*k*(s==='clay'?0.75:1),rate:rng(0.95,1.05)*(s==='clay'?0.86:1),lp:s==='clay'?3200:P_.lp}));return}   // real bounce (grass stays generated: it's much softer)
   play(pickA(SND.bank.bounce[s]||SND.bank.bounce.hard),Object.assign({},P_,{gain:P_.gain*(s==='grass'?0.45:0.6)*k,rate:rng(0.95,1.06)}))}
 /* the ball clipping the tape: a lighter, higher tick than the thud into the net */
 function sndCord(){if(!sndReady())return;play(pickA(SND.bank.net),Object.assign(place(0,0),{gain:0.4,rate:1.7}))}

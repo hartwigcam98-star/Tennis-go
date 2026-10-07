@@ -29,3 +29,5 @@ Leave out any you don't have; those keep the generated sound. Only use recording
 
 `applause-small`, `applause-medium` and `applause-large` are trimmed, faded and level-matched from BigSoundBank's CC0 recordings
 (Applause about 25–50 people #1, Applause: 300 people, Applause: 600 people — bigsoundbank.com, public domain).
+`hit-1`…`hit-8` are racket-on-ball strikes cut from "tennis ball.wav" by rasskot (freesound.org/s/245428, CC0), and `bounce-1`…`bounce-6`
+are from BigSoundBank's "Tennis Ball: Bounce" (#0584, CC0). Any key named `hit-N` or `bounce-N` is picked at random for shots / bounces.
