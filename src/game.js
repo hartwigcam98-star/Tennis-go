@@ -915,7 +915,7 @@ function beginMatch(cfg){
     state:'between',shot:null,t0:0,me:{x:0.4,y:-0.05},op:{x:-0.4,y:1.08},fault:false,sw:null,preview:null,samples:[],land:null,aim:null,lock:false,commit:null,pending:null,
     stat:{aces:0,winners:0,big:0,perfect:0,smashes:0,volleys:0,slices:0,rallyMax:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
   $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
-  $('quit').textContent='Pause';M.quitArm=false;applyCosmetics();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
+  $('ptBadge').hidden=true;$('quit').textContent='Pause';M.quitArm=false;applyCosmetics();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
   msStart();if(cfg.fat){M.en[0]=M.cap[0]=1-cfg.fat}if(cfg.ofat){M.en[1]=M.cap[1]=1-cfg.ofat}
   if(cfg.resume){applyResume(cfg.resume);cfg.intro='Match resumed at '+scoreText(M.sets,M.pts,M.tb)+'.'}
   renderBoard();{const O=OSTYLE[M.ostyle];say(cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))}
@@ -925,8 +925,20 @@ function beginMatch(cfg){
 }
 function ptLabel(i){const a=M.pts[i],b=M.pts[1-i];if(M.tb)return String(a);if(a>=3&&b>=3)return a===b?'40':a>b?'AD':'40';return['0','15','30','40'][Math.min(a,3)]}
 function renderBoard(){for(let i=0;i<2;i++){$('s'+i).innerHTML=M.sets.map((g,k)=>'<span class="'+(k===M.sets.length-1?'cur':'')+'">'+g[i]+'</span>').join('');$('p'+i).textContent=ptLabel(i);$('srv'+i).classList.toggle('on',M.server===i)}}
+/* big points: game, break, set, match (championship in a final). Shown under the scoreboard before the point */
+function bigPoint(){if(!M||M.over||M.drill)return null;let best=null;
+  for(const w of [0,1]){const r=pointWins(w);if(!r)continue;const match=r===2&&M.setsWon[w]+1>M.cfg.bo/2;
+    const kind=match?(/· Final$/.test(M.cfg.label||'')?'Championship point':'Match point'):r===2?'Set point':w!==M.server&&!M.tb?'Break point':'Game point';
+    const rank={Championship:4,Match:3,Set:2,Break:1,Game:0}[kind.split(' ')[0]];if(!best||rank>best.rank)best={w,kind,rank}}
+  if(!best)return null;
+  // how many in a row: "Triple match point" at 40-0 / 6-3 in a tiebreak
+  const a=M.pts[best.w],b=M.pts[1-best.w],n=M.tb?a-b:(a>=3&&b<3?a-b:1);best.n=Math.max(1,Math.min(3,n));return best}
+function showBigPoint(){const el=$('ptBadge');const B=bigPoint();if(!B){el.hidden=true;return}
+  const mult=B.n===3?'Triple ':B.n===2?'Double ':'';el.textContent=(mult?mult+B.kind.toLowerCase():B.kind)+' · '+(B.w===0?'You':M.cfg.opp.name);
+  el.className='ptbadge '+(B.w===0?'mine':'theirs')+(B.rank>=2?' big':'');el.hidden=false;el.style.animation='none';void el.offsetWidth;el.style.animation='';
+  if(B.rank>=3&&hasOfficials())after(()=>speak(B.kind+'.',{rate:0.95}),1400)}
 function nextPoint(){
-  if(!M||M.over)return;clearMarks();FX.tp=[];slowMo(false);
+  if(!M||M.over)return;clearMarks();FX.tp=[];slowMo(false);showBigPoint();
   M.lock=false;M.fault=false;M.oFault=false;M.shot=null;M.land=null;M.aim=null;M.commit=null;M.pending=null;M.rally=0;M.home=[{x:0,y:-0.05},{x:0,y:1.08}];W3.homeMark&&(W3.homeMark.visible=false);
   const d=side()==='deuce';
   if(M.server===0){M.me={x:d?0.4:-0.4,y:-0.05};M.op={x:d?-0.45:0.45,y:1.08};M.state='serveMe';say((M.tb?'Tiebreak. ':'')+'Your serve. Swipe up into the box.')}
@@ -935,7 +947,7 @@ function nextPoint(){
 }
 function pointTo(w,text,call,kind){
   if(M&&M.drill){drillPoint(w,text,call);return}
-  if(!M||M.lock)return;msPoint(w,call,kind);M.lock=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
+  if(!M||M.lock)return;msPoint(w,call,kind);M.lock=true;$('ptBadge').hidden=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
   // the crowd saves itself for the good stuff: aces, winners, long rallies, the end of a game (louder for a break)
   {const rl=M.rally||0,ace=call==='ACE',win=call==='WINNER'||kind==='wn',miss=call==='OUT'||call==='NET'||kind==='ue'||kind==='fe',gp=!M.tb&&pointWins(w)>0||M.tb&&pointWins(w)>1,brk=gp&&!M.tb&&w!==M.server,long=rl>=4,epic=rl>=7;
     let clap=0,voice=null;
@@ -1293,6 +1305,6 @@ function camera(dt){
 for(const ev of ['pointerdown','touchend','click','keydown'])document.addEventListener(ev,sndResume,{passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SND.ctx&&SND.ctx.state!=='running')SND.ctx.resume().catch(()=>{});if(SND.tag){if(document.hidden)SND.tag.pause();else if(SND.on)SND.tag.play().catch(()=>{})}});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),nextPoint:()=>nextPoint(),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
