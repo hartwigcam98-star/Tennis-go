@@ -117,6 +117,12 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 .advbar.on{opacity:1}.advbar span{width:62px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.advbar span:last-child{text-align:right}
 .advbar b{position:relative;flex:1;height:8px;border-radius:99px;background:rgba(5,12,20,.75);border:1px solid var(--line);overflow:hidden}
 .advbar i{position:absolute;top:0;bottom:0;transition:background .3s}.advbar i.mine{background:var(--ball)}.advbar i.theirs{background:var(--loss)}.advbar em{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--chalk);opacity:.7}
+.radar{display:flex;align-items:center;gap:8px;width:max-content;margin:6px auto 0 10px;padding:4px 12px;border-radius:8px;background:rgba(8,10,13,.88);border:1px solid rgba(255,178,30,.35);font-family:var(--display);opacity:0;transform:translateY(-4px);transition:opacity .3s,transform .3s;pointer-events:none}
+.radar.on{opacity:1;transform:none}
+.radar small{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#E9E6DA;max-width:96px;line-height:1.1}
+.radar b{font-size:30px;font-weight:800;color:#FFB21E;text-shadow:0 0 10px rgba(255,178,30,.6);line-height:1}
+.radar span{display:flex;flex-direction:column;font-size:13px;font-weight:800;color:#FFB21E;text-transform:uppercase;line-height:1.05}
+.radar em{font-style:normal;font-size:10px;font-weight:700;opacity:.75;text-transform:none}
 .ptbadge{display:block;width:max-content;max-width:94%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:6px auto 0;padding:4px 14px;border-radius:999px;font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.08em;text-transform:uppercase;background:rgba(5,12,20,.86);border:1.5px solid var(--line);color:var(--chalk);box-shadow:0 2px 10px rgba(0,0,0,.35);animation:ptpop .35s ease-out}
 .ptbadge.mine{border-color:var(--ball);color:var(--ball)}.ptbadge.theirs{border-color:var(--loss);color:var(--loss)}.ptbadge.big{font-size:17px;padding:5px 16px}
 @keyframes ptpop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}

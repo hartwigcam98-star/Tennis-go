@@ -1105,7 +1105,7 @@ function oppServeStart(){
 function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
   const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,C=P[1].tossC||P[1].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
-  const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:sec?'top':'serve',who:'op',x:C.x,z:C.z});
+  const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);radarShow(spd,1,sec);tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:sec?'top':'serve',who:'op',x:C.x,z:C.z});
   const oppFault=()=>{M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('FAULT');const go=()=>{say('Fault. Second serve.');M.oFault=true;M.shot=null;M.state='oppServe';after(oppServeStart,1000)};if(!(sh0&&sh0.hawk&&hawkFault(sh0,1,go)))go()},sh0.net?600:900)};let sh0=null;
   // first serves miss about a third of the time (less for better players); double faults only happen on the second
   if(!sec&&!M.drill&&Math.random()<clamp(0.4-s*0.022,0.18,0.4)){// a missed first serve that really is a fault: into the net, long or wide, checked so it never lands in the box
@@ -1208,12 +1208,17 @@ function executeShot(){
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
   if(!M.drill)say((slc?'Slice. ':'')+(tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*2.237)+' mph':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*2.237)+' mph'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*2.237)+' mph':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*2.237)+' mph'));
 }
+/* the radar gun: every serve's speed goes up on the boards and in a small readout under the score */
+let radarTok=0;function radarShow(mps,who,second){const mph=mps*2.237,id=++radarTok,nm=who===0?(M.cfg.me||'You'):M.cfg.opp.name;
+  after(()=>{if(!M||id!==radarTok)return;const lab=(nm.split(' ').pop()+' · '+(second?'2nd':'1st')).toUpperCase();for(const b of W3.radar||[])drawRadar(b,mph,lab);
+    $('radarV').textContent=Math.round(mph);$('radarK').textContent=Math.round(mph*1.609)+' km/h';$('radarL').textContent=(who===0?'Your ':nm.split(' ').pop()+"'s ")+(second?'2nd':'1st')+' serve';
+    const r=$('radar');r.hidden=false;r.classList.remove('on');void r.offsetWidth;r.classList.add('on');after(()=>{if(id===radarTok)$('radar').classList.remove('on')},3200)},450)}
 function doServe(a){
   if(!M||M.state!=='serving')return;
   const second=M.fault,ty=M.svType[second?1:0],SV=SVT[ty];
   const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(Object.assign({},a,{r:(a.r+(a.rp||0))*SV.r})),C=P[0].tossC||P[0].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
   const pw=Math.min(a.pw,1.1);
-  let spd=(12.8+20*pw+S.serve*2.0+(hasPerk('server',3)?1.5:0))*(0.92+0.08*M.en[0])*SV.spd,w=SV.w;tire(0,0.006);
+  let spd=(12.8+20*pw+S.serve*2.0+(hasPerk('server',3)?1.5:0))*(0.92+0.08*M.en[0])*SV.spd,w=SV.w;tire(0,0.006);radarShow(spd,0,second);
   const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss*(P[0].lefty?-1:1)});shot.svType=ty;onContact('me',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:second?'top':'serve',who:'me',x:C.x,z:C.z});
   M.aim={x:a.x,y:a.y};M.land=shot.land;
   if(!M.drill&&!shot.net&&lineMargin(shot,true,true).d>0.02&&Math.random()<LET_P[second?1:0]){const lt=tryLet(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss*(P[0].lefty?-1:1)},true);

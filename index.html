@@ -117,6 +117,12 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 .advbar.on{opacity:1}.advbar span{width:62px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.advbar span:last-child{text-align:right}
 .advbar b{position:relative;flex:1;height:8px;border-radius:99px;background:rgba(5,12,20,.75);border:1px solid var(--line);overflow:hidden}
 .advbar i{position:absolute;top:0;bottom:0;transition:background .3s}.advbar i.mine{background:var(--ball)}.advbar i.theirs{background:var(--loss)}.advbar em{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:var(--chalk);opacity:.7}
+.radar{display:flex;align-items:center;gap:8px;width:max-content;margin:6px auto 0 10px;padding:4px 12px;border-radius:8px;background:rgba(8,10,13,.88);border:1px solid rgba(255,178,30,.35);font-family:var(--display);opacity:0;transform:translateY(-4px);transition:opacity .3s,transform .3s;pointer-events:none}
+.radar.on{opacity:1;transform:none}
+.radar small{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#E9E6DA;max-width:96px;line-height:1.1}
+.radar b{font-size:30px;font-weight:800;color:#FFB21E;text-shadow:0 0 10px rgba(255,178,30,.6);line-height:1}
+.radar span{display:flex;flex-direction:column;font-size:13px;font-weight:800;color:#FFB21E;text-transform:uppercase;line-height:1.05}
+.radar em{font-style:normal;font-size:10px;font-weight:700;opacity:.75;text-transform:none}
 .ptbadge{display:block;width:max-content;max-width:94%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:6px auto 0;padding:4px 14px;border-radius:999px;font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.08em;text-transform:uppercase;background:rgba(5,12,20,.86);border:1.5px solid var(--line);color:var(--chalk);box-shadow:0 2px 10px rgba(0,0,0,.35);animation:ptpop .35s ease-out}
 .ptbadge.mine{border-color:var(--ball);color:var(--ball)}.ptbadge.theirs{border-color:var(--loss);color:var(--loss)}.ptbadge.big{font-size:17px;padding:5px 16px}
 @keyframes ptpop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
@@ -251,7 +257,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 55 · lets and net cords</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 56 · radar gun</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -401,6 +407,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
     </div>
     <div class="advbar" id="advBar"><span>You</span><b><i id="advFill"></i><em></em></b><span id="advOpp">Opp</span></div>
     <div class="ptbadge" id="ptBadge" hidden></div>
+    <div class="radar" id="radar" hidden><small id="radarL">Serve</small><b id="radarV">0</b><span>mph<em id="radarK"></em></span></div>
   </div>
   <div id="call"></div>
   <div id="dDone" hidden><div class="card"><p class="banner w" id="dDoneT">Lesson complete</p><p id="dDoneP"></p><div class="row"><button class="go" id="dNext">Next lesson</button><button class="ghost" id="dMenu">All lessons</button></div></div></div>
@@ -1477,6 +1484,18 @@ function boardWall(G,V,P,h,off){
   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();
   G.add(new T.Mesh(g,new T.MeshLambertMaterial({map:tex,side:T.DoubleSide})))
 }
+/* the radar-gun speed board: a dark LED panel that lights up with the speed of every serve */
+function radarBoard(G,x,y,z,ry,w,h){const c=document.createElement('canvas');c.width=512;c.height=Math.round(512*h/w);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;
+  const fr=new T.Mesh(new T.BoxGeometry(w+0.14,h+0.14,0.1),new T.MeshLambertMaterial({color:0x15181C}));fr.position.set(x,y,z);fr.rotation.y=ry;G.add(fr);
+  const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({map:t,toneMapped:false}));m.position.set(x+Math.sin(ry)*0.06,y,z+Math.cos(ry)*0.06);m.rotation.y=ry;G.add(m);
+  const b={c,t};W3.radar.push(b);drawRadar(b,null,'')}
+function drawRadar(b,mph,label){const g=b.c.getContext('2d'),w=b.c.width,h=b.c.height,amber='#FFB21E';
+  g.fillStyle='#0A0C0F';g.fillRect(0,0,w,h);g.fillStyle='rgba(255,178,30,0.05)';for(let y=4;y<h;y+=8)for(let x=4;x<w;x+=8)g.fillRect(x,y,3,3);   // unlit LEDs
+  g.textBaseline='middle';g.font='700 30px "Saira Condensed","Arial Narrow",sans-serif';g.fillStyle='#E9E6DA';g.textAlign='left';g.fillText('SERVE SPEED',22,30);
+  if(label){g.textAlign='right';g.fillStyle='rgba(233,230,218,0.75)';g.fillText(label,w-22,30)}
+  g.shadowColor=amber;g.shadowBlur=18;g.fillStyle=amber;g.textAlign='right';g.font='800 120px "Saira Condensed","Arial Narrow",sans-serif';g.fillText(mph==null?'---':String(Math.round(mph)),w*0.66,h*0.6);
+  g.shadowBlur=8;g.textAlign='left';g.font='800 46px "Saira Condensed","Arial Narrow",sans-serif';g.fillText('MPH',w*0.69,h*0.52);
+  g.font='700 30px "Saira Condensed","Arial Narrow",sans-serif';g.fillStyle='rgba(255,178,30,0.8)';g.fillText(mph==null?'':Math.round(mph*1.609)+' KM/H',w*0.69,h*0.8);g.shadowBlur=0;b.t.needsUpdate=true}
 function textPlane(G,txt,w,h,col,bg,x,y,z,ry,font){
   const tex=canvasTex(1024,Math.round(1024*h/w),(g,cw,ch)=>{if(bg!=null){g.fillStyle=hex(bg);g.fillRect(0,0,cw,ch)}g.fillStyle=hex(col);g.textAlign='center';g.textBaseline='middle';
     let fs=ch*0.78;g.font='800 '+fs+'px "Saira Condensed","Arial Narrow",sans-serif';while(g.measureText(txt).width>cw*0.94&&fs>10){fs*=0.92;g.font='800 '+fs+'px "Saira Condensed","Arial Narrow",sans-serif'}g.fillText(txt,cw/2,ch*0.55)});
@@ -1535,7 +1554,7 @@ function venueLight(V){const s=W3.scene,night=!!V.night;
 
 function disposeTree(G){G.traverse(o=>{if(o.geometry)o.geometry.dispose();const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];for(const m of ms){if(m.map)m.map.dispose();m.dispose()}});while(G.children.length)G.remove(G.children[0])}
 function buildCourt(surf,cfg){
-  const G=W3.court;disposeTree(G);W3.crowdMeshes=null;
+  const G=W3.court;disposeTree(G);W3.crowdMeshes=null;W3.radar=[];
   const V=W3.venue=venueFor(Object.assign({},cfg||{},{surf}));venueLight(V);
   const hz=CL/2,people=[];
   const stadium=V.kind==='tour'||V.kind==='major';
@@ -1571,6 +1590,7 @@ function buildCourt(surf,cfg){
     const B=buildBowl(G,V,P,{rows:V.rows,rise:0.42,tread:0.85,y0:V.kind==='major'?2.4:2.2,brk:V.brk||0,gap:1.6});seats=B.seats;
     {const wh=V.kind==='major'?2.4:2.2;textPlane(G,V.title,17.4,wh,0xF4F1E6,V.wall,0,wh/2,-zF+0.03,0)}
     umpireChair(G,V,-(postX+0.9),people);
+    {const wh=V.kind==='major'?2.4:2.2;radarBoard(G,6.4,wh+0.85,-zF+0.05,0,3.2,1.3);radarBoard(G,-6.4,wh+0.85,zF-0.05,Math.PI,3.2,1.3)}   // speed boards above each end wall
     // ball kids: two crouched at the net posts, two at the far corners
     for(const [x,z,yw] of[[postX+0.5,0.6,-Math.PI/2],[-(postX+0.4),-1.2,Math.PI/2],[-4.5,-(hz+4.6),0],[4.5,-(hz+4.6),0]])people.push({x,y:0.02,z,yaw:yw,ex:0.15,shirt:V.acc,staff:1});
     // line judges seated against the back wall
@@ -1587,7 +1607,7 @@ function buildCourt(surf,cfg){
       seats=seats.concat(bleacher(G,-(xS+1.3),-3,20,6,Math.PI/2,[]),bleacher(G,xS+1.3,-3,20,6,-Math.PI/2,[]),bleacher(G,0,-(zF+1.3),14,8,0,[]));
       const tp=[];for(let i=0;i<36;i++){const a=Math.random()*Math.PI*2,r=40+Math.random()*14;tp.push([Math.cos(a)*r,Math.sin(a)*r*1.1-8])}trees(G,tp);
       for(const [x,z] of[[-xS,-zF],[xS,-zF],[-xS,zF],[xS,zF]])lightPole(G,x,z,11);
-      textPlane(G,V.windText,6,0.9,V.acc,V.wind,0,3.9,-(zF+0.05),0);
+      textPlane(G,V.windText,6,0.9,V.acc,V.wind,0,3.9,-(zF+0.05),0);radarBoard(G,6,4.2,-(zF+0.08),0,2.8,1.14);radarBoard(G,-6,4.2,zF+0.08,Math.PI,2.8,1.14);
       umpireChair(G,V,-(postX+0.9),people);
     }
   }
@@ -2234,7 +2254,7 @@ function oppServeStart(){
 function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
   const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,C=P[1].tossC||P[1].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
-  const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:sec?'top':'serve',who:'op',x:C.x,z:C.z});
+  const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);radarShow(spd,1,sec);tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:sec?'top':'serve',who:'op',x:C.x,z:C.z});
   const oppFault=()=>{M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('FAULT');const go=()=>{say('Fault. Second serve.');M.oFault=true;M.shot=null;M.state='oppServe';after(oppServeStart,1000)};if(!(sh0&&sh0.hawk&&hawkFault(sh0,1,go)))go()},sh0.net?600:900)};let sh0=null;
   // first serves miss about a third of the time (less for better players); double faults only happen on the second
   if(!sec&&!M.drill&&Math.random()<clamp(0.4-s*0.022,0.18,0.4)){// a missed first serve that really is a fault: into the net, long or wide, checked so it never lands in the box
@@ -2337,12 +2357,17 @@ function executeShot(){
   M.opSide=sideFor(1,M.shot.hx,M.shot.volley,M.shot.smash);
   if(!M.drill)say((slc?'Slice. ':'')+(tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*2.237)+' mph':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*2.237)+' mph'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*2.237)+' mph':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*2.237)+' mph'));
 }
+/* the radar gun: every serve's speed goes up on the boards and in a small readout under the score */
+let radarTok=0;function radarShow(mps,who,second){const mph=mps*2.237,id=++radarTok,nm=who===0?(M.cfg.me||'You'):M.cfg.opp.name;
+  after(()=>{if(!M||id!==radarTok)return;const lab=(nm.split(' ').pop()+' · '+(second?'2nd':'1st')).toUpperCase();for(const b of W3.radar||[])drawRadar(b,mph,lab);
+    $('radarV').textContent=Math.round(mph);$('radarK').textContent=Math.round(mph*1.609)+' km/h';$('radarL').textContent=(who===0?'Your ':nm.split(' ').pop()+"'s ")+(second?'2nd':'1st')+' serve';
+    const r=$('radar');r.hidden=false;r.classList.remove('on');void r.offsetWidth;r.classList.add('on');after(()=>{if(id===radarTok)$('radar').classList.remove('on')},3200)},450)}
 function doServe(a){
   if(!M||M.state!=='serving')return;
   const second=M.fault,ty=M.svType[second?1:0],SV=SVT[ty];
   const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(Object.assign({},a,{r:(a.r+(a.rp||0))*SV.r})),C=P[0].tossC||P[0].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
   const pw=Math.min(a.pw,1.1);
-  let spd=(12.8+20*pw+S.serve*2.0+(hasPerk('server',3)?1.5:0))*(0.92+0.08*M.en[0])*SV.spd,w=SV.w;tire(0,0.006);
+  let spd=(12.8+20*pw+S.serve*2.0+(hasPerk('server',3)?1.5:0))*(0.92+0.08*M.en[0])*SV.spd,w=SV.w;tire(0,0.006);radarShow(spd,0,second);
   const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss*(P[0].lefty?-1:1)});shot.svType=ty;onContact('me',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:second?'top':'serve',who:'me',x:C.x,z:C.z});
   M.aim={x:a.x,y:a.y};M.land=shot.land;
   if(!M.drill&&!shot.net&&lineMargin(shot,true,true).d>0.02&&Math.random()<LET_P[second?1:0]){const lt=tryLet(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss*(P[0].lefty?-1:1)},true);

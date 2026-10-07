@@ -100,6 +100,18 @@ function boardWall(G,V,P,h,off){
   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();
   G.add(new T.Mesh(g,new T.MeshLambertMaterial({map:tex,side:T.DoubleSide})))
 }
+/* the radar-gun speed board: a dark LED panel that lights up with the speed of every serve */
+function radarBoard(G,x,y,z,ry,w,h){const c=document.createElement('canvas');c.width=512;c.height=Math.round(512*h/w);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;
+  const fr=new T.Mesh(new T.BoxGeometry(w+0.14,h+0.14,0.1),new T.MeshLambertMaterial({color:0x15181C}));fr.position.set(x,y,z);fr.rotation.y=ry;G.add(fr);
+  const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({map:t,toneMapped:false}));m.position.set(x+Math.sin(ry)*0.06,y,z+Math.cos(ry)*0.06);m.rotation.y=ry;G.add(m);
+  const b={c,t};W3.radar.push(b);drawRadar(b,null,'')}
+function drawRadar(b,mph,label){const g=b.c.getContext('2d'),w=b.c.width,h=b.c.height,amber='#FFB21E';
+  g.fillStyle='#0A0C0F';g.fillRect(0,0,w,h);g.fillStyle='rgba(255,178,30,0.05)';for(let y=4;y<h;y+=8)for(let x=4;x<w;x+=8)g.fillRect(x,y,3,3);   // unlit LEDs
+  g.textBaseline='middle';g.font='700 30px "Saira Condensed","Arial Narrow",sans-serif';g.fillStyle='#E9E6DA';g.textAlign='left';g.fillText('SERVE SPEED',22,30);
+  if(label){g.textAlign='right';g.fillStyle='rgba(233,230,218,0.75)';g.fillText(label,w-22,30)}
+  g.shadowColor=amber;g.shadowBlur=18;g.fillStyle=amber;g.textAlign='right';g.font='800 120px "Saira Condensed","Arial Narrow",sans-serif';g.fillText(mph==null?'---':String(Math.round(mph)),w*0.66,h*0.6);
+  g.shadowBlur=8;g.textAlign='left';g.font='800 46px "Saira Condensed","Arial Narrow",sans-serif';g.fillText('MPH',w*0.69,h*0.52);
+  g.font='700 30px "Saira Condensed","Arial Narrow",sans-serif';g.fillStyle='rgba(255,178,30,0.8)';g.fillText(mph==null?'':Math.round(mph*1.609)+' KM/H',w*0.69,h*0.8);g.shadowBlur=0;b.t.needsUpdate=true}
 function textPlane(G,txt,w,h,col,bg,x,y,z,ry,font){
   const tex=canvasTex(1024,Math.round(1024*h/w),(g,cw,ch)=>{if(bg!=null){g.fillStyle=hex(bg);g.fillRect(0,0,cw,ch)}g.fillStyle=hex(col);g.textAlign='center';g.textBaseline='middle';
     let fs=ch*0.78;g.font='800 '+fs+'px "Saira Condensed","Arial Narrow",sans-serif';while(g.measureText(txt).width>cw*0.94&&fs>10){fs*=0.92;g.font='800 '+fs+'px "Saira Condensed","Arial Narrow",sans-serif'}g.fillText(txt,cw/2,ch*0.55)});
@@ -158,7 +170,7 @@ function venueLight(V){const s=W3.scene,night=!!V.night;
 
 function disposeTree(G){G.traverse(o=>{if(o.geometry)o.geometry.dispose();const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];for(const m of ms){if(m.map)m.map.dispose();m.dispose()}});while(G.children.length)G.remove(G.children[0])}
 function buildCourt(surf,cfg){
-  const G=W3.court;disposeTree(G);W3.crowdMeshes=null;
+  const G=W3.court;disposeTree(G);W3.crowdMeshes=null;W3.radar=[];
   const V=W3.venue=venueFor(Object.assign({},cfg||{},{surf}));venueLight(V);
   const hz=CL/2,people=[];
   const stadium=V.kind==='tour'||V.kind==='major';
@@ -194,6 +206,7 @@ function buildCourt(surf,cfg){
     const B=buildBowl(G,V,P,{rows:V.rows,rise:0.42,tread:0.85,y0:V.kind==='major'?2.4:2.2,brk:V.brk||0,gap:1.6});seats=B.seats;
     {const wh=V.kind==='major'?2.4:2.2;textPlane(G,V.title,17.4,wh,0xF4F1E6,V.wall,0,wh/2,-zF+0.03,0)}
     umpireChair(G,V,-(postX+0.9),people);
+    {const wh=V.kind==='major'?2.4:2.2;radarBoard(G,6.4,wh+0.85,-zF+0.05,0,3.2,1.3);radarBoard(G,-6.4,wh+0.85,zF-0.05,Math.PI,3.2,1.3)}   // speed boards above each end wall
     // ball kids: two crouched at the net posts, two at the far corners
     for(const [x,z,yw] of[[postX+0.5,0.6,-Math.PI/2],[-(postX+0.4),-1.2,Math.PI/2],[-4.5,-(hz+4.6),0],[4.5,-(hz+4.6),0]])people.push({x,y:0.02,z,yaw:yw,ex:0.15,shirt:V.acc,staff:1});
     // line judges seated against the back wall
@@ -210,7 +223,7 @@ function buildCourt(surf,cfg){
       seats=seats.concat(bleacher(G,-(xS+1.3),-3,20,6,Math.PI/2,[]),bleacher(G,xS+1.3,-3,20,6,-Math.PI/2,[]),bleacher(G,0,-(zF+1.3),14,8,0,[]));
       const tp=[];for(let i=0;i<36;i++){const a=Math.random()*Math.PI*2,r=40+Math.random()*14;tp.push([Math.cos(a)*r,Math.sin(a)*r*1.1-8])}trees(G,tp);
       for(const [x,z] of[[-xS,-zF],[xS,-zF],[-xS,zF],[xS,zF]])lightPole(G,x,z,11);
-      textPlane(G,V.windText,6,0.9,V.acc,V.wind,0,3.9,-(zF+0.05),0);
+      textPlane(G,V.windText,6,0.9,V.acc,V.wind,0,3.9,-(zF+0.05),0);radarBoard(G,6,4.2,-(zF+0.08),0,2.8,1.14);radarBoard(G,-6,4.2,zF+0.08,Math.PI,2.8,1.14);
       umpireChair(G,V,-(postX+0.9),people);
     }
   }
