@@ -9,6 +9,8 @@
 <div id="pauseMenu" hidden role="dialog" aria-label="Paused"><div class="card">
   <p class="banner">Paused</p>
   <p class="muted num" id="pmScore"></p>
+  <div class="pm-tabs" id="pmTabs"><button data-t="stats" aria-pressed="true">Match stats</button><button data-t="h2h" aria-pressed="false">Head to head</button></div>
+  <div id="pmBody"></div>
   <button class="go" id="pmResume">Resume</button>
   <div class="row"><button id="pmSnd" style="flex:1">Sound: on</button><button id="pmSettings" style="flex:1">Game settings</button></div>
   <button class="ghost" id="pmRetire">Retire from the match</button>
@@ -18,7 +20,7 @@
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 62 · big-match walkouts</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 63 · pause-menu stats</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>

@@ -184,7 +184,16 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 #tunePanel{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:rgba(5,12,20,.6)}
 #tunePanel[hidden]{display:none}
 #pauseMenu{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,12,20,.72)}
-#pauseMenu[hidden]{display:none}#pauseMenu .card{max-width:380px;width:100%;max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px);overflow:auto}
+#pauseMenu[hidden]{display:none}
+.pm-tabs{display:flex;gap:4px;padding:3px;border-radius:12px;background:rgba(255,255,255,.06);margin:4px 0 10px}
+.pm-tabs button{flex:1;padding:7px 6px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.pm-tabs button[aria-pressed=true]{background:var(--ball);color:var(--ball-ink)}
+#pmBody{margin-bottom:12px}#pmBody .sc-head span:first-child{text-align:left}
+#pmBody .pm-note{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+#pmBody .pm-sub{font-family:var(--display);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px;color:var(--muted);margin:12px 0 4px}
+#pmBody .pm-big{text-align:center;font-family:var(--display);font-weight:800;font-size:26px;margin:2px 0 6px}#pmBody .pm-big small{display:block;font-size:12px;letter-spacing:.12em;color:var(--muted);font-weight:700;text-transform:uppercase}
+#pmBody ol{list-style:none;margin:0;padding:0}#pmBody li{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(38,64,90,.5);font-size:14px}
+#pmBody li b{font-family:var(--display);font-size:16px}#pmBody li small{color:var(--muted);display:block;font-size:12px}#pauseMenu .card{max-width:380px;width:100%;max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px);overflow:auto}
 #tunePanel .card{max-width:440px;width:100%;max-height:calc(100vh - 32px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px);overflow:auto;-webkit-overflow-scrolling:touch;padding-top:0}
 #tunePanel .card>.row.between:first-child{position:sticky;top:0;z-index:2;background:var(--panel);padding:12px 0 8px;margin:0 0 -4px;border-bottom:1px solid var(--line)}
 .trow{display:flex;flex-direction:column;gap:4px;color:var(--chalk)}.trow span{display:flex;justify-content:space-between;gap:10px}.trow b{font-weight:600}

@@ -16,6 +16,7 @@ function scoreText(sets,pts,tb){const W=['0','15','30','40'],a=pts[0],b=pts[1];
   return sets.map(s=>s[0]+'–'+s[1]).join(', ')+(a+b?' · '+g:'')}
 function openPause(){if(!M||$('match').hidden||M.over)return;PAUSE.menu=true;syncPause();$('pauseMenu').hidden=false;
   $('pmScore').textContent=M.drill?'Lesson: '+M.drill.L.t:M.cfg.me+' vs '+M.cfg.opp.name+' · '+scoreText(M.sets,M.pts,M.tb);
+  pmRender();
   $('pmSnd').textContent=SND.on?'Sound: on':'Sound: off';$('pmRetire').textContent=M.drill?'Leave the lesson':'Retire from the match';$('pmRetire').dataset.arm=''}
 function closePause(){PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true}
 function retireMatch(){if(!M)return;closePause();

@@ -184,7 +184,16 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 #tunePanel{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:rgba(5,12,20,.6)}
 #tunePanel[hidden]{display:none}
 #pauseMenu{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,12,20,.72)}
-#pauseMenu[hidden]{display:none}#pauseMenu .card{max-width:380px;width:100%;max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px);overflow:auto}
+#pauseMenu[hidden]{display:none}
+.pm-tabs{display:flex;gap:4px;padding:3px;border-radius:12px;background:rgba(255,255,255,.06);margin:4px 0 10px}
+.pm-tabs button{flex:1;padding:7px 6px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.pm-tabs button[aria-pressed=true]{background:var(--ball);color:var(--ball-ink)}
+#pmBody{margin-bottom:12px}#pmBody .sc-head span:first-child{text-align:left}
+#pmBody .pm-note{font-size:13px;color:var(--muted);text-align:center;margin:8px 0 0}
+#pmBody .pm-sub{font-family:var(--display);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px;color:var(--muted);margin:12px 0 4px}
+#pmBody .pm-big{text-align:center;font-family:var(--display);font-weight:800;font-size:26px;margin:2px 0 6px}#pmBody .pm-big small{display:block;font-size:12px;letter-spacing:.12em;color:var(--muted);font-weight:700;text-transform:uppercase}
+#pmBody ol{list-style:none;margin:0;padding:0}#pmBody li{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(38,64,90,.5);font-size:14px}
+#pmBody li b{font-family:var(--display);font-size:16px}#pmBody li small{color:var(--muted);display:block;font-size:12px}#pauseMenu .card{max-width:380px;width:100%;max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px);overflow:auto}
 #tunePanel .card{max-width:440px;width:100%;max-height:calc(100vh - 32px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px);overflow:auto;-webkit-overflow-scrolling:touch;padding-top:0}
 #tunePanel .card>.row.between:first-child{position:sticky;top:0;z-index:2;background:var(--panel);padding:12px 0 8px;margin:0 0 -4px;border-bottom:1px solid var(--line)}
 .trow{display:flex;flex-direction:column;gap:4px;color:var(--chalk)}.trow span{display:flex;justify-content:space-between;gap:10px}.trow b{font-weight:600}
@@ -276,6 +285,8 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
 <div id="pauseMenu" hidden role="dialog" aria-label="Paused"><div class="card">
   <p class="banner">Paused</p>
   <p class="muted num" id="pmScore"></p>
+  <div class="pm-tabs" id="pmTabs"><button data-t="stats" aria-pressed="true">Match stats</button><button data-t="h2h" aria-pressed="false">Head to head</button></div>
+  <div id="pmBody"></div>
   <button class="go" id="pmResume">Resume</button>
   <div class="row"><button id="pmSnd" style="flex:1">Sound: on</button><button id="pmSettings" style="flex:1">Game settings</button></div>
   <button class="ghost" id="pmRetire">Retire from the match</button>
@@ -285,7 +296,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 62 · big-match walkouts</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 63 · pause-menu stats</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -2411,7 +2422,7 @@ function executeShot(){
   if(!M.drill)say((slc?'Slice. ':'')+(tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*2.237)+' mph':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*2.237)+' mph'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*2.237)+' mph':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*2.237)+' mph'));
 }
 /* the radar gun: every serve's speed goes up on the boards and in a small readout under the score */
-let radarTok=0;function radarShow(mps,who,second){const mph=mps*2.237,id=++radarTok,nm=who===0?(M.cfg.me||'You'):M.cfg.opp.name;
+let radarTok=0;function radarShow(mps,who,second){const mph=mps*2.237,id=++radarTok;if(M){M.fast=M.fast||[0,0];M.fast[who]=Math.max(M.fast[who],mph)}const nm=who===0?(M.cfg.me||'You'):M.cfg.opp.name;
   after(()=>{if(!M||id!==radarTok)return;const lab=(nm.split(' ').pop()+' · '+(second?'2nd':'1st')).toUpperCase();for(const b of W3.radar||[])drawRadar(b,mph,lab);
     $('radarV').textContent=Math.round(mph);$('radarK').textContent=Math.round(mph*1.609)+' km/h';$('radarL').textContent=(who===0?'Your ':nm.split(' ').pop()+"'s ")+(second?'2nd':'1st')+' serve';
     const r=$('radar');r.hidden=false;r.classList.remove('on');void r.offsetWidth;r.classList.add('on');after(()=>{if(id===radarTok)$('radar').classList.remove('on')},3200)},450)}
@@ -3217,6 +3228,7 @@ function scoreText(sets,pts,tb){const W=['0','15','30','40'],a=pts[0],b=pts[1];
   return sets.map(s=>s[0]+'–'+s[1]).join(', ')+(a+b?' · '+g:'')}
 function openPause(){if(!M||$('match').hidden||M.over)return;PAUSE.menu=true;syncPause();$('pauseMenu').hidden=false;
   $('pmScore').textContent=M.drill?'Lesson: '+M.drill.L.t:M.cfg.me+' vs '+M.cfg.opp.name+' · '+scoreText(M.sets,M.pts,M.tb);
+  pmRender();
   $('pmSnd').textContent=SND.on?'Sound: on':'Sound: off';$('pmRetire').textContent=M.drill?'Leave the lesson':'Retire from the match';$('pmRetire').dataset.arm=''}
 function closePause(){PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true}
 function retireMatch(){if(!M)return;closePause();
@@ -3608,6 +3620,28 @@ function showStatCard(title){if(!M||!M.ms)return;const el=$('statCard');
       return'<div class="sc-row"><b class="num'+(better===0?' up':'')+'">'+x+'</b><span>'+k+'</span><b class="num'+(better===1?' up':'')+'">'+y+'</b></div>'}).join('')+'<small>Tap to continue</small>';
   el.hidden=false;el.onclick=()=>{hideStatCard();if(M&&M.cardFn)hurry(M.cardFn)}}
 function hideStatCard(){$('statCard').hidden=true}
+/* ---- pause menu: this match's stats, and the head-to-head with this opponent ---- */
+let PM_TAB='stats';
+function cmpRow(k,x,y,lowerBetter,vx,vy){const nx=vx!==undefined?vx:parseFloat(x),ny=vy!==undefined?vy:parseFloat(y);let better=-1;if(lowerBetter!=='none'&&nx!=null&&ny!=null&&!isNaN(nx)&&!isNaN(ny)&&nx!==ny)better=(lowerBetter?nx<ny:nx>ny)?0:1;
+  return'<div class="sc-row"><b class="num'+(better===0?' up':'')+'">'+x+'</b><span>'+k+'</span><b class="num'+(better===1?' up':'')+'">'+y+'</b></div>'}
+function pmHead(){return'<div class="sc-head"><span>'+esc(M.cfg.me.split(' ').pop())+'</span><span></span><span>'+esc(M.cfg.opp.name.split(' ').pop())+'</span></div>'}
+function pmStats(){if(!M.ms)return'<p class="pm-note">Stats start with the first point.</p>';const a=M.ms[0],b=M.ms[1],F=M.fast||[0,0];
+  const rows=statCardRows().map(([k,x,y])=>cmpRow(k,x,y,k==='Double faults'||k==='Unforced errors')).join('');
+  return pmHead()+rows+cmpRow('Fastest serve',F[0]?Math.round(F[0])+' mph':'–',F[1]?Math.round(F[1])+' mph':'–')+
+    '<p class="pm-note">Longest rally: '+(M.stat.rallyMax||0)+' shots · '+(a.pt||0)+' point'+((a.pt||0)===1?'':'s')+' played</p>'}
+function pmH2H(){if(M.cfg.mode!=='career'||!save)return'<p class="pm-note">Head-to-head records are kept in career mode.</p>';
+  const F=walkFacts(),A=F.me,B=F.op,h=F.h2h,key=stKey(M.cfg.opp),L=(save.log||[]).filter(x=>x.k===key).slice(-5).reverse();
+  const big=h[0]+h[1]?(h[0]+'–'+h[1]):'0–0';
+  return'<p class="pm-big">'+big+'<small>'+(h[0]+h[1]?(h[0]>h[1]?'You lead':h[1]>h[0]?esc(B.name.split(' ').pop())+' leads':'All square'):'First meeting')+'</small></p>'+pmHead()+
+    cmpRow(F.label+' rank',A.rank?'#'+A.rank:'–',B.rank?'#'+B.rank:'–',true,A.rank||null,B.rank||null)+
+    cmpRow('Rating',A.rating.toFixed(1),B.rating.toFixed(1))+cmpRow('Age',A.age,B.age,'none')+cmpRow('Height',fmtHeight(A.ht).split(' (')[0],fmtHeight(B.ht).split(' (')[0],'none')+
+    cmpRow('Plays',A.plays.split('-')[0],B.plays.split('-')[0],'none')+cmpRow('Record',A.w+'–'+A.l,B.w+'–'+B.l,false,A.w/Math.max(1,A.w+A.l),B.w/Math.max(1,B.w+B.l))+cmpRow('Titles',A.t,B.t)+cmpRow('Aces',A.ace,B.ace)+
+    '<p class="pm-sub">Past meetings</p>'+(L.length?'<ol>'+L.map(x=>'<li><b style="color:'+(x.w?'var(--win)':'var(--loss)')+'">'+(x.w?'W':'L')+'</b><span>'+esc(x.e)+'<small>'+esc(x.r)+' · Season '+x.se+(x.sim?' · simmed':'')+'</small></span><b class="num">'+esc(x.sc)+'</b></li>').join('')+'</ol>':'<p class="pm-note">You haven’t played each other before.</p>')}
+function pmRender(){const car=M&&!M.drill&&M.cfg.mode==='career';$('pmTabs').hidden=!M||M.drill;if(!car&&PM_TAB==='h2h')PM_TAB='stats';
+  $('pmTabs').querySelector('[data-t=h2h]').hidden=!car;
+  $('pmTabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===PM_TAB)));
+  $('pmBody').innerHTML=!M||M.drill?'':PM_TAB==='h2h'?pmH2H():pmStats()}
+$('pmTabs').querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();PM_TAB=b.dataset.t;pmRender()});
 /* bring a scheduled game-clock timer forward to now */
 function hurry(fn){for(const x of TIMERS)if(x.fn===fn)x.t=GT}
 

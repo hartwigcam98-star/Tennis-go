@@ -1212,7 +1212,7 @@ function executeShot(){
   if(!M.drill)say((slc?'Slice. ':'')+(tim==='perfect'?'Perfect timing! ':tim==='late'?'Late. ':tim==='early'?'Early. ':'')+(mp>0.55?'On the run. ':'')+(smh?'Smash! '+Math.round(spd*2.237)+' mph':type==='lob'?'Lob over the top.':vol?(type==='drop'?'Drop volley.':'Volley! '+Math.round(spd*2.237)+' mph'):type==='drop'?'Drop shot.':c.pw>=0.85?'Big hit! '+Math.round(spd*2.237)+' mph':c.pw<0.3?'Soft shot. Swipe faster for more pace.':'In play. '+Math.round(spd*2.237)+' mph'));
 }
 /* the radar gun: every serve's speed goes up on the boards and in a small readout under the score */
-let radarTok=0;function radarShow(mps,who,second){const mph=mps*2.237,id=++radarTok,nm=who===0?(M.cfg.me||'You'):M.cfg.opp.name;
+let radarTok=0;function radarShow(mps,who,second){const mph=mps*2.237,id=++radarTok;if(M){M.fast=M.fast||[0,0];M.fast[who]=Math.max(M.fast[who],mph)}const nm=who===0?(M.cfg.me||'You'):M.cfg.opp.name;
   after(()=>{if(!M||id!==radarTok)return;const lab=(nm.split(' ').pop()+' · '+(second?'2nd':'1st')).toUpperCase();for(const b of W3.radar||[])drawRadar(b,mph,lab);
     $('radarV').textContent=Math.round(mph);$('radarK').textContent=Math.round(mph*1.609)+' km/h';$('radarL').textContent=(who===0?'Your ':nm.split(' ').pop()+"'s ")+(second?'2nd':'1st')+' serve';
     const r=$('radar');r.hidden=false;r.classList.remove('on');void r.offsetWidth;r.classList.add('on');after(()=>{if(id===radarTok)$('radar').classList.remove('on')},3200)},450)}

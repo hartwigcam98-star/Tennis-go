@@ -61,6 +61,28 @@ function showStatCard(title){if(!M||!M.ms)return;const el=$('statCard');
       return'<div class="sc-row"><b class="num'+(better===0?' up':'')+'">'+x+'</b><span>'+k+'</span><b class="num'+(better===1?' up':'')+'">'+y+'</b></div>'}).join('')+'<small>Tap to continue</small>';
   el.hidden=false;el.onclick=()=>{hideStatCard();if(M&&M.cardFn)hurry(M.cardFn)}}
 function hideStatCard(){$('statCard').hidden=true}
+/* ---- pause menu: this match's stats, and the head-to-head with this opponent ---- */
+let PM_TAB='stats';
+function cmpRow(k,x,y,lowerBetter,vx,vy){const nx=vx!==undefined?vx:parseFloat(x),ny=vy!==undefined?vy:parseFloat(y);let better=-1;if(lowerBetter!=='none'&&nx!=null&&ny!=null&&!isNaN(nx)&&!isNaN(ny)&&nx!==ny)better=(lowerBetter?nx<ny:nx>ny)?0:1;
+  return'<div class="sc-row"><b class="num'+(better===0?' up':'')+'">'+x+'</b><span>'+k+'</span><b class="num'+(better===1?' up':'')+'">'+y+'</b></div>'}
+function pmHead(){return'<div class="sc-head"><span>'+esc(M.cfg.me.split(' ').pop())+'</span><span></span><span>'+esc(M.cfg.opp.name.split(' ').pop())+'</span></div>'}
+function pmStats(){if(!M.ms)return'<p class="pm-note">Stats start with the first point.</p>';const a=M.ms[0],b=M.ms[1],F=M.fast||[0,0];
+  const rows=statCardRows().map(([k,x,y])=>cmpRow(k,x,y,k==='Double faults'||k==='Unforced errors')).join('');
+  return pmHead()+rows+cmpRow('Fastest serve',F[0]?Math.round(F[0])+' mph':'–',F[1]?Math.round(F[1])+' mph':'–')+
+    '<p class="pm-note">Longest rally: '+(M.stat.rallyMax||0)+' shots · '+(a.pt||0)+' point'+((a.pt||0)===1?'':'s')+' played</p>'}
+function pmH2H(){if(M.cfg.mode!=='career'||!save)return'<p class="pm-note">Head-to-head records are kept in career mode.</p>';
+  const F=walkFacts(),A=F.me,B=F.op,h=F.h2h,key=stKey(M.cfg.opp),L=(save.log||[]).filter(x=>x.k===key).slice(-5).reverse();
+  const big=h[0]+h[1]?(h[0]+'–'+h[1]):'0–0';
+  return'<p class="pm-big">'+big+'<small>'+(h[0]+h[1]?(h[0]>h[1]?'You lead':h[1]>h[0]?esc(B.name.split(' ').pop())+' leads':'All square'):'First meeting')+'</small></p>'+pmHead()+
+    cmpRow(F.label+' rank',A.rank?'#'+A.rank:'–',B.rank?'#'+B.rank:'–',true,A.rank||null,B.rank||null)+
+    cmpRow('Rating',A.rating.toFixed(1),B.rating.toFixed(1))+cmpRow('Age',A.age,B.age,'none')+cmpRow('Height',fmtHeight(A.ht).split(' (')[0],fmtHeight(B.ht).split(' (')[0],'none')+
+    cmpRow('Plays',A.plays.split('-')[0],B.plays.split('-')[0],'none')+cmpRow('Record',A.w+'–'+A.l,B.w+'–'+B.l,false,A.w/Math.max(1,A.w+A.l),B.w/Math.max(1,B.w+B.l))+cmpRow('Titles',A.t,B.t)+cmpRow('Aces',A.ace,B.ace)+
+    '<p class="pm-sub">Past meetings</p>'+(L.length?'<ol>'+L.map(x=>'<li><b style="color:'+(x.w?'var(--win)':'var(--loss)')+'">'+(x.w?'W':'L')+'</b><span>'+esc(x.e)+'<small>'+esc(x.r)+' · Season '+x.se+(x.sim?' · simmed':'')+'</small></span><b class="num">'+esc(x.sc)+'</b></li>').join('')+'</ol>':'<p class="pm-note">You haven’t played each other before.</p>')}
+function pmRender(){const car=M&&!M.drill&&M.cfg.mode==='career';$('pmTabs').hidden=!M||M.drill;if(!car&&PM_TAB==='h2h')PM_TAB='stats';
+  $('pmTabs').querySelector('[data-t=h2h]').hidden=!car;
+  $('pmTabs').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===PM_TAB)));
+  $('pmBody').innerHTML=!M||M.drill?'':PM_TAB==='h2h'?pmH2H():pmStats()}
+$('pmTabs').querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();PM_TAB=b.dataset.t;pmRender()});
 /* bring a scheduled game-clock timer forward to now */
 function hurry(fn){for(const x of TIMERS)if(x.fn===fn)x.t=GT}
 
