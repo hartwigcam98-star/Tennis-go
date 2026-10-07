@@ -222,7 +222,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 33 · new sound</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 34 · crowd sound</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -1577,7 +1577,7 @@ function crowdTick(dt){const t=now(),U=CROWD_U;U.uT.value+=dt;
    stereo, quieter and wetter on the far side, through a venue echo sized from a club court up to a major stadium. */
 const SND={ctx:null,on:true,amb:null,ambG:null,level:0,buf:{},bank:{},ready:false};
 try{SND.on=localStorage.getItem('tennis-go-sound')!=='off'}catch(e){}
-const SR=()=>SND.ctx.sampleRate,rng=(a,b)=>a+Math.random()*(b-a),pickA=a=>a[Math.floor(Math.random()*a.length)];
+const SR=()=>SND.srO||SND.ctx.sampleRate,rng=(a,b)=>a+Math.random()*(b-a),pickA=a=>a[Math.floor(Math.random()*a.length)];
 
 /* ---- offline DSP helpers ---- */
 function biq(type,f,Q,sr){const w=2*Math.PI*Math.min(f,sr*0.45)/sr,cs=Math.cos(w),sn=Math.sin(w),al=sn/(2*Q);let b0,b1,b2;
@@ -1640,31 +1640,74 @@ function formants(src,F,breath){let o=new Float32Array(src.length);const parts=[
   if(breath){const b=filt(noiseArr(src.length),'bp',1500,0.7);let env=0;for(let i=0;i<o.length;i++){env+=(Math.abs(src[i])-env)*0.002;o[i]+=breath*b[i]*Math.min(1,env*6)}}
   return o}
 function mkGrunt(f0){const s=arr(0.36),dur=rng(0.18,0.28);voiceSrc(s,f0*1.12,f0*0.86,0.005,dur,1,s);return mkBuf(norm(formants(s,[rng(650,780),rng(1080,1250),rng(2400,2700)],0.45),0.8))}
-/* crowd voices: dozens of people, each with their own pitch and timing, then the vowel */
-function mkCrowdVoice(kind){const len=kind==='ooh'?1.7:2.8,L=arr(len),R=arr(len),n=kind==='ooh'?40:55;
-  for(let k=0;k<n;k++){const fem=Math.random()<0.45,f0=fem?rng(190,270):rng(100,150),t0=rng(0,kind==='ooh'?0.15:0.25),dur=rng(len*0.45,len*0.9)-t0;
-    const rise=kind==='ooh'?rng(1.15,1.35):rng(1.05,1.2),pan=Math.random(),src=arr(len);voiceSrc(src,f0,f0*rise,t0,dur,rng(0.4,1),src);
-    for(let i=0;i<src.length;i++){L[i]+=src[i]*(1-pan*0.6);R[i]+=src[i]*(0.4+pan*0.6)}}
-  const F=kind==='ooh'?[330,820,2400]:[760,1180,2600];let l=formants(L,F,0.35),r=formants(R,F,0.35);
-  if(kind!=='ooh')for(let w=0;w<3;w++){const t0=rng(0.2,1.2),sr=SR(),s0=Math.floor(t0*sr),d=rng(0.4,0.8),f=rng(2200,3000);let ph=0;   // a few whistles
-    for(let i=0;i<d*sr&&s0+i<l.length;i++){const u=i/(d*sr),fr=f*(1+0.25*Math.sin(Math.PI*u));ph+=2*Math.PI*fr/sr;const v=0.25*Math.sin(Math.PI*u)*Math.sin(ph);l[s0+i]+=v;r[s0+i]+=v*0.7}}
-  const m=Math.max(...[l,r].map(a=>a.reduce((x,v)=>Math.max(x,Math.abs(v)),0)))||1;for(const a of [l,r])for(let i=0;i<a.length;i++)a[i]*=0.85/m;
-  return mkBuf(l,r)}
-/* applause: individual clappers, each clapping in their own rhythm with their own hand sound */
-function mkClapKernels(){const K=[];for(let k=0;k<24;k++){const o=arr(0.03);nz(o,'bp',rng(800,2200),rng(1.5,3.5),rng(0.003,0.007),1,0,0.0005);mode(o,rng(300,500),0.004,0.3,0);K.push(norm(o))}return K}
-function mkApplause(n,len){const sr=SR(),L=arr(len),R=arr(len),K=SND.bank.kern;
-  for(let c=0;c<n;c++){const rate=rng(3.2,5.8),pan=Math.random(),gl=1-pan*0.7,gr=0.3+pan*0.7,t0=Math.random()*0.35,t1=len*rng(0.5,0.98),kern=pickA(K),loud=rng(0.5,1);
-    for(let t=t0;t<t1;t+=(1/rate)*rng(0.88,1.12)){const s0=Math.floor(t*sr),e=loud*rng(0.6,1)*(t<0.25?0.4+t*2.4:Math.max(0.05,1-(t-0.25)/(t1-0.25))*0.9+0.1);
+/* ---- the crowd ----
+   Real crowds sound the way they do because most of the people are far away (duller and quieter), every clap and
+   voice is a little different, and the whole lot is smeared by the stadium. So: near / middle / far clappers with
+   cupped and flat hands, voices with a soft breathy tone and their own "yeah" / "woo" / "ooh" shapes, and a reverb
+   rendered into each sound. */
+/* a small Freeverb (eight combs, four allpasses) run offline on a stereo pair */
+function verbOff(L,R,size,wet,tail){const sr=SR(),k=sr/44100,n=L.length+Math.floor(sr*(tail||0.8)),oL=new Float32Array(n),oR=new Float32Array(n);
+  const CB=[1116,1188,1277,1356,1422,1491,1557,1617],AP=[556,441,341,225],fb=0.7+0.28*size,damp=0.25;
+  for(const [src,out,spread] of [[L,oL,0],[R,oR,23]]){const wetBuf=new Float32Array(n);
+    for(const d0 of CB){const d=Math.floor((d0+spread)*k),buf=new Float32Array(d);let idx=0,f=0;
+      for(let i=0;i<n;i++){const x=i<src.length?src[i]:0,y=buf[idx];f=y*(1-damp)+f*damp;buf[idx]=x*0.015+f*fb;idx=(idx+1)%d;wetBuf[i]+=y}}
+    for(const a0 of AP){const d=Math.floor((a0+spread)*k),buf=new Float32Array(d);let idx=0;
+      for(let i=0;i<n;i++){const b=buf[idx],x=wetBuf[i];buf[idx]=x+b*0.5;wetBuf[i]=b-x;idx=(idx+1)%d}}
+    for(let i=0;i<n;i++)out[i]=(i<src.length?src[i]*(1-wet*0.5):0)+wetBuf[i]*wet}
+  return[oL,oR]}
+function lp1(x,fc){const a=1-Math.exp(-2*Math.PI*fc/SR());let y=0;for(let i=0;i<x.length;i++){y+=a*(x[i]-y);x[i]=y}return x}
+function scale2(l,r,peak){let m=0;for(let i=0;i<l.length;i++)m=Math.max(m,Math.abs(l[i]),Math.abs(r[i]));const k=(peak||0.85)/(m||1);for(let i=0;i<l.length;i++){l[i]*=k;r[i]*=k}}
+/* band-pass whose centre moves over time (a vowel changing shape) */
+function fvar(x,fFn,Q){const sr=SR(),y=new Float32Array(x.length);let x1=0,x2=0,y1=0,y2=0,c=null;
+  for(let i=0;i<x.length;i++){if(i%64===0)c=biq('bp',fFn(i/x.length),Q,sr);const v=c.b0*x[i]+c.b1*x1+c.b2*x2-c.a1*y1-c.a2*y2;x2=x1;x1=x[i];y2=y1;y1=v;y[i]=v}return y}
+/* one person: a soft (not buzzy) voice source with breath, shaped by a pitch contour and a vowel path */
+function person(dur,f0,pitch,F1,F2,breath){const sr=SR(),src=arr(dur+0.04),s0=0,m=Math.floor(dur*sr);let ph=0;const vib=rng(4.5,6.5),vd=rng(0.006,0.018);
+  for(let i=0;i<m;i++){const u=i/m,f=f0*pitch(u)*(1+vd*Math.sin(2*Math.PI*vib*i/sr));ph+=f/sr;if(ph>=1)ph-=1;
+    const g=ph<0.6?0.5-0.5*Math.cos(2*Math.PI*ph/0.6):0,e=Math.min(1,u/0.08)*Math.min(1,(1-u)/0.3);src[s0+i]=e*(g-0.3+breath*(Math.random()*2-1)*(0.3+g))}
+  lp1(src,f0*7);const a=fvar(src,u=>F1(Math.min(1,u*(dur+0.04)/dur)),4),b=fvar(src,u=>F2(Math.min(1,u*(dur+0.04)/dur)),5),c=filt(src,'bp',2600,6);
+  for(let i=0;i<src.length;i++)src[i]=a[i]+0.5*b[i]+0.15*c[i];return src}
+const lerp=(a,b)=>u=>a+(b-a)*u;
+function addAt(L,R,v,t,g,pan){const s0=Math.floor(t*SR());for(let i=0;i<v.length&&s0+i<L.length;i++){const x=v[i]*g;L[s0+i]+=x*(1-pan*0.6);R[s0+i]+=x*(0.4+pan*0.6)}}
+const SHOUT={
+  yeah:()=>({d:rng(0.35,0.8),p:u=>1+0.28*Math.sin(Math.PI*Math.min(1,u*1.4)),F1:lerp(rng(480,540),rng(720,800)),F2:lerp(rng(1800,2000),rng(1200,1300))}),
+  woo:()=>({d:rng(0.6,1.3),p:u=>1+0.55*Math.min(1,u*2.2)-0.15*Math.max(0,u-0.6),F1:()=>320,F2:lerp(700,800)}),
+  ahh:()=>({d:rng(0.5,1.1),p:u=>1+0.15*Math.sin(Math.PI*u),F1:()=>rng(720,780),F2:()=>1150}),
+  ooh:()=>({d:rng(0.7,1.3),p:u=>1+0.3*Math.sin(Math.PI*Math.min(1,u*1.3)),F1:()=>330,F2:lerp(780,860)}),
+  aww:()=>({d:rng(0.6,1.1),p:u=>1.15-0.25*u,F1:lerp(620,560),F2:lerp(1000,900)})};
+/* where each person sits: near (bright), middle, far (dull and quiet) */
+function seat(){const r=Math.random();return r<0.1?{g:1,lp:0}:r<0.4?{g:0.55,lp:4500}:{g:0.3,lp:2200}}
+/* crowds have no real treble, so they are rendered at a lower rate: two to three times quicker to build */
+function lowRate(f){return(...a)=>{SND.srO=22050;try{return f(...a)}finally{SND.srO=0}}}
+const mkCrowdVoiceLR=lowRate(kind=>mkCrowdVoice(kind)),mkBabbleLR=lowRate(()=>mkBabble()),mkApplauseLR=lowRate((n,l,z)=>mkApplause(n,l,z)),mkClapKernelsLR=lowRate(()=>mkClapKernels());
+function mkCrowdVoice(kind){const len=kind==='ooh'?2:3.2,L=arr(len+0.1),R=arr(len+0.1),n=kind==='ooh'?36:46,mix=kind==='ooh'?['ooh','ooh','ooh','aww']:['yeah','yeah','woo','ahh','woo'];
+  for(let k=0;k<n;k++){const fem=Math.random()<0.45,f0=fem?rng(195,280):rng(100,155),S=SHOUT[pickA(mix)](),t0=rng(0,kind==='ooh'?0.18:0.45),d=Math.min(S.d,len-t0-0.05);
+    const v=person(d,f0,S.p,S.F1,S.F2,rng(0.15,0.45)),st=seat();if(st.lp)lp1(v,st.lp);const pan=Math.random(),a=st.g*rng(0.5,1);addAt(L,R,v,t0,a,pan);
+    if(kind!=='ooh'&&Math.random()<0.35){const S2=SHOUT[pickA(mix)](),t1=t0+d+rng(0.1,0.4);if(t1<len-0.4){const v2=person(Math.min(S2.d,len-t1-0.05),f0*rng(0.95,1.1),S2.p,S2.F1,S2.F2,0.3);if(st.lp)lp1(v2,st.lp);addAt(L,R,v2,t1,a,pan)}}}
+  if(kind!=='ooh')for(let w=0;w<3;w++){const sr=SR(),t0=rng(0.2,1.4),s0=Math.floor(t0*sr),d=rng(0.35,0.7),f=rng(2200,3000),st=seat(),pan=Math.random();let ph=0;   // a few whistles
+    for(let i=0;i<d*sr&&s0+i<L.length;i++){const u=i/(d*sr),fr=f*(1+0.2*Math.sin(Math.PI*u)+0.01*Math.sin(2*Math.PI*30*i/sr));ph+=2*Math.PI*fr/sr;const v=0.12*st.g*Math.sin(Math.PI*u)*Math.sin(ph);L[s0+i]+=v*(1-pan*0.6);R[s0+i]+=v*(0.4+pan*0.6)}}
+  const [l,r]=verbOff(L,R,0.75,0.45,1);scale2(l,r);return mkBuf(l,r)}
+/* applause */
+function clapKernel(cupped,lp){const o=arr(0.05);nz(o,'hp',2000,0.7,0.0004,0.5,0);
+  if(cupped){nz(o,'bp',rng(650,1100),rng(2,4),rng(0.004,0.008),1,0,0.0004);mode(o,rng(350,480),0.005,0.4,0)}
+  else{nz(o,'bp',rng(1600,2800),rng(1.2,2.5),rng(0.002,0.004),1,0,0.0003);mode(o,rng(900,1200),0.002,0.2,0)}
+  nz(o,'bp',rng(800,1600),2,0.003,0.15,rng(0.006,0.012));   // the first reflection off the hands and body
+  if(lp)lp1(lp1(o,lp),lp*1.3);return norm(o)}
+function mkClapKernels(){const K={near:[],mid:[],far:[]};for(let k=0;k<8;k++){const c=k%2===0;K.near.push(clapKernel(c,0));K.mid.push(clapKernel(c,5000));K.far.push(clapKernel(c,2400))}return K}
+function mkApplause(n,len,size){const sr=SR(),L=arr(len),R=arr(len),K=SND.bank.kern,small=n<30;
+  for(let c=0;c<n;c++){const r=Math.random(),pos=small?(r<0.4?'near':'mid'):r<0.08?'near':r<0.38?'mid':'far',g={near:1,mid:0.55,far:0.32}[pos],kern=pickA(K[pos]);
+    const rate=clamp(4.6+0.8*(Math.random()+Math.random()+Math.random()-1.5)*1.4,3,6.5),pan=Math.random(),gl=1-pan*0.7,gr=0.3+pan*0.7;
+    const t0=-Math.log(1-Math.random()*0.95)*0.12,t1=len*(0.35+0.6*Math.pow(Math.random(),0.7)),loud=g*rng(0.6,1);
+    for(let t=t0;t<t1;t+=(1/rate)*rng(0.92,1.08)){const s0=Math.floor(t*sr),u=(t-t0)/(t1-t0),e=loud*rng(0.75,1)*Math.min(1,(t-t0)/0.15+0.3)*(1-0.3*u)*(t1-t<0.5?(t1-t)/0.5+0.2:1);
       for(let i=0;i<kern.length&&s0+i<L.length;i++){const v=kern[i]*e;L[s0+i]+=v*gl;R[s0+i]+=v*gr}}}
-  const l=filt(filt(L,'hp',350,0.7),'lp',7000,0.7),r=filt(filt(R,'hp',350,0.7),'lp',7000,0.7);const m=Math.max(...[l,r].map(a=>a.reduce((x,v)=>Math.max(x,Math.abs(v)),0)))||1;for(const a of [l,r])for(let i=0;i<a.length;i++)a[i]*=0.85/m;
-  return mkBuf(l,r)}
-/* the murmur of a crowd between points: many voices talking, filtered and looped */
-function mkBabble(){const sr=SR(),len=4,L=arr(len),R=arr(len);
-  for(let k=0;k<26;k++){const src=arr(len),f0=Math.random()<0.45?rng(180,250):rng(95,140),pan=Math.random();let t=Math.random()*0.5;
-    while(t<len-0.3){const d=rng(0.08,0.25);voiceSrc(src,f0*rng(0.9,1.15),f0*rng(0.85,1.1),t,d,rng(0.3,1),src);t+=d+rng(0.03,0.35)}
-    const v=formants(src,[rng(400,800),rng(1000,1800),2500],0.3);for(let i=0;i<v.length;i++){L[i]+=v[i]*(1-pan*0.6);R[i]+=v[i]*(0.4+pan*0.6)}}
-  const fade=Math.floor(sr*0.2);for(const a of [L,R])for(let i=0;i<fade;i++){const k=i/fade;a[i]=a[i]*k+a[a.length-fade+i]*(1-k)}   // seamless loop
-  const l=filt(L,'lp',2200,0.7),r=filt(R,'lp',2200,0.7);norm(l,0.8);norm(r,0.8);return mkBuf(l,r)}
+  const [l,r]=verbOff(filt(L,'hp',250,0.7),filt(R,'hp',250,0.7),size,small?0.25:0.4,small?0.6:1.2);lp1(l,8500);lp1(r,8500);scale2(l,r);return mkBuf(l,r)}
+/* the murmur of a crowd between points: many people talking, mostly far away, looped */
+function mkBabble(){const sr=SR(),len=5,L=arr(len),R=arr(len),V=[[300,800],[500,1800],[720,1150],[400,2100],[600,1000]];
+  for(let k=0;k<22;k++){const f0=Math.random()<0.45?rng(180,250):rng(95,140),st=seat(),pan=Math.random();let t=Math.random()*0.6;
+    while(t<len-0.3){const d=rng(0.1,0.28),a=pickA(V),b=pickA(V),v=person(d,f0*rng(0.92,1.1),u=>1+0.12*Math.sin(Math.PI*u)-0.08*u,lerp(a[0],b[0]),lerp(a[1],b[1]),0.35);
+      lp1(v,Math.min(st.lp||3000,2200));addAt(L,R,v,t,st.g*rng(0.4,1),pan);t+=d+rng(0.04,0.4)}}
+  let [l,r]=verbOff(L,R,0.7,0.5,0.01);l=l.subarray(0,L.length);r=r.subarray(0,R.length);
+  const fade=Math.floor(sr*0.3);for(const a of [l,r])for(let i=0;i<fade;i++){const q=i/fade;a[i]=a[i]*q+a[a.length-fade+i]*(1-q)}   // seamless loop
+  scale2(l,r,0.8);return mkBuf(l,r)}
 /* venue echo: a short decaying noise tail with a couple of early reflections */
 const VERB={club:[0.5,0.09],college:[0.9,0.13],tour:[1.4,0.17],masters:[1.6,0.19],major:[1.9,0.22]};
 function mkIR(sec){const sr=SR(),n=Math.floor(sr*sec),b=SND.ctx.createBuffer(2,n,sr);
@@ -1691,10 +1734,10 @@ function sndInit(){
   const later=[()=>{B.squeak=[0,1,2,3].map(mkSqueak);B.slide=[0,1].map(mkSlide);B.scuff=[0,1].map(mkScuff)},
     ()=>{B.step={};for(const s of ['hard','clay','grass'])B.step[s]=[0,1,2].map(()=>mkStep(s))},
     ()=>{B.grunt={m:[0,1,2].map(()=>mkGrunt(rng(105,140))),f:[0,1,2].map(()=>mkGrunt(rng(200,240)))}},
-    ()=>{B.kern=mkClapKernels();B.clapS=mkApplause(14,2.4)},()=>{B.clapM=mkApplause(70,3)},()=>{B.clapL=mkApplause(260,3.6)},
-    ()=>{B.ooh=mkCrowdVoice('ooh')},()=>{B.cheer=mkCrowdVoice('cheer')},
-    ()=>{B.babble=mkBabble();const s=c.createBufferSource();s.buffer=B.babble;s.loop=true;const g=SND.ambG=c.createGain();g.gain.value=0;s.connect(g);g.connect(SND.dry);s.start()}];
-  let i=0;const step=()=>{if(i<later.length){try{later[i++]()}catch(e){console.error(e)}setTimeout(step,30)}};setTimeout(step,60);
+    ()=>{B.kern=mkClapKernelsLR();B.clapS=mkApplauseLR(14,2.4,0.3)},()=>{B.clapM=mkApplauseLR(70,3,0.6)},()=>{B.clapL=mkApplauseLR(260,3.6,0.85)},
+    ()=>{B.ooh=mkCrowdVoiceLR('ooh')},()=>{B.cheer=mkCrowdVoiceLR('cheer')},
+    ()=>{B.babble=mkBabbleLR();const s=c.createBufferSource();s.buffer=B.babble;s.loop=true;const g=SND.ambG=c.createGain();g.gain.value=0;s.connect(g);g.connect(SND.dry);s.start()}];
+  let i=0;SND.tm=[];const step=()=>{if(i<later.length){const t0=performance.now();try{later[i++]()}catch(e){console.error(e)}SND.tm.push(Math.round(performance.now()-t0));setTimeout(step,30)}};setTimeout(step,60);
   return true}
 /* iPhones play web audio as "ambient" sound, which the silent switch mutes. Asking for the playback session (newer iOS)
    and running a silent media loop (older iOS) makes the game sound like any video or music app instead. */
@@ -1750,7 +1793,7 @@ function sndMove(i,st,dt){if(!sndReady()||!SND.bank.squeak||!dt)return;const m=M
 
 /* ---- the crowd ---- */
 function sndApplause(amp){if(!sndReady())return;const z=crowdSize(),B=SND.bank,b=z>0.6?B.clapL:z>0.25?B.clapM:B.clapS;if(!b)return;
-  play(b,{gain:clamp(amp,0,1.2)*(0.3+0.5*z),rate:rng(0.95,1.05),wet:1.3})}
+  play(b,{gain:clamp(amp,0,1.2)*(0.3+0.5*z)*1.6,rate:rng(0.96,1.04),wet:1})}
 function sndCrowdVoice(kind,amp){if(!sndReady())return;const z=crowdSize();if(z<0.3)return;const b=kind==='ooh'?SND.bank.ooh:SND.bank.cheer;if(!b)return;
   play(b,{gain:amp*z*(kind==='ooh'?0.7:0.6),rate:rng(0.94,1.06),wet:1.4})}
 /* the murmur between points, hushed during them; birds at the club */
@@ -1931,10 +1974,17 @@ function nextPoint(){
 function pointTo(w,text,call,kind){
   if(M&&M.drill){drillPoint(w,text,call);return}
   if(!M||M.lock)return;msPoint(w,call,kind);M.lock=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
-  {const rl=M.rally||0,big=call==='ACE'||call==='WINNER';
-    if(big){crowdCheer(1,2.6,rl>=6||Math.random()<0.25?2.2:0);sndApplause(1);if(rl>=6)sndCrowdVoice('cheer',0.9)}
-    else if(call==='NET'||call==='DOUBLE FAULT'){crowdCheer(0.35,1.4);sndCrowdVoice('ooh',0.7);after(()=>sndApplause(0.3),600)}
-    else{if(call==='OUT'&&rl>=4)sndCrowdVoice('ooh',0.6);crowdCheer(0.55,1.8);sndApplause(0.55)}}
+  // the crowd saves itself for the good stuff: aces, winners, long rallies, the end of a game (louder for a break)
+  {const rl=M.rally||0,ace=call==='ACE',win=call==='WINNER'||kind==='wn',miss=call==='OUT'||call==='NET'||kind==='ue'||kind==='fe',gp=!M.tb&&pointWins(w)>0||M.tb&&pointWins(w)>1,brk=gp&&!M.tb&&w!==M.server,long=rl>=4,epic=rl>=7;
+    let clap=0,voice=null;
+    if(ace)clap=0.65;
+    else if(win){clap=epic?1:long?0.8:0.45;if(long)voice='cheer'}
+    else if(epic){clap=0.75;voice=miss?'ooh':'cheer'}
+    else if(long&&miss)voice='ooh';
+    else if(call==='DOUBLE FAULT'&&Math.random()<0.4)voice='ooh';
+    if(gp)clap=Math.max(clap,brk?0.8:0.4);if(brk&&!voice&&Math.random()<0.6)voice='cheer';
+    if(clap){crowdCheer(clap,1.2+clap*1.6,voice==='cheer'?2.2:0);sndApplause(clap)}else if(voice)crowdCheer(0.3,1.2);
+    if(voice)after(()=>sndCrowdVoice(voice,voice==='ooh'?0.75:0.9),voice==='ooh'?120:250)}
   const pg=M.sets.reduce((a,x)=>a+x[0]+x[1],0),ps=M.sets.length;
   for(let i=0;i<2;i++)recover(i,0.03);
   const o=1-w;

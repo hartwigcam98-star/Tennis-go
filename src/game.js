@@ -936,10 +936,17 @@ function nextPoint(){
 function pointTo(w,text,call,kind){
   if(M&&M.drill){drillPoint(w,text,call);return}
   if(!M||M.lock)return;msPoint(w,call,kind);M.lock=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
-  {const rl=M.rally||0,big=call==='ACE'||call==='WINNER';
-    if(big){crowdCheer(1,2.6,rl>=6||Math.random()<0.25?2.2:0);sndApplause(1);if(rl>=6)sndCrowdVoice('cheer',0.9)}
-    else if(call==='NET'||call==='DOUBLE FAULT'){crowdCheer(0.35,1.4);sndCrowdVoice('ooh',0.7);after(()=>sndApplause(0.3),600)}
-    else{if(call==='OUT'&&rl>=4)sndCrowdVoice('ooh',0.6);crowdCheer(0.55,1.8);sndApplause(0.55)}}
+  // the crowd saves itself for the good stuff: aces, winners, long rallies, the end of a game (louder for a break)
+  {const rl=M.rally||0,ace=call==='ACE',win=call==='WINNER'||kind==='wn',miss=call==='OUT'||call==='NET'||kind==='ue'||kind==='fe',gp=!M.tb&&pointWins(w)>0||M.tb&&pointWins(w)>1,brk=gp&&!M.tb&&w!==M.server,long=rl>=4,epic=rl>=7;
+    let clap=0,voice=null;
+    if(ace)clap=0.65;
+    else if(win){clap=epic?1:long?0.8:0.45;if(long)voice='cheer'}
+    else if(epic){clap=0.75;voice=miss?'ooh':'cheer'}
+    else if(long&&miss)voice='ooh';
+    else if(call==='DOUBLE FAULT'&&Math.random()<0.4)voice='ooh';
+    if(gp)clap=Math.max(clap,brk?0.8:0.4);if(brk&&!voice&&Math.random()<0.6)voice='cheer';
+    if(clap){crowdCheer(clap,1.2+clap*1.6,voice==='cheer'?2.2:0);sndApplause(clap)}else if(voice)crowdCheer(0.3,1.2);
+    if(voice)after(()=>sndCrowdVoice(voice,voice==='ooh'?0.75:0.9),voice==='ooh'?120:250)}
   const pg=M.sets.reduce((a,x)=>a+x[0]+x[1],0),ps=M.sets.length;
   for(let i=0;i<2;i++)recover(i,0.03);
   const o=1-w;
