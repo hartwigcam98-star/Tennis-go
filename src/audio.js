@@ -255,7 +255,7 @@ function sndMove(i,st,dt){if(!sndReady()||!SND.bank.squeak||!dt)return;const m=M
   if(m.cool<=0&&psp>2.6&&(acc>12||(Math.sign(st.v)!==Math.sign(m.v)&&Math.abs(m.v)>2.2))){m.cool=0.7;
     const B=SND.bank;if(s==='clay')play(pickA(B.slide),Object.assign({},P_,{gain:P_.gain*0.32*clamp(psp/5,0.4,1),rate:rng(0.9,1.1)}));
     else if(s==='grass')play(pickA(B.scuff),Object.assign({},P_,{gain:P_.gain*0.25,rate:rng(0.9,1.1)}));
-    else if(Math.random()<0.5)play(pickA(B.squeak),Object.assign({},P_,{gain:P_.gain*0.12*clamp(psp/5,0.5,1),rate:rng(0.92,1.08)}))}
+}   // no shoe squeaks on hard courts
   m.step+=sp*dt;if(sp>1.4&&m.step>1.35&&SND.bank.step){m.step=0;play(pickA(SND.bank.step[s]||SND.bank.step.hard),Object.assign({},P_,{gain:P_.gain*0.13*clamp(sp/5,0.5,1),rate:rng(0.9,1.1),wet:0.4}))}
   m.v=st.v;m.vz=st.vz}
 
