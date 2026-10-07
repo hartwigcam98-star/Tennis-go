@@ -233,7 +233,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 40 · lunges, big moments, night and wind</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 41 · smaller field</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -902,7 +902,7 @@ function careerResult(won,score,st){
   save.xp+=xp;lines.unshift(['Training pts','+'+xp]);
   if(done){
     if(save.stage==='pro'){const r=proRank();save.rec.best=Math.min(save.rec.best,r);if(r===1)save.rec.weeks1++}
-    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});if(c.draw){if(!c.draw.res||c.draw.res.length<c.draw.R)drawSimAll(c.draw);awardDrawPoints(c.draw,ev)}if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};save.week++;save.cur=null;save.pick=null;weekOff();
+    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});if(c.draw){if(!c.draw.res||c.draw.res.length<c.draw.R)drawSimAll(c.draw);awardDrawPoints(c.draw,ev)}if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};simOtherEvents(c.others);save.week++;save.cur=null;save.pick=null;weekOff();
     const before=perkLevel();checkSponsors(lines);
     if(c.rk0){const r1=myRankIn(stageKey);lines.push(['Ranking','#'+c.rk0+' → #'+r1+(r1<c.rk0?' ▲':r1>c.rk0?' ▼':'')])}
   }
@@ -2808,7 +2808,7 @@ const RANK_SCALE={junior:{N:300,K:190,label:'Junior'},college:{N:400,K:230,label
 function skillPts(stage,skill){const [s0,s1]=STAGE_SKILL[stage],{N,K}=RANK_SCALE[stage];const r=Math.pow(N,clamp((s1+0.2-skill)/(s1-s0+0.4),0,1));return K*Math.log(N/Math.max(1,r))}
 /* the field's standing: by skill order, the best 30 fill the top 30 places and the rest spread down the ranking,
    so the field sits where the points scale says it should and your results move you past them */
-function slotPts(stage,i){const {N,K}=RANK_SCALE[stage],D=30,n=96,r=i<D?i+1:D*Math.pow(N/D,(i-D+1)/(n-D));return K*Math.log(N/r)}
+function slotPts(stage,i){const {N,K}=RANK_SCALE[stage],D=Math.min(30,FIELD_N[stage]-2),n=FIELD_N[stage],r=i<D?i+1:D*Math.pow(N/D,(i-D+1)/(n-D));return K*Math.log(N/r)}
 function fieldPts(stage,p){return slotPts(stage,(p.rank||1)-1)+0.5*((p.cur||0)+fadeW(stage)*(p.prev||0))}
 let RANK_CACHE={key:null,list:null};
 function rankingList(stage){stage=stage||save.stage;const my=roll(stage),key=stage+'|'+my+'|'+save.week+'|'+save.season+'|'+(save.fieldV||0)+'|'+save.char+'|'+(save.rivals||[]).map(r=>r.fid||r.id).join();
@@ -2839,13 +2839,18 @@ function openRankings(){const st=save.stage,L=rankingList(st),meI=L.findIndex(e=
 const show_=id=>show(id);
 $('rkBack').onclick=()=>renderHub();
 function rngFrom(seed){let h=seed>>>0||1;return()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return(h>>>0)/4294967296}}
+const FIELD_N={junior:32,college:32,pro:64};
 function fieldFor(stage){
-  save.pool=save.pool||{};if(save.pool[stage])return save.pool[stage];
+  save.pool=save.pool||{};const N=FIELD_N[stage];
+  if(save.pool[stage]&&save.pool[stage].length>N){// an older, larger field: keep N players spread across its levels, with their records
+    const L=save.pool[stage].slice().sort((a,b)=>b.skill-a.skill),keep=[];for(let i=0;i<N;i++)keep.push(L[Math.round(i*(L.length-1)/(N-1))]);
+    keep.forEach((p,i)=>p.rank=i+1);save.pool[stage]=keep;save.fieldV=(save.fieldV||0)+1}
+  if(save.pool[stage])return save.pool[stage];
   if(!save.seed)save.seed=Math.floor(Math.random()*2147483647);
   const r=rngFrom(save.seed+({junior:11,college:23,pro:37}[stage])),pk=a=>a[Math.floor(r()*a.length)],[s0,s1]=STAGE_SKILL[stage],used={};
   const list=[];
-  for(let i=0;i<96;i++){const base=pk(FIELD_BASES),f=!!FEMALE_BASE[base];let name;do{name=pk(f?NAMES_F:NAMES_M)+' '+pk(SURNAMES)}while(used[name]);used[name]=1;
-    const u=Math.pow(r(),1.35),skill=Math.round((s1-(s1-s0)*u)*10)/10;   // fewer players near the top
+  for(let i=0;i<N;i++){const base=pk(FIELD_BASES),f=!!FEMALE_BASE[base];let name;do{name=pk(f?NAMES_F:NAMES_M)+' '+pk(SURNAMES)}while(used[name]);used[name]=1;
+    const skill=Math.round(clamp(s1-(s1-s0)*Math.pow(i/(N-1),0.85)+(r()-0.5)*0.2,s0,s1)*10)/10;   // spread evenly from the top of the level down
     const nat=styleOfChar(RBYID[base]),style=r()<0.55?nat:pk(['server','baseliner','allcourt','counter']);
     list.push({id:stage[0]+i,name,base,nat:pk(NATS),style,skill,v:{h:Math.round(r()*360),t:Math.round(r()*360),a:Math.round((0.25+r()*0.35)*100)/100,l:Math.round((0.88+r()*0.24)*100)/100}})}
   list.sort((a,b)=>b.skill-a.skill);list.forEach((p,i)=>p.rank=i+1);
@@ -2860,12 +2865,9 @@ function simPair(D,a,b){const A=D.players[a],B=D.players[b],p=1/(1+Math.exp(-(A.
 /* build a draw for the event you just entered */
 function makeDraw(c){
   const ev=c.ev,stage=save.stage,R=ev.rounds,size=1<<R,f=fmt(stage,ev),field=fieldFor(stage),[k0,k1]=ev.sk;
-  const players={me:{id:'me',name:RBYID[save.char].name,me:true,nat:'YOU',skill:0}},picked=new Set();
-  for(const r of save.rivals||[])if(r.fid)picked.add(r.fid);   // rivals from the field only appear as rivals
-  // entrants spread across the event's level: weakest near the bottom of the range, top seed near the top
-  const need=size-1,targets=Array.from({length:need},(_,i)=>k1+0.3-(k1-k0+0.5)*(need>1?i/(need-1):0));
-  for(const t of targets){let best=null,bd=1e9;for(const p of field){if(picked.has(p.id))continue;const d=Math.abs(p.skill-t)+Math.random()*0.25;if(d<bd){bd=d;best=p}}
-    if(best){picked.add(best.id);players[best.id]=Object.assign({},best)}}
+  const players={me:{id:'me',name:RBYID[save.char].name,me:true,nat:'YOU',skill:0}},plan=planWeek(ev),picked=plan.taken;
+  c.others=plan.others;
+  for(const id of plan.mine)players[id]=Object.assign({},fieldFor(stage).find(p=>p.id===id));
   // a rival waits in the draw at the bigger events: the final, or the semifinal at a major
   let rivalId=null;
   if(R>=3){const ri=save.history.length%3,rv=save.rivals[ri];if(rv.fid&&players[rv.fid]){delete players[rv.fid];picked.delete(rv.fid);const pool=field.filter(p=>!picked.has(p.id)&&p.id!==rv.fid);const fill=pool[Math.floor(Math.random()*pool.length)];if(fill){picked.add(fill.id);players[fill.id]=Object.assign({},fill)}}picked.add(rv.fid);
@@ -2950,6 +2952,32 @@ function variantTexture(D,v){D._vmaps=D._vmaps||{};const key=v.h+'_'+v.t+'_'+v.a
       else if(val>0.5){const a=v.a;R=r*(1-a)+r*tint[0]*a*1.1;G=gg*(1-a)+gg*tint[1]*a*1.1;B=b*(1-a)+b*tint[2]*a*1.1}   // white and grey kit takes a colour
       d[i]=clamp(R*v.l,0,255);d[i+1]=clamp(G*v.l,0,255);d[i+2]=clamp(B*v.l,0,255)}
     g.putImageData(id,0,0);t.needsUpdate=true};im.src=D.tex.d;return t}
+
+/* ---- the week's events: every event of the week is played, by the field, whether you are in it or not ----
+   Each event fills from the top of the rankings down, among players at its level, biggest event first, so the
+   best players enter every big event and the smaller events take the next group. */
+function weekEvents(wk){const W=weeks()[wk];if(!W)return[];const L=[W.main];
+  if(save.stage==='pro')L.push(EV('Challenger '+ALT_CITIES[wk],'Challenger',W.main.surf,4,[5,6.5],250),EV('Futures '+ALT_CITIES[wk],'Futures',W.main.surf,3,[4,5.5],100));
+  else if(W.alt)L.push(W.alt);return L}
+function pickEntrants(ev,taken,need,main){const field=fieldFor(save.stage),RK={};for(const e of rankingList(save.stage))RK[e.id]=e.rank;const [k0,k1]=ev.sk;
+  const ok=p=>!taken.has(p.id)&&p.skill>=k0-0.9&&p.skill<=k1+(main?2:0.7);   // the week's main event takes the top players; smaller ones stay at their level
+  let L=field.filter(ok).sort((a,b)=>(RK[a.id]||999)-(RK[b.id]||999)).slice(0,need);
+  if(L.length<need){const mid=(k0+k1)/2,more=field.filter(p=>!taken.has(p.id)&&!L.includes(p)).sort((a,b)=>Math.abs(a.skill-mid)-Math.abs(b.skill-mid));L=L.concat(more.slice(0,need-L.length))}
+  for(const p of L)taken.add(p.id);return L.map(p=>p.id)}
+/* who plays what this week; mine = the field players in your event (one place is yours) */
+function planWeek(myEv){const taken=new Set();for(const r of save.rivals||[])if(r.fid)taken.add(r.fid);   // rivals from the field only appear as rivals
+  const evs=weekEvents(save.week);if(myEv&&!evs.some(e=>e.n===myEv.n))evs.unshift(myEv);
+  const out={mine:[],others:[],taken};
+  const mainN=(weeks()[save.week]||{}).main;
+  for(const ev of evs){const size=1<<ev.rounds,mine=myEv&&ev.n===myEv.n,ids=pickEntrants(ev,taken,size-(mine?1:0),mainN&&ev.n===mainN.n);if(mine)out.mine=ids;else out.others.push({ev,ids})}
+  return out}
+/* play out one of the week's other events and bank its points and stats */
+function simEvent(o){const ev=o.ev,f=fmt(save.stage,ev),field=fieldFor(save.stage),RK={};for(const e of rankingList(save.stage))RK[e.id]=e.rank;
+  const players={};for(const id of o.ids){const p=field.find(x=>x.id===id);if(p)players[id]=Object.assign({},p)}
+  let ids=Object.keys(players).sort((a,b)=>(RK[a]||999)-(RK[b]||999));const size=1<<Math.ceil(Math.log2(Math.max(2,ids.length)));if(ids.length<size)return;
+  const slots=new Array(size);seedOrder(size).forEach((k,pos)=>{slots[pos]=ids[k-1]});
+  const D={size,R:Math.log2(size),f:{bo:f.bo,g:f.g},players,slots,seeds:{},res:[],ev:ev.n};drawSimAll(D);awardDrawPoints(D,ev)}
+function simOtherEvents(list){for(const o of list||[])try{simEvent(o)}catch(e){console.error(e)}}
 
 /* ================= pause, game-time timers, and picking a match back up =================
    Match timers run on the game clock (after()), so pausing really stops everything: serves, the gap
@@ -3052,7 +3080,7 @@ function pickerHtml(wk){const o=weekOptions(wk),k=pickOf(wk);
     [x.E.ev.n,x.E.ev.tier+' · '+x.E.ev.pts+' pts'+(save.stage==='pro'&&PRIZE[x.E.ev.tier]?' · '+money(PRIZE[x.E.ev.tier]):'')+(x.E.how==='qual'?' · qualifying':'')];
   return'<p class="eyebrow">This week</p><div class="wkpick">'+o.map(x=>{const [a,b]=lab(x);return'<button class="pc" data-pick="'+x.k+'" aria-pressed="'+(x.k===k)+'"><strong>'+esc(a)+'</strong><small class="muted">'+esc(b)+'</small></button>'}).join('')+'</div>'}
 function wirePicker(wk){document.querySelectorAll('#nextCard [data-pick]').forEach(b=>b.onclick=()=>{save.pick={wk,season:save.season,stage:save.stage,k:b.dataset.pick};store();renderHub()})}
-function restWeek(){const xp=restXP();save.xp+=xp;save.fat=0;
+function restWeek(){const xp=restXP();save.xp+=xp;save.fat=0;simOtherEvents(planWeek(null).others);
   save.history.push({stage:save.stage,season:save.season,wk:save.week,name:'Rest week',res:'Rest',champ:false});save.week++;save.pick=null;store();
   seasonScreen('Week '+save.week+' · '+stageName(),'A week off','You skip the event, train and recover. +'+xp+' training points, and you are back to full fitness.',[['Back to hub','go',()=>renderHub()]])}
 

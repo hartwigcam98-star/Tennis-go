@@ -44,7 +44,7 @@ function pickerHtml(wk){const o=weekOptions(wk),k=pickOf(wk);
     [x.E.ev.n,x.E.ev.tier+' · '+x.E.ev.pts+' pts'+(save.stage==='pro'&&PRIZE[x.E.ev.tier]?' · '+money(PRIZE[x.E.ev.tier]):'')+(x.E.how==='qual'?' · qualifying':'')];
   return'<p class="eyebrow">This week</p><div class="wkpick">'+o.map(x=>{const [a,b]=lab(x);return'<button class="pc" data-pick="'+x.k+'" aria-pressed="'+(x.k===k)+'"><strong>'+esc(a)+'</strong><small class="muted">'+esc(b)+'</small></button>'}).join('')+'</div>'}
 function wirePicker(wk){document.querySelectorAll('#nextCard [data-pick]').forEach(b=>b.onclick=()=>{save.pick={wk,season:save.season,stage:save.stage,k:b.dataset.pick};store();renderHub()})}
-function restWeek(){const xp=restXP();save.xp+=xp;save.fat=0;
+function restWeek(){const xp=restXP();save.xp+=xp;save.fat=0;simOtherEvents(planWeek(null).others);
   save.history.push({stage:save.stage,season:save.season,wk:save.week,name:'Rest week',res:'Rest',champ:false});save.week++;save.pick=null;store();
   seasonScreen('Week '+save.week+' · '+stageName(),'A week off','You skip the event, train and recover. +'+xp+' training points, and you are back to full fitness.',[['Back to hub','go',()=>renderHub()]])}
 

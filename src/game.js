@@ -377,7 +377,7 @@ function careerResult(won,score,st){
   save.xp+=xp;lines.unshift(['Training pts','+'+xp]);
   if(done){
     if(save.stage==='pro'){const r=proRank();save.rec.best=Math.min(save.rec.best,r);if(r===1)save.rec.weeks1++}
-    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});if(c.draw){if(!c.draw.res||c.draw.res.length<c.draw.R)drawSimAll(c.draw);awardDrawPoints(c.draw,ev)}if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};save.week++;save.cur=null;save.pick=null;weekOff();
+    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});if(c.draw){if(!c.draw.res||c.draw.res.length<c.draw.R)drawSimAll(c.draw);awardDrawPoints(c.draw,ev)}if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};simOtherEvents(c.others);save.week++;save.cur=null;save.pick=null;weekOff();
     const before=perkLevel();checkSponsors(lines);
     if(c.rk0){const r1=myRankIn(stageKey);lines.push(['Ranking','#'+c.rk0+' → #'+r1+(r1<c.rk0?' ▲':r1>c.rk0?' ▼':'')])}
   }
