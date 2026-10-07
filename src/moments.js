@@ -88,3 +88,18 @@ function nightFor(ev,roundsLeft,venueKind){if(!ev)return false;if(ev.tier==='Fin
   if(ev.major)return ev.major==='New York'?roundsLeft<=3:roundsLeft<=1||Math.random()<0.2;
   if(['Masters','Tour 500','Tour 250'].includes(ev.tier))return roundsLeft===0?Math.random()<0.6:Math.random()<0.2;
   return false}
+
+/* ---- the advantage bar: who is in control of the rally, shot by shot (display only) ----
+   Each shot is scored from what the game already works out: how rushed and stretched it leaves the receiver
+   (pressureOf), whether it can be reached at all, and whether it is going out. The bar keeps some memory of
+   earlier shots so it moves like momentum, and resets every point. */
+function shotAdv(sh){if(sh.err)return sh.who==='me'?-0.55:0.55;
+  if(sh.who==='me')return(M.returns===false||sh.ace)?1:0.12+0.88*pressureOf(1,sh);
+  return sh.unreach?-1:-(0.12+0.88*(M.mePress||pressureOf(0,sh)))}
+function advTick(dt){const el=$('advBar');if(!M||!el)return;
+  const live=!M.drill&&M.shot&&['op','me','err','oppErr','serving','oppServing'].includes(M.state);
+  if(M.shot&&M._advShot!==M.shot){M._advShot=M.shot;try{M.advT=0.35*(M.advT||0)+0.65*clamp(shotAdv(M.shot),-1,1)}catch(e){}}
+  M.adv=(M.adv||0)+((M.advT||0)-(M.adv||0))*Math.min(1,dt*5);const a=clamp(M.adv,-1,1);
+  el.classList.toggle('on',!!live);const f=$('advFill');f.style.width=(Math.abs(a)*50)+'%';f.style.left=a>=0?(50-a*50)+'%':'50%';   // your edge fills toward your end (left)
+  f.className=a>=0?'mine':'theirs'}
+function advReset(){if(!M)return;M.advT=0;M.adv=0;M._advShot=null}

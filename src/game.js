@@ -955,7 +955,7 @@ function beginMatch(cfg){
   M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,ostyle:cfg.opp.style||styleOfChar(RBYID[cfg.opp.id]),pat:[],readMe:false,readSaid:false,ostam:clamp(Math.round(((RBYID[cfg.opp.id]&&RBYID[cfg.opp.id].st.stamina)||5)*0.5+cfg.opp.skill*0.5),1,10),sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
     state:'between',shot:null,t0:0,me:{x:0.4,y:-0.05},op:{x:-0.4,y:1.08},fault:false,sw:null,preview:null,samples:[],land:null,aim:null,lock:false,commit:null,pending:null,
     stat:{aces:0,winners:0,big:0,perfect:0,smashes:0,volleys:0,slices:0,rallyMax:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
-  $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;applyWeather(cfg);{const c=conditionsText(cfg);$('bSurf').textContent=SURF[cfg.surf].name+(c?' · '+c:'')}
+  $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('advOpp').textContent=cfg.opp.name.split(' ').pop();$('bLabel').textContent=cfg.label;applyWeather(cfg);{const c=conditionsText(cfg);$('bSurf').textContent=SURF[cfg.surf].name+(c?' · '+c:'')}
   $('ptBadge').hidden=true;$('quit').textContent='Pause';M.quitArm=false;applyCosmetics();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
   msStart();if(cfg.fat){M.en[0]=M.cap[0]=1-cfg.fat}if(cfg.ofat){M.en[1]=M.cap[1]=1-cfg.ofat}
   if(cfg.resume){applyResume(cfg.resume);cfg.intro='Match resumed at '+scoreText(M.sets,M.pts,M.tb)+'.'}
@@ -979,7 +979,7 @@ function showBigPoint(){const el=$('ptBadge');const B=bigPoint();if(!B){el.hidde
   el.className='ptbadge '+(B.w===0?'mine':'theirs')+(B.rank>=2?' big':'');el.hidden=false;el.style.animation='none';void el.offsetWidth;el.style.animation='';
   if(B.rank>=3&&hasOfficials())after(()=>speak(B.kind+'.',{rate:0.95}),1400)}
 function nextPoint(){
-  if(!M||M.over)return;clearMarks();FX.tp=[];slowMo(false);showBigPoint();
+  if(!M||M.over)return;clearMarks();FX.tp=[];slowMo(false);showBigPoint();advReset();
   M.lock=false;M.fault=false;M.oFault=false;M.shot=null;M.land=null;M.aim=null;M.commit=null;M.pending=null;M.rally=0;M.home=[{x:0,y:-0.05},{x:0,y:1.08}];W3.homeMark&&(W3.homeMark.visible=false);
   const d=side()==='deuce';
   if(M.server===0){M.me={x:d?0.4:-0.4,y:-0.05};M.op={x:d?-0.45:0.45,y:1.08};M.state='serveMe';say((M.tb?'Tiebreak. ':'')+'Your serve. Swipe up into the box.')}
@@ -1269,7 +1269,7 @@ function loop(t){
   if(P[0]){P[0].serveReady=!!M&&M.state==='serveMe';P[1].serveReady=!!M&&M.state==='oppServe'}
   const rlx=!M||M.state==='between';P[0].relax=rlx;P[1].relax=rlx||(M&&(M.state==='serveMe'));
   P[0].update(dt,1,M?M.mv[0].v:0,M?M.mv[0].vz:0);P[1].update(dt,-1,M?M.mv[1].v:0,M?M.mv[1].vz:0);
-  ceremonyTick(dtr);camera(dtr);fxTick(dt);if(M&&!window.__FREEZE)recordFrame();
+  ceremonyTick(dtr);advTick(dtr);camera(dtr);fxTick(dt);if(M&&!window.__FREEZE)recordFrame();
   W3.r.render(W3.scene,W3.cam);
 }
 function swingFor(pl,side,tHit,hz){const S=SWINGS[side];if(!pl.swing&&now()>=tHit-S.dur*S.cf*1000){const yo=yoFor(side,hz);const off=Math.max(0,(now()-(tHit-S.dur*S.cf*1000))/1000);pl.startSwing(side,Math.min(off,S.dur*S.cf),yo)}}
