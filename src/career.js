@@ -127,6 +127,7 @@ function playFinals(){const F=finalsMode();if(!F)return;{const L=liveFor('career
 function finalsResult(won,score,st){const F=finalsMode(),lines=[],xp=Math.round((won?60:20)*(SIMMED?0.6:1));let text,champ=false,out=false;
   const opp=F.P[F.next],stageKey='pro';statMine(opp,won,score,lines,'Tour Finals',finRoundName(F));
   if(won)save.careerW++;else save.careerL++;
+  {const rb=myRankIn('pro');if(won&&opp.rank&&rb&&opp.rank<rb){const b=bigWinBonus('pro',opp.rank);if(b){save.pts.pro.cur+=b;lines.push(['Big-win bonus','+'+b+' (beat #'+opp.rank+')'])}}}
   if(opp.rival!=null){const rv=save.rivals[opp.rival];if(won)rv.w++;else rv.l++;rv.last=won?'w':'l'}
   let pts=0,pay=0;
   if(F.phase==='rr'){finDay(F,won,score);if(won){pts+=FIN_PTS.rr;pay+=FIN_PAY.rr}

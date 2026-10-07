@@ -124,6 +124,8 @@ save=load();
 if(save&&save.stats&&save.stats.stamina==null){const c=RBYID[save.char];save.stats.stamina=Math.max(1,Math.round(((c&&c.st.stamina)||5)*0.45));store()}
 /* rolling year: last season's points fade out week by week as this season's come in, so there is no cliff at a new season */
 function fadeW(k){if(!save||k!==save.stage)return 0.5;const n=weeks().length;return clamp(1-save.week/n,0,1)}
+/* bonus ranking points for beating a higher-ranked player (scaled to each league's points) */
+function bigWinBonus(stage,oppRank){const base=oppRank<=1?140:oppRank<=3?110:oppRank<=5?85:oppRank<=10?60:oppRank<=20?35:oppRank<=50?18:oppRank<=100?8:0;return Math.round(base*RANK_SCALE[stage].K/450)}
 function myName(){return save&&save.name||(save?RBYID[save.char].name:'')}
 const roll=k=>Math.round(save.pts[k].cur+fadeW(k)*save.pts[k].prev);
 /* share of the winner's points for the round you go out in (0 = lost the final), the same in every draw size */
@@ -380,25 +382,27 @@ function careerResult(won,score,st){
   if(o.fid)h2hNote(o.fid,won);
   statMine(o,won,score,lines,ev.n,roundName(c.round,c.total,c.qual));
   let text,champ=false,done=false,resLabel,prize=0;
-  const mainRounds=c.total-c.qual,winsMain=Math.max(0,c.round-1-c.qual);
+  const mainRounds=c.total-c.qual,winsMain=Math.max(0,c.round-1-c.qual),rkBefore=myRankIn(stageKey);
+  // ranking points are banked as you go: each win locks in what reaching the next round is worth
+  const bank=target=>{const add=Math.max(0,Math.round(target)-(c.banked||0));if(add){save.pts[stageKey].cur+=add;if(stageKey==='junior')save.juniorTotal+=add;c.banked=(c.banked||0)+add}return add};
+  // and beating someone ranked above you earns a bonus, much bigger against the very top
+  if(won&&o.rk&&rkBefore&&o.rk<rkBefore){const b=bigWinBonus(stageKey,o.rk);if(b){save.pts[stageKey].cur+=b;if(stageKey==='junior')save.juniorTotal+=b;lines.push(['Big-win bonus','+'+b+' (beat #'+o.rk+')'])}}
   if(won&&c.round===c.total){
-    champ=true;done=true;myLine().t++;careerMilestone(ev,true);xp+=Math.round(40*xpMult());save.pts[stageKey].cur+=ev.pts;save.titles.push(ev.n+' '+save.season);save.rec.titles++;
+    champ=true;done=true;myLine().t++;careerMilestone(ev,true);xp+=Math.round(40*xpMult());const tp=bank(ev.pts);save.titles.push(ev.n+' '+save.season);save.rec.titles++;
     if(ev.major)save.majors[ev.major]=(save.majors[ev.major]||0)+1,save.rec.majors++;if(ev.tier==='Masters')save.rec.masters++;
-    if(stageKey==='junior')save.juniorTotal+=ev.pts;
     prize=prizeFor(ev,mainRounds,mainRounds,true);
-    text=ev.major?'You are a major champion. '+ev.n+' is yours.':'Champion of the '+ev.n+'!';resLabel='W';lines.push(['Points','+'+ev.pts]);
+    text=ev.major?'You are a major champion. '+ev.n+' is yours.':'Champion of the '+ev.n+'!';resLabel='W';lines.push(['Points','+'+tp+' (title '+ev.pts+')']);
   }else if(won){
-    const wasQual=c.round===c.qual;c.round++;c.opp=null;
+    const wasQual=c.round===c.qual,nr=c.round+1,got=nr>c.qual?bank(ev.pts*reachFrac(c.total-nr)):0;if(got)lines.push(['Points','+'+got]);c.round++;c.opp=null;
     text=wasQual?'Through qualifying! You are in the main draw.':'Into the '+roundName(c.round,c.total,c.qual).toLowerCase()+'.';
   }else{
     done=true;
-    const earned=c.round>c.qual?Math.round(ev.pts*reachFrac(c.total-c.round)):0;
-    save.pts[stageKey].cur+=earned;if(stageKey==='junior')save.juniorTotal+=earned;
+    const earned=c.round>c.qual?bank(ev.pts*reachFrac(c.total-c.round)):0;
     prize=c.round>c.qual?prizeFor(ev,winsMain,mainRounds,false):(save.stage==='pro'&&PRIZE[ev.tier]?Math.round(PRIZE[ev.tier]*0.005):0);
     const rn=roundName(c.round,c.total,c.qual);resLabel=c.round<=c.qual?'Q'+c.round:c.round===c.total?'F':(SHORT[rn]||'R1');
     text=o.rival!=null?'Your rival '+o.name+' gets the better of you this time.':'Out in the '+rn.toLowerCase()+'.';
     if(o.fid){const nr=maybeNewRival(o,c,lines);if(nr)text+=' '+nr.name+' is now one of your rivals'+(nr.old?', taking '+nr.old+'’s place':'')+'.'}
-    lines.push(['Points','+'+earned]);
+    if(earned)lines.push(['Points','+'+earned]);
   }
   if(prize){save.money+=prize;save.earnings+=prize;lines.push(['Prize money',money(prize)])}
   save.xp+=xp;lines.unshift(['Training pts','+'+xp]);
@@ -406,8 +410,9 @@ function careerResult(won,score,st){
     if(save.stage==='pro'){const r=proRank();save.rec.best=Math.min(save.rec.best,r);if(r===1)save.rec.weeks1++}
     save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,tier:ev.tier,res:resLabel,champ});if(c.draw){if(!c.draw.res||c.draw.res.length<c.draw.R)drawSimAll(c.draw);awardDrawPoints(c.draw,ev)}if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};newsFromDraw(c.draw,ev,true);simOtherEvents(c.others);weekNews();checkGoals(lines);save.week++;save.cur=null;save.pick=null;weekOff();
     const before=perkLevel();checkSponsors(lines);
-    if(c.rk0){const r1=myRankIn(stageKey);lines.push(['Ranking','#'+c.rk0+' → #'+r1+(r1<c.rk0?' ▲':r1>c.rk0?' ▼':'')])}
+    if(c.rk0){const r1=myRankIn(stageKey);lines.push(['Ranking this event','#'+c.rk0+' → #'+r1+(r1<c.rk0?' ▲':r1>c.rk0?' ▼':'')])}
   }
+  if(!done&&rkBefore){const r1=myRankIn(stageKey);if(r1!==rkBefore)lines.push(['Ranking','#'+rkBefore+' → #'+r1+(r1<rkBefore?' ▲':' ▼')])}
   const pl=perkLevel(),S=STYLES.find(s=>s.id===save.style);
   if(won&&PERK_AT.includes(save.careerW)&&save.careerW>0)lines.push(['Perk unlocked',S.perks[PERK_AT.indexOf(save.careerW)]]);
   store();showResult(won,score,st,(SIMMED?'Simulated. ':'')+text,lines,'Back to hub',()=>renderHub(),champ);
