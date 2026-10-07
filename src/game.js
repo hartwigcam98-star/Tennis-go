@@ -1324,7 +1324,7 @@ cv.addEventListener('pointercancel',()=>{if(M){M.sw=null;M.preview=null}});
 /* ---- per frame ---- */
 let lastT=0;
 function loop(t){
-  requestAnimationFrame(loop);
+  requestAnimationFrame(loop);if(window.__FAST)return;   // test harness: the simulation drives the clock itself
   const rawMs=t-lastT,dtr=Math.min(0.05,rawMs/1000||0.016);lastT=t;clockTick();runTimers();
   if(rawMs>0&&rawMs<1000)perfFrame(rawMs,!!M&&!$('match').hidden&&!REP.on&&!CLK.paused);
   if($('match').hidden||!P[0])return;
@@ -1442,6 +1442,11 @@ function camera(dt){
 for(const ev of ['pointerdown','touchend','click','keydown'])document.addEventListener(ev,sndResume,{passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SND.ctx&&SND.ctx.state!=='running')SND.ctx.resume().catch(()=>{});if(SND.tag){if(document.hidden)SND.tag.pause();else if(SND.on)SND.tag.play().catch(()=>{})}});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{get WALK(){return WALK},walkTap:()=>walkTap(),doServe:a=>doServe(a),cordShot:(...a)=>cordShot(...a),tryLet:(...a)=>tryLet(...a),lineMargin:(...a)=>lineMargin(...a),startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},setWindXZ:(x,z)=>{WIND={x,z}},get chal(){return M&&M.chal},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},get RECS(){return RECS},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{
+  /* balance harness: run the game clock and simulation without rendering. bot() is called every step */
+  ff:(ms,bot)=>{const dt=1/30;let n=Math.ceil(ms/1000/dt);while(n-->0&&M){GT+=dt*1000;runTimers();if(REP.on)endReplay();if(!M)break;if(M.state!=='walkout')step(dt);if(P[0]){P[0].swing=null;P[1].swing=null}if(bot)bot()}},
+  serveSwipe:a=>{if(!M||M.state!=='serveMe')return;M.state='serving';M.aim={x:a.x,y:a.y};M.serveT0=now();after(()=>doServe(a),SWINGS.sv.dur*SWINGS.sv.cf*1000)},
+  get MAXL(){return MAXL},get PERFECT(){return PERFECT},
+  get WALK(){return WALK},walkTap:()=>walkTap(),doServe:a=>doServe(a),cordShot:(...a)=>cordShot(...a),tryLet:(...a)=>tryLet(...a),lineMargin:(...a)=>lineMargin(...a),startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},setWindXZ:(x,z)=>{WIND={x,z}},get chal(){return M&&M.chal},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},get RECS(){return RECS},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
