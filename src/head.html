@@ -174,11 +174,12 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 .rk.rv{border-color:#6b2f2f}
 .rk-gap{text-align:center;color:var(--muted);letter-spacing:.3em}
 .board{pointer-events:auto;-webkit-touch-callout:none;user-select:none}
-#tunePanel{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,12,20,.6)}
+#tunePanel{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:rgba(5,12,20,.6)}
 #tunePanel[hidden]{display:none}
 #pauseMenu{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,12,20,.72)}
-#pauseMenu[hidden]{display:none}#pauseMenu .card{max-width:380px;width:100%}
-#tunePanel .card{max-width:440px;width:100%;max-height:calc(100vh - 32px);overflow:auto}
+#pauseMenu[hidden]{display:none}#pauseMenu .card{max-width:380px;width:100%;max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px);overflow:auto}
+#tunePanel .card{max-width:440px;width:100%;max-height:calc(100vh - 32px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px);overflow:auto;-webkit-overflow-scrolling:touch;padding-top:0}
+#tunePanel .card>.row.between:first-child{position:sticky;top:0;z-index:2;background:var(--panel);padding:12px 0 8px;margin:0 0 -4px;border-bottom:1px solid var(--line)}
 .trow{display:flex;flex-direction:column;gap:4px;color:var(--chalk)}.trow span{display:flex;justify-content:space-between;gap:10px}.trow b{font-weight:600}
 .trow output{color:var(--ball);font-variant-numeric:tabular-nums}.trow small{color:var(--muted);font-size:12px}
 .trow input{width:100%;accent-color:#D3E86B}

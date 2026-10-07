@@ -174,11 +174,12 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 .rk.rv{border-color:#6b2f2f}
 .rk-gap{text-align:center;color:var(--muted);letter-spacing:.3em}
 .board{pointer-events:auto;-webkit-touch-callout:none;user-select:none}
-#tunePanel{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,12,20,.6)}
+#tunePanel{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 12px) 12px calc(env(safe-area-inset-bottom,0px) + 12px);background:rgba(5,12,20,.6)}
 #tunePanel[hidden]{display:none}
 #pauseMenu{position:fixed;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(5,12,20,.72)}
-#pauseMenu[hidden]{display:none}#pauseMenu .card{max-width:380px;width:100%}
-#tunePanel .card{max-width:440px;width:100%;max-height:calc(100vh - 32px);overflow:auto}
+#pauseMenu[hidden]{display:none}#pauseMenu .card{max-width:380px;width:100%;max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px);overflow:auto}
+#tunePanel .card{max-width:440px;width:100%;max-height:calc(100vh - 32px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 24px);overflow:auto;-webkit-overflow-scrolling:touch;padding-top:0}
+#tunePanel .card>.row.between:first-child{position:sticky;top:0;z-index:2;background:var(--panel);padding:12px 0 8px;margin:0 0 -4px;border-bottom:1px solid var(--line)}
 .trow{display:flex;flex-direction:column;gap:4px;color:var(--chalk)}.trow span{display:flex;justify-content:space-between;gap:10px}.trow b{font-weight:600}
 .trow output{color:var(--ball);font-variant-numeric:tabular-nums}.trow small{color:var(--muted);font-size:12px}
 .trow input{width:100%;accent-color:#D3E86B}
@@ -236,6 +237,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div id="tBody" style="display:flex;flex-direction:column;gap:12px"></div>
   <div class="row"><button id="tCopy">Copy settings</button><button class="ghost" id="tReset">Reset defaults</button></div>
   <p class="note" id="tMsg" style="word-break:break-all"></p>
+  <button class="go" id="tClose2">Done</button>
 </div></div>
 <div id="pauseMenu" hidden role="dialog" aria-label="Paused"><div class="card">
   <p class="banner">Paused</p>
@@ -249,7 +251,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 52 · serve rebalance</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 53 · settings fit the screen</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -2876,7 +2878,7 @@ function renderTune(){
   $('tRep').onchange=e=>{TUNE.replays=e.target.value;storeTune()};
   $('tBody').querySelectorAll('input[type=range]').forEach(i=>i.oninput=()=>{const r=TROWS.find(x=>x.k===i.dataset.k);TUNE[r.k]=+i.value;$('o_'+r.k).textContent=r.f(TUNE[r.k]);applyTune();storeTune()});
   $('tMsg').textContent=''}
-$('tClose').onclick=closeTune;
+$('tClose').onclick=closeTune;$('tClose2').onclick=closeTune;
 $('tReset').onclick=()=>{TUNE=Object.assign({},TUNE_DEF);storeTune();applyTune();applyQuality();renderTune();$('tMsg').textContent='Back to the defaults.'};
 $('tCopy').onclick=async()=>{const txt='Tennis Go settings: '+JSON.stringify(Object.assign({},TUNE,{fps:Math.round(PERF.fps),autoQuality:QLV[QAUTO].name,device:navigator.userAgent.replace(/\s*\(KHTML.*$/,'')}));
   let ok=false;try{await navigator.clipboard.writeText(txt);ok=true}catch(e){}$('tMsg').textContent=ok?'Copied. Paste it into a message to send it over.':txt};

@@ -53,7 +53,7 @@ function renderTune(){
   $('tRep').onchange=e=>{TUNE.replays=e.target.value;storeTune()};
   $('tBody').querySelectorAll('input[type=range]').forEach(i=>i.oninput=()=>{const r=TROWS.find(x=>x.k===i.dataset.k);TUNE[r.k]=+i.value;$('o_'+r.k).textContent=r.f(TUNE[r.k]);applyTune();storeTune()});
   $('tMsg').textContent=''}
-$('tClose').onclick=closeTune;
+$('tClose').onclick=closeTune;$('tClose2').onclick=closeTune;
 $('tReset').onclick=()=>{TUNE=Object.assign({},TUNE_DEF);storeTune();applyTune();applyQuality();renderTune();$('tMsg').textContent='Back to the defaults.'};
 $('tCopy').onclick=async()=>{const txt='Tennis Go settings: '+JSON.stringify(Object.assign({},TUNE,{fps:Math.round(PERF.fps),autoQuality:QLV[QAUTO].name,device:navigator.userAgent.replace(/\s*\(KHTML.*$/,'')}));
   let ok=false;try{await navigator.clipboard.writeText(txt);ok=true}catch(e){}$('tMsg').textContent=ok?'Copied. Paste it into a message to send it over.':txt};
