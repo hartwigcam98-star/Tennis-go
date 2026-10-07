@@ -120,7 +120,7 @@ function renderPlayerCard(pid){const st=REC.stage;
   const h2=meet.reduce((a,x)=>(a[x.w?0:1]++,a),[0,0]);
   const LBL={junior:'Junior',college:'College',pro:'World'};
   $('recBody').innerHTML='<div class="card"><div class="row between"><p class="eyebrow">'+LBL[st]+' #'+P.rank+(P.rival!=null?' · Rival':'')+'</p><button class="ghost" id="recPBack">Back</button></div><h3 style="font-size:26px">'+esc(P.name)+' <small class="nat">'+(P.me?'You':P.nat||'')+'</small></h3>'+
-    (P.me?'':'<p class="muted" style="font-size:14px">'+(OSTYLE[P.style]?OSTYLE[P.style].name:'')+(P.skill!=null?' · Rating '+(+P.skill).toFixed(1):'')+(P.lefty?' · Left-handed':'')+'</p>')+
+    (P.me?'<p class="muted" style="font-size:14px">Rating '+myRating().toFixed(1)+' (current)</p>':'<p class="muted" style="font-size:14px">'+(OSTYLE[P.style]?OSTYLE[P.style].name:'')+(P.skill!=null?' · Rating '+(+P.skill).toFixed(1):'')+(P.lefty?' · Left-handed':'')+'</p>')+
     (P.line.m?stGrid(P.line):'<p class="muted">No recorded matches yet. Their stats build up as they play in your events.</p>')+
     (P.me?'':'<h3 style="margin-top:6px">Against you</h3><p class="num" style="font-size:20px">'+h2[0]+'–'+h2[1]+'</p>'+(meet.length?'<ol class="rk-list">'+meet.slice().reverse().map(x=>'<li class="rk"><b class="num" style="font-size:16px;color:'+(x.w?'var(--win)':'var(--loss)')+'">'+(x.w?'W':'L')+'</b><span>'+esc(x.e)+'<small class="muted" style="display:block">'+esc(x.r)+' · Season '+x.se+'</small></span><small class="num">'+esc(x.sc)+'</small></li>').join('')+'</ol>':'<p class="muted" style="font-size:14px">You haven’t played each other yet.</p>'))+'</div>';
   $('recPBack').onclick=()=>{REC.player=null;renderRecords()}}
