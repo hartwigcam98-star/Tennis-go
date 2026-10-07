@@ -635,7 +635,7 @@ class Player{
     for(let k=0;k<nb;k++){let d=0;for(let e=0;e<4;e++)d+=qa[k*4+e]*qb[k*4+e];const s=d<0?-1:1;let l=0;
       for(let e=0;e<4;e++){qa[k*4+e]=qa[k*4+e]*(1-w)+qb[k*4+e]*s*w;l+=qa[k*4+e]*qa[k*4+e]}l=Math.sqrt(l)||1;for(let e=0;e<4;e++)qa[k*4+e]/=l}
     ha[1]=ha[1]*(1-w)+hb[1]*w}
-  startSwing(type,offset,yo){this.swing={type,t:offset||0,yo:yo||0};this.post=null;if(type==='sv'){this.tossR=null;this.tossC=null}}
+  startSwing(type,offset,yo){this.swing={type,t:offset||0,yo:yo||0};sndSwing(this,type,offset);this.post=null;if(type==='sv'){this.tossR=null;this.tossC=null}}
   startReact(name){const c=this.clips[name];if(c)this.react={name,t:0,dur:c.dur}}
   fk(q,h){const nb=this.nb,D=this.D,W=this.W,PP=this.PP,B=this.bones,v=this._v;
     for(let k=0;k<nb;k++){this.L[k].set(q[k*4],q[k*4+1],q[k*4+2],q[k*4+3]);const p=D.parent[k];
@@ -1008,7 +1008,7 @@ function oppServeStart(){
 function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
   const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,C=P[1].tossC||P[1].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
-  const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndHit(Math.min(1.2,spd/45));
+  const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:sec?'top':'serve',who:'op',x:C.x,z:C.z});
   const oppFault=()=>{M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('FAULT');say('Fault. Second serve.');M.oFault=true;M.shot=null;M.state='oppServe';after(oppServeStart,1000)},sh0.net?600:900)};let sh0=null;
   // first serves miss about a third of the time (less for better players); double faults only happen on the second
   if(!sec&&!M.drill&&Math.random()<clamp(0.4-s*0.022,0.18,0.4)){sh0=M.shot=makeShot(from,{x:(lo+hi)/2+rnd(-0.35,0.35),y:Math.random()<0.5?0.5:0.17},spd,OV.w,{who:'op',err:true});oppFault();return}
@@ -1064,7 +1064,7 @@ function oppHit(from){
   for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(kind==='lob'?0.95:0.88,k),w,{who:'op',err,kind,lob:kind==='lob',recv:recvPos(0)});
     if(err)break;const L=sh.land;if(!sh.net&&Math.abs(L.x)<=1&&L.y>=0&&L.y<0.5)break}
   {const L=sh.land;sh.err=sh.net||Math.abs(L.x)>1.012||L.y<-0.004||L.y>0.5}  // the physics decides in or out
-  M.shot=sh;sh.kind=kind;sh.pr=pr;sh.w=w;sh.slice=!!M.oSlice;M.oSlice=false;onContact('op',toW(from.x,from.y,from.z),sh.speed,false);tire(1,0.004+0.004*clamp((sh.speed-18)/20,0,1));sndHit(Math.min(1.2,sh.speed/38));
+  M.shot=sh;sh.kind=kind;sh.pr=pr;sh.w=w;sh.slice=!!M.oSlice;M.oSlice=false;onContact('op',toW(from.x,from.y,from.z),sh.speed,false);tire(1,0.004+0.004*clamp((sh.speed-18)/20,0,1));{const W=toW(from.x,from.y,from.z);sndShot({pw:Math.min(1.2,sh.speed/38),kind:osm?'smash':ovol?'volley':sh.slice||w<0?'slice':'top',q:pr>0.75&&Math.random()<0.25?'frame':'ok',who:'op',x:W.x,z:W.z})}
   {const oy=from.y,app=ovol||osm||(kind==='attack'&&Math.random()<O.approach)||(oy<0.82&&Math.random()<O.approach*0.5);M.home[1]=app?{x:0,y:0.72}:{x:0,y:1.08};if(osm)say(M.cfg.opp.name+' smashes it!');else if(kind==='defend'&&!err)say(M.cfg.opp.name+' is on the run and slices it back.');else if(pr>0.55&&!err&&kind==='deep')say('Weak reply. Go after it.');else if(kind==='lob'&&!err)say(M.cfg.opp.name+' throws up a lob.');else if(kind==='attack'&&!err)say(M.cfg.opp.name+' attacks the short ball'+(M.home[1].y<1?' and comes in.':'.'));else if(kind==='pass'&&!err)say('Passing shot from '+M.cfg.opp.name+'.');else if(kind==='wrongfoot'&&!err)say('Behind you: '+M.cfg.opp.name+' wrong-foots you.');else if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
   if(!sh.err){setReach(M.shot);if(M.shot.unreach&&pointWins(1)===2)slowMo(true)}
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);
@@ -1084,7 +1084,7 @@ function executeShot(){
   if(smh)type='drive';else if(!vol&&type!=='drop'&&opNet&&c.pw<0.35&&c.f>=0.6)type='lob';
   let Dm=Math.hypot((l.x-bp.x)*HW,(l.y-bp.y)*CL),spd=smh?(20+16*pw+S.power*1.0)*(Math.abs(bp.y-0.5)>0.32?0.8:1):type==='lob'?Math.sqrt(9.81*Dm)*1.08:type==='drop'?Math.max((vol?6:9)+2.5*pw,Math.sqrt(9.81*Dm)*(vol?1.15:1.3)):vol?11+12*pw+S.power*0.6:8+18*pw+S.power*1.3,w=smh?40:type==='lob'?140:type==='drop'?-170:vol?-70:170+70*(1-Math.min(pw,1))+S.control*6;
   const slc=!!c.slice&&type==='drive'&&!vol&&!smh;if(slc){spd*=0.82;w=-(150+50*Math.min(pw,1))}
-  const shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type,lob:type==='lob',slice:slc,recv:recvPos(1)});sndHit(Math.min(1.2,spd/38));tire(0,0.004+0.004*Math.min(pw,1));if(tim==='perfect')perfectFlash();onContact('me',toW(bp.x,bp.y,bp.z),spd,tim==='perfect');
+  const shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type,lob:type==='lob',slice:slc,recv:recvPos(1)});{const W=toW(bp.x,bp.y,bp.z);sndShot({pw:Math.min(1.2,spd/38),kind:smh?'smash':vol?'volley':type==='drop'?'drop':slc||type==='lob'?'slice':'top',q:tim==='perfect'?'perfect':tim==='late'&&mp>0.55&&Math.random()<0.5?'frame':'ok',who:'me',x:W.x,z:W.z})}tire(0,0.004+0.004*Math.min(pw,1));if(tim==='perfect')perfectFlash();onContact('me',toW(bp.x,bp.y,bp.z),spd,tim==='perfect');
   M.aim={x:c.x,y:c.y};M.land=shot.land;
   if(!landIn(shot,false)){
     const L=shot.land,why=shot.net?'Into the net. Swipe slower or a little longer.':Math.abs(L.x)>1?'Just wide.':'Long. Swipe a little shorter or slower.';
@@ -1108,7 +1108,7 @@ function doServe(a){
   const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(Object.assign({},a,{r:a.r*SV.r})),C=P[0].tossC||P[0].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
   const pw=Math.min(a.pw,1.1);
   let spd=(12.8+20*pw+S.serve*2.0+(hasPerk('server',3)?1.5:0))*(0.92+0.08*M.en[0])*SV.spd,w=SV.w;tire(0,0.006);
-  const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss});shot.svType=ty;onContact('me',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndHit(Math.min(1.2,spd/45));
+  const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss});shot.svType=ty;onContact('me',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:second?'top':'serve',who:'me',x:C.x,z:C.z});
   M.aim={x:a.x,y:a.y};M.land=shot.land;
   if(!landIn(shot,true)){
     const L=shot.land,why=shot.net?'into the net':L.y>0.772?'long':'wide';
@@ -1205,7 +1205,7 @@ function swingFor(pl,side,tHit,hz){const S=SWINGS[side];if(!pl.swing&&now()>=tHi
 function step(dt){
   const t=now(),sh=M.shot;let p=0;
   if(sh){p=(t-M.t0)/1000/sh.T;
-    if(sh.r&&p<1.4){const tt=p*sh.T,lt=sh._lt||0;for(const b of sh.r.bounces)if(b.t>lt&&b.t<=tt){sndBounce(-b.vy);if(W3.venue){puff(b.x,b.z,W3.venue.surf,-b.vy);ballMark(b.x,b.z,Math.atan2(b.x-sh.S[0],b.z-sh.S[2]))}}if(sh.r.net&&sh.r.net.t>lt&&sh.r.net.t<=tt)sndNet();sh._lt=tt}
+    if(sh.r&&p<1.4){const tt=p*sh.T,lt=sh._lt||0;for(const b of sh.r.bounces)if(b.t>lt&&b.t<=tt){sndBounce(-b.vy,b.x,b.z);if(W3.venue){puff(b.x,b.z,W3.venue.surf,-b.vy);ballMark(b.x,b.z,Math.atan2(b.x-sh.S[0],b.z-sh.S[2]))}}if(sh.r.net&&sh.r.net.t>lt&&sh.r.net.t<=tt)sndNet();sh._lt=tt}
     if(M.state==='op'){
       if(M.commit&&!sh.err&&!sh.unreach)swingFor(P[0],M.meSide,M.t0+0.9*sh.T*1000,sh.hz);
       if(M.commit&&p>=0.9){executeShot()}else{
@@ -1230,7 +1230,7 @@ function step(dt){
     else if(M.state==='me'&&sh){const hz=toW(0,sh.hy).z;
       if(M.returns){x1=sh.hx*HW+({fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[M.opSide]);z1=hz-(sh.smash?0.29:sh.volley?0.55:0.5)}else if(M.drill){x1=M.home[1].x*HW;z1=toW(0,M.home[1].y).z}else{const sp=spotFor(1,sh,M.opSide);x1=sp.x;z1=sp.z}
       if(sh.type!=='serve'){x0=M.home[0].x*HW;z0=toW(0,M.home[0].y).z}}
-    drive2(mv[0],x0,z0,vm0,dt);drive2(mv[1],x1,z1,vm1,dt);
+    drive2(mv[0],x0,z0,vm0,dt);drive2(mv[1],x1,z1,vm1,dt);sndMove(0,mv[0],dt);sndMove(1,mv[1],dt);
     for(let i=0;i<2;i++){const sp=Math.hypot(mv[i].v,mv[i].vz),d=sp*dt;M.run[i]+=d;tire(i,d*0.0022*TUNE.drain*(0.55+0.45*Math.min(1,sp/(i?vm1:vm0))))}
     renderEnergy();
     for(let i=0;i<2;i++)if(M.en[i]<0.35&&!M.tiredSaid[i]&&M.state!=='between'){M.tiredSaid[i]=true;if(i===1)say(M.cfg.opp.name+' is breathing hard. Keep making them run.')}
@@ -1286,6 +1286,6 @@ function camera(dt){
 for(const ev of ['pointerdown','touchend','click','keydown'])document.addEventListener(ev,sndResume,{passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SND.ctx&&SND.ctx.state!=='running')SND.ctx.resume().catch(()=>{});if(SND.tag){if(document.hidden)SND.tag.pause();else if(SND.on)SND.tag.play().catch(()=>{})}});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
