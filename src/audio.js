@@ -29,22 +29,24 @@ function norm(o,peak){let m=0;for(let i=0;i<o.length;i++)m=Math.max(m,Math.abs(o
 function mkBuf(L,R){const c=SND.ctx,b=c.createBuffer(R?2:1,L.length,SR());b.getChannelData(0).set(L);if(R)b.getChannelData(1).set(R);return b}
 
 /* ---- the sound bank ---- */
-function mkHit(kind){const o=arr(0.32),soft=kind==='slice'||kind==='drop',f0=rng(500,640),sm=kind==='volley'?0.55:1;
-  nz(o,'bp',rng(2200,3300),0.8,kind==='volley'?0.0011:0.0015,soft?0.3:1);   // the contact click
-  mode(o,rng(1050,1380),0.006,soft?0.3:0.8,0,0.08);                            // the ball's hollow "pok"
-  [[1,1,0.022],[2.03,0.45,0.014],[3.1,0.22,0.009],[4.25,0.1,0.006]].forEach(([k,a,t])=>mode(o,f0*k*rng(0.985,1.015),t*sm,a*(soft?0.4:0.7),0.0004,0.03)); // the string bed
-  mode(o,rng(140,185),0.016*(kind==='volley'?1.6:1),kind==='volley'?0.8:0.4,0);   // racket and arm
-  if(kind==='top')nz(o,'hp',3000,0.7,0.009,0.28,0.001,0.007);                     // strings brushing up the back of the ball
-  if(kind==='slice')nz(o,'bp',1700,0.9,0.02,0.5,0,0.014);                         // the chop under it
-  if(kind==='smash'||kind==='serve'){nz(o,'lp',6500,0.7,0.0035,1,0);mode(o,rng(85,100),0.03,0.55,0)}   // the crack
+function mkHit(kind){const o=arr(0.25),soft=kind==='slice'||kind==='drop',vol=kind==='volley',f0=rng(470,600);
+  nz(o,'bp',rng(2500,3500),0.7,0.0011,soft?0.3:0.85);                         // the contact click
+  nz(o,'bp',rng(950,1250),3,0.0035,soft?0.35:0.9,0,0.0003);                   // the ball's hollow pock: resonant noise, not a tone
+  nz(o,'bp',rng(380,520),1.8,0.006*(vol?1.3:1),soft?0.45:0.8,0,0.0005);       // the string bed's thock
+  mode(o,f0,0.004,soft?0.08:0.12,0.0005,0.05);mode(o,f0*1.07,0.0035,0.07,0.0005);   // only a trace of string ring, detuned so it doesn't sing
+  nz(o,'lp',320,0.8,0.012*(vol?1.5:1),vol?0.9:0.6,0,0.001);                   // racket and arm
+  if(kind==='top')nz(o,'hp',3000,0.7,0.008,0.22,0.001,0.006);                 // strings brushing up the back of the ball
+  if(kind==='slice')nz(o,'bp',1600,0.9,0.018,0.45,0,0.012);                   // the chop under it
+  if(kind==='smash'||kind==='serve'){nz(o,'lp',5500,0.7,0.003,0.9,0);nz(o,'lp',200,0.8,0.02,0.7,0,0.001)}   // the crack and the weight behind it
   return mkBuf(norm(o))}
-function mkPing(){const o=arr(0.25),f=rng(1100,1300);mode(o,f,0.05,0.5,0);mode(o,f*2.01,0.03,0.25,0);mode(o,80,0.04,0.7,0);return mkBuf(norm(o,0.8))}
-function mkFrame(){const o=arr(0.35);[[310,0.05,0.8],[820,0.035,0.6],[1490,0.025,0.4],[2640,0.02,0.25]].forEach(([f,t,a])=>mode(o,f*rng(0.95,1.05),t,a,0));
+/* a perfect hit: a cleaner click and a deeper thump (not a ring) */
+function mkPing(){const o=arr(0.15);nz(o,'bp',3000,0.8,0.0008,0.6,0);nz(o,'lp',230,0.8,0.02,1,0,0.001);nz(o,'bp',600,1.5,0.006,0.4,0);return mkBuf(norm(o,0.8))}
+function mkFrame(){const o=arr(0.35);[[310,0.03,0.8],[820,0.02,0.5],[1490,0.014,0.3],[2640,0.01,0.15]].forEach(([f,t,a])=>mode(o,f*rng(0.95,1.05),t,a,0));
   nz(o,'bp',900,2,0.04,0.35,0.002,0,t=>0.5+0.5*Math.sign(Math.sin(2*Math.PI*70*t)));nz(o,'bp',2500,0.8,0.0015,0.4,0);return mkBuf(norm(o))}
 function mkBounce(s){const o=arr(0.2);
-  if(s==='hard'){nz(o,'bp',3000,0.8,0.0009,0.8);mode(o,rng(1080,1250),0.005,0.9,0,0.05);mode(o,rng(105,125),0.012,0.6,0)}
-  else if(s==='clay'){mode(o,rng(850,950),0.0035,0.45,0);mode(o,rng(150,170),0.016,0.75,0);nz(o,'bp',2500,1,0.025,0.4,0.001,0.003,crackle(0.08))}
-  else{mode(o,rng(130,150),0.02,0.85,0);nz(o,'lp',700,0.7,0.012,0.6,0);mode(o,700,0.003,0.2,0)}
+  if(s==='hard'){nz(o,'bp',3000,0.8,0.0009,0.8);nz(o,'bp',rng(1000,1250),3,0.0035,0.9,0,0.0003);nz(o,'lp',220,0.8,0.01,0.7,0,0.0008)}
+  else if(s==='clay'){nz(o,'bp',rng(800,950),2,0.003,0.45,0,0.0003);mode(o,rng(150,170),0.016,0.75,0);nz(o,'bp',2500,1,0.025,0.4,0.001,0.003,crackle(0.08))}
+  else{nz(o,'lp',200,0.8,0.016,0.9,0,0.001);nz(o,'lp',700,0.7,0.012,0.6,0)}
   return mkBuf(norm(o))}
 function mkNet(){const o=arr(0.45);nz(o,'bp',1400,1.2,0.07,0.6,0,0.004,t=>0.6+0.4*Math.sin(2*Math.PI*35*t));mode(o,85,0.05,0.7,0);nz(o,'hp',4000,0.7,0.03,0.2,0.005);return mkBuf(norm(o))}
 function mkSqueak(){const sr=SR(),dur=rng(0.11,0.22),o=arr(dur+0.05),base=rng(1700,2500),vr=rng(35,60);let ph=0;
@@ -199,7 +201,7 @@ function sndShot(o){if(!sndReady())return;const B=SND.bank,pw=clamp(o.pw==null?0
   if(o.q==='frame'){play(pickA(B.frame),Object.assign({},P_,{gain:P_.gain*(0.5+0.4*pw),rate:rng(0.92,1.08)}));return}
   const kind=B.hit[o.kind]?o.kind:'top',lvl={top:0.75,slice:0.6,volley:0.7,smash:1.05,serve:0.95,drop:0.4}[kind]*(0.45+0.55*pw);
   play(pickA(B.hit[kind]),Object.assign({},P_,{gain:P_.gain*lvl,rate:rng(0.95,1.05)*(0.94+0.08*pw)}));
-  if(o.q==='perfect')play(pickA(B.ping),Object.assign({},P_,{gain:P_.gain*0.55}));
+  if(o.q==='perfect')play(pickA(B.ping),Object.assign({},P_,{gain:P_.gain*0.5}));
   // a grunt on the big ones
   const big=kind==='smash'||(kind==='serve'&&pw>0.75)||pw>0.92;
   if(big&&B.grunt&&Math.random()<0.6){const v=voiceOf(o.who);play(pickA(B.grunt[v]),Object.assign({},P_,{gain:P_.gain*0.42,rate:rng(0.94,1.06),when:0.025,wet:P_.wet*0.8}))}}
