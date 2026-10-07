@@ -24,3 +24,8 @@ The game generates all of its sounds in code. To use real recordings for the cro
 | crowd-ambience | Quiet stadium murmur between points; loops | 5–20 s |
 
 Leave out any you don't have; those keep the generated sound. Only use recordings you're allowed to use (public domain / CC0, or your own).
+
+## What's in here now
+
+`applause-small`, `applause-medium` and `applause-large` are trimmed, faded and level-matched from BigSoundBank's CC0 recordings
+(Applause about 25–50 people #1, Applause: 300 people, Applause: 600 people — bigsoundbank.com, public domain).

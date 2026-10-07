@@ -272,7 +272,7 @@ function loadRecordings(){if(RECS.tried||!SND.ctx||typeof fetch!=='function'||lo
     for(const k in list)fetch('sounds/'+list[k]).then(r=>r.ok?r.arrayBuffer():null).then(a=>a&&SND.ctx.decodeAudioData(a)).then(b=>{if(b){RECS.buf[k]=b;if(k==='crowd-ambience')SND.vKey=null}}).catch(()=>{})}).catch(()=>{})}
 function recClap(z){const R=RECS.buf;return z>0.6?R['applause-large']||R['applause-medium']:z>0.3?R['applause-medium']||R['applause-large']||R['applause-small']:R['applause-small']||R['applause-medium']}
 function sndApplause(amp){if(!sndReady()||!SND.vb)return;const z=crowdSize(),rec=recClap(z);
-  if(rec){play(rec,{gain:clamp(amp,0,1.2)*(0.35+0.6*z),rate:rng(0.97,1.03),wet:0.6});return}
+  if(rec){play(rec,{gain:clamp(amp,0,1.2)*(0.35+0.6*z)*1.3,rate:rng(0.97,1.03),wet:0.6});return}
   const b=SND.vb.clap;if(!b)return;
   play(b,{gain:clamp(amp,0,1.2)*(0.3+0.5*z)*1.6,rate:rng(0.96,1.04),wet:1})}
 function sndCrowdVoice(kind,amp){if(!sndReady()||!SND.vb)return;const z=crowdSize();if(z<0.3)return;const b=RECS.buf[kind]||(kind==='ooh'?SND.vb.ooh:SND.vb.cheer);if(!b)return;
