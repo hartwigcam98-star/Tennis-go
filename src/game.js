@@ -1087,7 +1087,11 @@ function oppServeLaunch(){
   const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:sec?'top':'serve',who:'op',x:C.x,z:C.z});
   const oppFault=()=>{M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('FAULT');const go=()=>{say('Fault. Second serve.');M.oFault=true;M.shot=null;M.state='oppServe';after(oppServeStart,1000)};if(!(sh0&&sh0.hawk&&hawkFault(sh0,1,go)))go()},sh0.net?600:900)};let sh0=null;
   // first serves miss about a third of the time (less for better players); double faults only happen on the second
-  if(!sec&&!M.drill&&Math.random()<clamp(0.4-s*0.022,0.18,0.4)){sh0=M.shot=makeShot(from,{x:(lo+hi)/2+rnd(-0.35,0.35),y:Math.random()<0.5?0.5:0.17},spd,OV.w,{who:'op',err:true});oppFault();return}
+  if(!sec&&!M.drill&&Math.random()<clamp(0.4-s*0.022,0.18,0.4)){// a missed first serve that really is a fault: into the net, long or wide, checked so it never lands in the box
+    const miss=()=>{const q=Math.random();return q<0.35?{x:(lo+hi)/2+rnd(-0.3,0.3),y:0.56}:q<0.7?{x:(lo+hi)/2+rnd(-0.3,0.3),y:rnd(0.12,0.17)}:{x:(Math.random()<0.5?lo-rnd(0.08,0.2):hi+rnd(0.08,0.2)),y:rnd(0.28,0.42)}};
+    for(let k=0;k<4;k++){sh0=makeShot(from,miss(),spd,OV.w,{who:'op',err:true});if(sh0.net||lineMargin(sh0,true,false).d<-0.05)break}
+    if(!sh0.net&&lineMargin(sh0,true,false).d>=-0.05)sh0=makeShot(from,{x:(lo+hi)/2,y:0.08},spd,OV.w,{who:'op',err:true});
+    M.shot=sh0;oppFault();return}
   if(sec&&Math.random()<Math.max(0.02,0.1-s*0.007)*O.df){
     M.shot=makeShot(from,{x:(lo+hi)/2,y:0.5},spd,120,{who:'op',err:true});M.t0=now();M.state='oppErr';
     after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}
