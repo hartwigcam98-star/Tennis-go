@@ -110,14 +110,14 @@ const SHOUT={
 function seat(){const r=Math.random();return r<0.1?{g:1,lp:0}:r<0.4?{g:0.55,lp:4500}:{g:0.3,lp:2200}}
 /* crowds have no real treble, so they are rendered at a lower rate: two to three times quicker to build */
 function lowRate(f){return(...a)=>{SND.srO=22050;try{return f(...a)}finally{SND.srO=0}}}
-const mkCrowdVoiceLR=lowRate(kind=>mkCrowdVoice(kind)),mkBabbleLR=lowRate(()=>mkBabble()),mkApplauseLR=lowRate((n,l,z)=>mkApplause(n,l,z)),mkClapKernelsLR=lowRate(()=>mkClapKernels());
-function mkCrowdVoice(kind){const len=kind==='ooh'?2:3.2,L=arr(len+0.1),R=arr(len+0.1),n=kind==='ooh'?36:46,mix=kind==='ooh'?['ooh','ooh','ooh','aww']:['yeah','yeah','woo','ahh','woo'];
+const mkCrowdVoiceLR=lowRate((kind,n,room)=>mkCrowdVoice(kind,n,room)),mkBabbleLR=lowRate((t,room)=>mkBabble(t,room)),mkApplauseLR=lowRate((n,l,z,w,t)=>mkApplause(n,l,z,w,t)),mkClapKernelsLR=lowRate(()=>mkClapKernels());
+function mkCrowdVoice(kind,nV,room){const len=kind==='ooh'?2:3.2,L=arr(len+0.1),R=arr(len+0.1),n=Math.max(4,Math.round((nV||40)*(kind==='ooh'?0.8:1))),mix=kind==='ooh'?['ooh','ooh','ooh','aww']:['yeah','yeah','woo','ahh','woo'];
   for(let k=0;k<n;k++){const fem=Math.random()<0.45,f0=fem?rng(195,280):rng(100,155),S=SHOUT[pickA(mix)](),t0=rng(0,kind==='ooh'?0.18:0.45),d=Math.min(S.d,len-t0-0.05);
     const v=person(d,f0,S.p,S.F1,S.F2,rng(0.15,0.45)),st=seat();if(st.lp)lp1(v,st.lp);const pan=Math.random(),a=st.g*rng(0.5,1);addAt(L,R,v,t0,a,pan);
     if(kind!=='ooh'&&Math.random()<0.35){const S2=SHOUT[pickA(mix)](),t1=t0+d+rng(0.1,0.4);if(t1<len-0.4){const v2=person(Math.min(S2.d,len-t1-0.05),f0*rng(0.95,1.1),S2.p,S2.F1,S2.F2,0.3);if(st.lp)lp1(v2,st.lp);addAt(L,R,v2,t1,a,pan)}}}
   if(kind!=='ooh')for(let w=0;w<3;w++){const sr=SR(),t0=rng(0.2,1.4),s0=Math.floor(t0*sr),d=rng(0.35,0.7),f=rng(2200,3000),st=seat(),pan=Math.random();let ph=0;   // a few whistles
     for(let i=0;i<d*sr&&s0+i<L.length;i++){const u=i/(d*sr),fr=f*(1+0.2*Math.sin(Math.PI*u)+0.01*Math.sin(2*Math.PI*30*i/sr));ph+=2*Math.PI*fr/sr;const v=0.12*st.g*Math.sin(Math.PI*u)*Math.sin(ph);L[s0+i]+=v*(1-pan*0.6);R[s0+i]+=v*(0.4+pan*0.6)}}
-  const [l,r]=verbOff(L,R,0.75,0.45,1);scale2(l,r);return mkBuf(l,r)}
+  const rm=room||[0.75,0.45,1],[l,r]=verbOff(L,R,rm[0],rm[1],rm[2]);scale2(l,r);return mkBuf(l,r)}
 /* applause */
 function clapKernel(cupped,lp){const o=arr(0.05);nz(o,'bp',2500,1,0.0005,0.25,0);   // a soft edge, not a bright click
   if(cupped){nz(o,'bp',rng(600,1000),rng(2.5,4),rng(0.004,0.008),1,0,0.0004);mode(o,rng(330,450),0.005,0.35,0)}
@@ -126,7 +126,7 @@ function clapKernel(cupped,lp){const o=arr(0.05);nz(o,'bp',2500,1,0.0005,0.25,0)
   if(lp)lp1(lp1(o,lp),lp*1.3);return norm(o)}
 function mkClapKernels(){const K={near:[],mid:[],far:[]};for(let k=0;k<8;k++){const c=k%2===0;K.near.push(clapKernel(c,7000));K.mid.push(clapKernel(c,3500));K.far.push(clapKernel(c,1800))}return K}
 /* clappers sit in loose groups that drift in and out of time with each other, like a real crowd; a few close ones stand out */
-function mkApplause(n,len,size){const sr=SR(),L=arr(len),R=arr(len),K=SND.bank.kern,small=n<30;
+function mkApplause(n,len,size,wet,tail){const sr=SR(),L=arr(len),R=arr(len),K=SND.bank.kern,small=n<30;
   const one=(pos,g,rate,ph,pan,t0,t1)=>{const kern=pickA(K[pos]),gl=1-pan*0.7,gr=0.3+pan*0.7;
     for(let t=t0+ph;t<t1;t+=(1/rate)*rng(0.94,1.06)){const s0=Math.floor(t*sr),u=(t-t0)/(t1-t0),e=g*rng(0.7,1)*Math.min(1,(t-t0)/0.15+0.3)*(1-0.3*u)*(t1-t<0.5?(t1-t)/0.5+0.2:1);
       for(let i=0;i<kern.length&&s0+i<L.length;i++){const v=kern[i]*e;L[s0+i]+=v*gl;R[s0+i]+=v*gr}}};
@@ -134,13 +134,13 @@ function mkApplause(n,len,size){const sr=SR(),L=arr(len),R=arr(len),K=SND.bank.k
     for(let k=0;k<gsz;k++,c++){const r=Math.random(),pos=small?(r<0.45?'near':'mid'):r<0.2?'near':r<0.6?'mid':'far',g={near:1,mid:0.5,far:0.25}[pos]*rng(0.6,1);
       const t0=-Math.log(1-Math.random()*0.95)*0.12,t1=len*(0.35+0.6*Math.pow(Math.random(),0.7));one(pos,g,rate*rng(0.97,1.03),ph+rng(-0.015,0.015),Math.random(),t0,t1)}}
   for(let k=0;k<(small?1:6);k++)one('near',1.3,rng(4,5.5),Math.random()*0.2,Math.random(),rng(0,0.1),len*rng(0.6,0.95));   // the keen ones near you
-  const [l,r]=verbOff(filt(L,'hp',250,0.7),filt(R,'hp',250,0.7),size,small?0.15:0.22,small?0.5:0.8);lp1(l,6000);lp1(r,6000);scale2(l,r);return mkBuf(l,r)}
+  const [l,r]=verbOff(filt(L,'hp',250,0.7),filt(R,'hp',250,0.7),size,wet!=null?wet:small?0.15:0.22,tail||(small?0.5:0.8));lp1(l,6000);lp1(r,6000);scale2(l,r);return mkBuf(l,r)}
 /* the murmur of a crowd between points: many people talking, mostly far away, looped */
-function mkBabble(){const sr=SR(),len=5,L=arr(len),R=arr(len),V=[[300,800],[500,1800],[720,1150],[400,2100],[600,1000]];
-  for(let k=0;k<22;k++){const f0=Math.random()<0.45?rng(180,250):rng(95,140),st=seat(),pan=Math.random();let t=Math.random()*0.6;
+function mkBabble(talkers,room){const sr=SR(),len=5,L=arr(len),R=arr(len),V=[[300,800],[500,1800],[720,1150],[400,2100],[600,1000]];
+  for(let k=0;k<(talkers||22);k++){const f0=Math.random()<0.45?rng(180,250):rng(95,140),st=seat(),pan=Math.random();let t=Math.random()*0.6;
     while(t<len-0.3){const d=rng(0.1,0.28),a=pickA(V),b=pickA(V),v=person(d,f0*rng(0.92,1.1),u=>1+0.12*Math.sin(Math.PI*u)-0.08*u,lerp(a[0],b[0]),lerp(a[1],b[1]),0.35);
       lp1(v,Math.min(st.lp||3000,2200));addAt(L,R,v,t,st.g*rng(0.4,1),pan);t+=d+rng(0.04,0.4)}}
-  let [l,r]=verbOff(L,R,0.7,0.5,0.01);l=l.subarray(0,L.length);r=r.subarray(0,R.length);
+  let [l,r]=verbOff(L,R,room?room[0]:0.7,room?room[1]+0.15:0.5,0.01);l=l.subarray(0,L.length);r=r.subarray(0,R.length);
   const fade=Math.floor(sr*0.3);for(const a of [l,r])for(let i=0;i<fade;i++){const q=i/fade;a[i]=a[i]*q+a[a.length-fade+i]*(1-q)}   // seamless loop
   scale2(l,r,0.8);return mkBuf(l,r)}
 /* venue echo: a short decaying noise tail with a couple of early reflections */
@@ -149,7 +149,7 @@ function mkIR(sec){const sr=SR(),n=Math.floor(sr*sec),b=SND.ctx.createBuffer(2,n
   for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);let lp=0;for(let i=0;i<n;i++){lp+=(Math.random()*2-1-lp)*0.35;d[i]=lp*Math.exp(-6.9*i/sr/sec)*0.6}
     for(const [t,a] of [[0.011,0.5],[0.023,0.35],[0.041,0.25],[0.067,0.15]]){const k=Math.floor((t+Math.random()*0.004)*sr);if(k<n)d[k]+=a*(ch?0.85:1)}}
   return b}
-function setVerb(){if(!SND.ctx||!SND.conv)return;const k=(W3.venue&&W3.venue.kind)||'club',v=VERB[k]||VERB.club;if(SND.verbKind===k)return;SND.verbKind=k;
+function setVerb(){if(!SND.ctx||!SND.conv)return;sndVenue();const V0=W3.venue||{},k=V0.kind==='tour'&&(V0.rows||12)>=16?'masters':V0.kind||'club',v=VERB[k]||VERB.club;if(SND.verbKind===k)return;SND.verbKind=k;
   try{SND.conv.buffer=mkIR(v[0])}catch(e){}SND.send.gain.setTargetAtTime(v[1],SND.ctx.currentTime,0.05)}
 
 function sndInit(){
@@ -169,9 +169,7 @@ function sndInit(){
   const later=[()=>{B.squeak=[0,1,2,3].map(mkSqueak);B.slide=[0,1].map(mkSlide);B.scuff=[0,1].map(mkScuff)},
     ()=>{B.step={};for(const s of ['hard','clay','grass'])B.step[s]=[0,1,2].map(()=>mkStep(s))},
     ()=>{B.grunt={m:[0,1,2].map(()=>mkGrunt(rng(105,140))),f:[0,1,2].map(()=>mkGrunt(rng(200,240)))}},
-    ()=>{B.kern=mkClapKernelsLR();B.clapS=mkApplauseLR(14,2.4,0.3)},()=>{B.clapM=mkApplauseLR(40,3,0.6)},()=>{B.clapL=mkApplauseLR(110,3.6,0.8)},
-    ()=>{B.ooh=mkCrowdVoiceLR('ooh')},()=>{B.cheer=mkCrowdVoiceLR('cheer')},
-    ()=>{B.babble=mkBabbleLR();const s=c.createBufferSource();s.buffer=B.babble;s.loop=true;const g=SND.ambG=c.createGain();g.gain.value=0;s.connect(g);g.connect(SND.dry);s.start()}];
+    ()=>{B.kern=mkClapKernelsLR();const g=SND.ambG=c.createGain();g.gain.value=0;g.connect(SND.dry);SND.kernOK=true;sndVenue()}];
   let i=0;SND.tm=[];const step=()=>{if(i<later.length){const t0=performance.now();try{later[i++]()}catch(e){console.error(e)}SND.tm.push(Math.round(performance.now()-t0));setTimeout(step,30)}};setTimeout(step,60);
   return true}
 /* iPhones play web audio as "ambient" sound, which the silent switch mutes. Asking for the playback session (newer iOS)
@@ -195,7 +193,21 @@ function play(buf,o){if(!buf)return;o=o||{};const c=SND.ctx,s=c.createBufferSour
 /* where a sound sits: x across the court, z along it (world units; the camera is behind your baseline) */
 function place(x,z){const d=Math.max(6,23-(z==null?8:z)),g=clamp(13/d,0.38,1.15);return{pan:clamp((x||0)/(HW*1.7),-0.75,0.75),gain:g,wet:clamp(0.6+(d-10)/18,0.6,1.8),lp:d>24?6500:0}}
 function surfNow(){return W3.venue?W3.venue.surf:'hard'}
-function crowdSize(){const V=W3.venue||{};return V.kind==='major'?(V.fill>0.8?1:0.6):V.kind==='masters'?0.8:V.kind==='tour'?0.7:V.kind==='college'?0.35:0.12}
+/* the crowd you'd find at this venue: how many people, how many of them clap or shout, and how enclosed it is.
+   Each major has its own character: New York loud, London polite. */
+function crowdProfile(V){V=V||W3.venue||{kind:'club',fill:0.5};const f=V.fill||0.5,big=V.kind==='tour'&&(V.rows||12)>=16;
+  const people=V.kind==='major'?16000*f:V.kind==='tour'?(big?8000:3500)*f:V.kind==='college'?260*f:30*f,z=clamp(Math.log10(Math.max(10,people))/4.2,0.1,1);
+  const room=V.kind==='major'?[0.85,0.28,1.1]:V.kind==='tour'?(big?[0.8,0.25,1]:[0.7,0.22,0.8]):V.kind==='college'?[0.5,0.15,0.5]:[0.3,0.08,0.3];
+  return{key:V.kind+'|'+(V.rows||0)+'|'+f+'|'+(V.major||''),people,z,room,claps:clamp(Math.round(Math.sqrt(people)*1.6),5,130),clapLen:2.2+z*1.6,voices:z<0.3?0:Math.round(z*55*({'New York':1.25,London:0.65,Paris:1.05,Melbourne:1.1}[V.major]||1)),talkers:Math.round(4+z*22)}}
+function crowdSize(){return crowdProfile().z}
+SND.profile=()=>crowdProfile();
+/* build this venue's applause, shouts and murmur (at the start of each match, a little at a time) */
+function sndVenue(){if(!SND.ctx||!SND.kernOK)return;const C=crowdProfile();if(SND.vKey===C.key)return;SND.vKey=C.key;const key=C.key,V={};
+  const jobs=[()=>{V.clap=mkApplauseLR(C.claps,C.clapLen,C.room[0],C.room[1],C.room[2])},
+    ()=>{if(C.voices)V.ooh=mkCrowdVoiceLR('ooh',C.voices,C.room)},()=>{if(C.voices)V.cheer=mkCrowdVoiceLR('cheer',C.voices,C.room)},
+    ()=>{V.babble=mkBabbleLR(C.talkers,C.room)},
+    ()=>{if(SND.vKey!==key)return;SND.vb=V;try{if(SND.ambSrc)SND.ambSrc.stop()}catch(e){}const s=SND.ambSrc=SND.ctx.createBufferSource();s.buffer=V.babble;s.loop=true;s.connect(SND.ambG);s.start()}];
+  let i=0;SND.vtm=[];const step=()=>{if(SND.vKey!==key)return;if(i<jobs.length){const t0=performance.now();try{jobs[i++]()}catch(e){console.error(e)}SND.vtm.push(Math.round(performance.now()-t0));setTimeout(step,20)}};setTimeout(step,0)}
 
 /* ---- shots ---- */
 function voiceOf(who){if(!M||!M.cfg)return'm';const id=who==='me'?M.cfg.meId:M.cfg.opp&&M.cfg.opp.id;return typeof FEMALE_BASE!=='undefined'&&FEMALE_BASE[id]?'f':'m'}
@@ -227,9 +239,9 @@ function sndMove(i,st,dt){if(!sndReady()||!SND.bank.squeak||!dt)return;const m=M
   m.v=st.v;m.vz=st.vz}
 
 /* ---- the crowd ---- */
-function sndApplause(amp){if(!sndReady())return;const z=crowdSize(),B=SND.bank,b=z>0.6?B.clapL:z>0.25?B.clapM:B.clapS;if(!b)return;
+function sndApplause(amp){if(!sndReady()||!SND.vb)return;const z=crowdSize(),b=SND.vb.clap;if(!b)return;
   play(b,{gain:clamp(amp,0,1.2)*(0.3+0.5*z)*1.6,rate:rng(0.96,1.04),wet:1})}
-function sndCrowdVoice(kind,amp){if(!sndReady())return;const z=crowdSize();if(z<0.3)return;const b=kind==='ooh'?SND.bank.ooh:SND.bank.cheer;if(!b)return;
+function sndCrowdVoice(kind,amp){if(!sndReady()||!SND.vb)return;const z=crowdSize();if(z<0.3)return;const b=kind==='ooh'?SND.vb.ooh:SND.vb.cheer;if(!b)return;
   play(b,{gain:amp*z*(kind==='ooh'?0.7:0.6),rate:rng(0.94,1.06),wet:1.4})}
 /* the murmur between points, hushed during them; birds at the club */
 function sndAmbience(live){if(!SND.ctx)return;setVerb();
