@@ -247,6 +247,8 @@ function sndSwing(pl,type,offset){if(!sndReady()||!SND.bank.whoosh||!P||!SWINGS[
   const p=pl.pos||{x:0,z:0},P_=place(p.x,p.z);play(pickA(SND.bank.whoosh),Object.assign({},P_,{gain:P_.gain*0.22*(type==='sv'||type==='sm'?1.3:1),rate:rng(0.9,1.15),when:Math.max(0,toHit-0.13),wet:P_.wet*0.5}))}
 function sndBounce(v,x,z){if(!sndReady())return;const s=surfNow(),k=clamp(v/12,0.2,1),P_=place(x,z);
   play(pickA(SND.bank.bounce[s]||SND.bank.bounce.hard),Object.assign({},P_,{gain:P_.gain*(s==='grass'?0.45:0.6)*k,rate:rng(0.95,1.06)}))}
+/* the ball clipping the tape: a lighter, higher tick than the thud into the net */
+function sndCord(){if(!sndReady())return;play(pickA(SND.bank.net),Object.assign(place(0,0),{gain:0.4,rate:1.7}))}
 function sndNet(){if(!sndReady())return;play(pickA(SND.bank.net),Object.assign(place(0,0),{gain:0.55}))}
 /* feet: squeaks and slides when a player plants and changes direction, light steps while running */
 const MOVE=[{v:0,vz:0,step:0,cool:0},{v:0,vz:0,step:0,cool:0}];

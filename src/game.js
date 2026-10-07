@@ -838,7 +838,7 @@ function drive2(st,tx,tz,vmax,dt){const dx=tx-st.x,dz=tz-st.z,dd=Math.hypot(dx,d
 function drive(st,target,vmax,dt){if(!isFinite(target))target=st.x;if(!isFinite(st.x)){st.x=0;st.v=0}const d=target-st.x,vd=Math.sign(d)*Math.min(vmax,Math.sqrt(2*DEC*Math.abs(d))),a=ACC*dt;st.v+=clamp(vd-st.v,-a,a);if(Math.abs(d)<0.03&&Math.abs(st.v)<0.25)st.v=0;st.x+=st.v*dt}
 function say(t){$('msg').textContent=t}
 let callTimer=0;
-function callOut(t){if(t==='OUT')lineCall('Out!');else if(t==='FAULT'||t==='DOUBLE FAULT')lineCall(t==='FAULT'?'Fault!':'Double fault.');const c=$('call');c.textContent=t;c.classList.add('on');clearTimeout(callTimer);callTimer=setTimeout(()=>c.classList.remove('on'),900)}
+function callOut(t){if(t==='LET')lineCall('Let.');else if(t==='OUT')lineCall('Out!');else if(t==='FAULT'||t==='DOUBLE FAULT')lineCall(t==='FAULT'?'Fault!':'Double fault.');const c=$('call');c.textContent=t;c.classList.add('on');clearTimeout(callTimer);callTimer=setTimeout(()=>c.classList.remove('on'),900)}
 function side(){return(M.pts[0]+M.pts[1])%2===0?'deuce':'ad'}
 function hasPerk(style,lvl){return M&&M.style===style&&M.perks>=lvl}
 function reach(){return 1.1}
@@ -851,7 +851,7 @@ const KAIR=0.5*BALL.rho*BALL.A/BALL.m;
 const PDT=1/240,SAMPLE=2;
 function netH(x){const a=Math.min(Math.abs(x)/6.4,1);return 0.914+(1.07-0.914)*a*a}
 /* sidespin (rad/s about the vertical axis, + = a right-hander's slice) bends the ball sideways; set by makeShot for the shot being built */
-let SS=0;
+let SS=0,CORD=false;   // CORD: a ball that clips the tape can roll over (only for shots built by cordShot)
 function simulate(p0,v0,w,sf,maxT,firstBounceOnly){
   let px=p0.x,py=p0.y,pz=p0.z,vx=v0.x,vy=v0.y,vz=v0.z,t=0,i=0;
   const r=BALL.r,out={S:[],bounces:[],net:null,crossT:null};
@@ -868,7 +868,10 @@ function simulate(p0,v0,w,sf,maxT,firstBounceOnly){
     const ozPrev=pz;px+=vx*PDT;py+=vy*PDT;pz+=vz*PDT;t+=PDT;i++;
     if(out.crossT==null&&Math.sign(ozPrev)!==Math.sign(pz)&&ozPrev!==0){const f=ozPrev/(ozPrev-pz),hy=py-vy*PDT*(1-f),hx=px-vx*PDT*(1-f);
       out.crossT=t;out.netY=hy;
-      if(hy<netH(hx)+r){out.net={x:hx,y:hy,t};pz=Math.sign(ozPrev)*0.05;vz=-vz*0.12;vx*=0.3;vy=Math.min(vy,0)*0.5}}
+      const top=netH(hx),g=(hy-(top-r))/(2*r);
+      if(CORD&&g>=0.3&&g<1){// clipped the tape: it loses most of its pace, pops up a little and carries on over
+        const u=(g-0.3)/0.7,k=0.12+0.7*Math.pow(u,1.4);out.cord={x:hx,y:hy,t,g};vz*=k;vx*=k;vy=vy*k*0.5+(1-u)*1.8+0.3;w*=0.3;pz=-Math.sign(ozPrev)*0.02}
+      else if(hy<top+r){out.net={x:hx,y:hy,t};if(CORD&&g>=0)out.cord={x:hx,y:hy,t,g,back:true};pz=Math.sign(ozPrev)*0.05;vz=-vz*0.12;vx*=0.3;vy=Math.min(vy,0)*0.5}}
     if(py<=r&&vy<0){// bounce
       const e=sf.e*(1-0.0025*Math.max(0,-vy-8)),h=Math.hypot(vx,vz),dx=h>1e-6?vx/h:0,dz=h>1e-6?vz/h:0;
       const vc=h-r*w,jmax=sf.mu*(1+e)*(-vy),jroll=Math.abs(vc)/(1+1/BALL.alpha),j=Math.min(jmax,jroll),sg=Math.sign(vc);
@@ -907,14 +910,32 @@ function makeShot(from,tgt,speed,w,o){
   WIND_K=1;let r=simulate(st,v,w,sf,5,false);
   if(r.net&&(WIND.x||WIND.z)){v=launch(st,aim,speed,w,sf,o.lob);r=simulate(st,v,w,sf,5,false);   // wind nudges where a ball lands, but never drags a good shot into the net
     if(r.net){WIND_K=0;v=launch(st,{x:tw.x,z:tw.z},speed,w,sf,o.lob);r=simulate(st,v,w,sf,5,false);WIND_K=1}}
-  SS=0;
+  SS=0;return finishShot(r,tgt,tw,speed,o);
+}
+/* a serve that clips the tape and still drops in the box: try a few heights on the tape until one lands in */
+function tryLet(from,tgt,spd,w,o,toOpp){for(let k=0;k<5;k++){const c=cordShot(from,tgt,spd,w,o,rnd(0.4,0.97));if(c&&!c.net&&c.cord&&lineMargin(c,true,toOpp).d>0.01)return c}return null}
+function finishShot(r,tgt,tw,speed,o){
   const toMe=tw.z>0,b=r.bounces[0];
   const sh=Object.assign({S:r.S,n:r.S.length/3,dt:PDT*SAMPLE,who:o.who,net:!!r.net,speed},o);
   if(b){sh.land={x:b.x/HW,y:0.5-b.z/CL};sh.tb=b.t}else{sh.land={x:tgt.x,y:tgt.y};sh.tb=r.T}
-  sh.toMe=toMe;sh.r=r;
+  sh.toMe=toMe;sh.r=r;if(r.cord)sh.cord=r.cord;
   chooseHit(sh,o.recv);
   return sh;
 }
+/* the same shot, but flown a little lower so it clips the top of the net. g is how high on the tape it hits:
+   0 = full on the band (dead), 1 = barely brushing it. Below about 0.3 it falls back; above, it rolls over */
+function cordShot(from,tgt,speed,w,o,g){
+  o=o||{};const sf=M.surf,st={x:from.x*HW,y:Math.max(0.25,(from.z!=null?from.z:0.5)*ZS),z:(0.5-from.y)*CL},tw={x:tgt.x*HW,z:(0.5-tgt.y)*CL};
+  SS=o.ss||0;WIND_K=1;const v=launch(st,tw,speed,w,sf,o.lob),hs=Math.hypot(v.x,v.z),sp=Math.hypot(hs,v.y),ux=v.x/hs,uz=v.z/hs,th0=Math.atan2(v.y,hs);
+  const vel=th=>({x:ux*sp*Math.cos(th),y:sp*Math.sin(th),z:uz*sp*Math.cos(th)});
+  const gAt=th=>{const q=simulate(st,vel(th),w,sf,4,true);if(q.netY==null)return-9;const t=netH(st.x+ux*(Math.abs(st.z)/Math.abs(uz||1)))+BALL.r;return(q.netY-(t-2*BALL.r))/(2*BALL.r)};
+  let L=th0-0.26,H=th0+0.03;const gl=gAt(L),gh=gAt(H);if(gl>g||gh<g){SS=0;return null}
+  for(let k=0;k<18;k++){const m=(L+H)/2;if(gAt(m)<g)L=m;else H=m}
+  CORD=true;const r=simulate(st,vel((L+H)/2),w,sf,5,false);CORD=false;SS=0;
+  return finishShot(r,tgt,tw,sp,o)}
+/* how often the net gets involved, roughly as on tour: about one first serve in 25 is a let (fewer on second serves,
+   which have more margin), and a rally ball clips the tape about once every 150 shots */
+const LET_P=[0.065,0.017],CORD_P=0.0065;
 /* where the receiver meets the ball. Up at the net (within ~7.5 m of it) they take it out of the air if it
    reaches them between knee and head height (a volley); otherwise after the bounce, dropping through waist height,
    or early if it would carry far behind the baseline */
@@ -1100,6 +1121,8 @@ function oppServeLaunch(){
   const bx=wide?(d?(Math.random()<0.5?0.1:0.88):(Math.random()<0.5?-0.1:-0.88)):tact&&Math.random()<0.5?(P[0].lefty?(d?0.6:-0.12):(d?0.12:-0.6)):lo+0.25+Math.random()*0.5;
   const by=0.24+Math.random()*0.1;
   let sh=null;for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),OV.w+k*70,{who:'op',serve:true,recv:null,ss:OV.ss*(P[1].lefty?-1:1)});sh.svType=oty;if(!sh.net&&sh.land.y>0.2&&sh.land.y<0.5)break}
+  if(!M.drill&&!sh.net&&lineMargin(sh,true,false).d>0.02&&Math.random()<LET_P[sec?1:0]){const lt=tryLet(from,{x:bx,y:by},sh.speed,OV.w,{who:'op',serve:true,recv:null,ss:OV.ss*(P[1].lefty?-1:1)},false);
+    if(lt){M.shot=lt;M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('LET');say(sec?'Let. Still a second serve.':'Let. First serve again.');M.shot=null;M.state='oppServe';after(oppServeStart,1000)},Math.min(1500,lt.tb*1000+250));return}}
   M.shot=sh;
   sh.second=sec;{const inBox=judge(sh,true,false);if(!inBox){sh.err=true;if(!sec&&!M.drill){sh0=sh;oppFault();return}M.t0=now();M.state='oppErr';after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
   setReach(M.shot);if(M.shot.unreach)M.shot.ace=true;
@@ -1143,6 +1166,7 @@ function oppHit(from){
   let sh=null;
   for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(kind==='lob'?0.95:0.88,k),w,{who:'op',err,kind,lob:kind==='lob',recv:recvPos(0)});
     if(err)break;const L=sh.land;if(!sh.net&&Math.abs(L.x)<=1&&L.y>=0&&L.y<0.5)break}
+  if(!err&&!sh.net&&!M.drill&&kind!=='lob'&&!osm&&Math.random()<CORD_P){const c=cordShot(from,{x:sh.land.x,y:sh.land.y},sh.speed,w,{who:'op',err,kind,recv:recvPos(0)},rnd(0.08,0.97));if(c)sh=c}
   {const L=sh.land;sh.err=sh.net||Math.abs(L.x)>1.012||L.y<-0.004||L.y>0.5}  // the physics decides in or out
   M.shot=sh;sh.kind=kind;sh.pr=pr;sh.w=w;sh.slice=!!M.oSlice;M.oSlice=false;onContact('op',toW(from.x,from.y,from.z),sh.speed,false);tire(1,0.004+0.004*clamp((sh.speed-18)/20,0,1));{const W=toW(from.x,from.y,from.z);sndShot({pw:Math.min(1.2,sh.speed/38),kind:osm?'smash':ovol?'volley':sh.slice||w<0?'slice':'top',q:pr>0.75&&Math.random()<0.25?'frame':'ok',who:'op',x:W.x,z:W.z})}
   {const oy=from.y,app=ovol||osm||(kind==='attack'&&Math.random()<O.approach)||(oy<0.82&&Math.random()<O.approach*0.5);M.home[1]=app?{x:0,y:0.72}:{x:0,y:1.08};if(osm)say(M.cfg.opp.name+' smashes it!');else if(kind==='defend'&&!err)say(M.cfg.opp.name+' is on the run and slices it back.');else if(pr>0.55&&!err&&kind==='deep')say('Weak reply. Go after it.');else if(kind==='lob'&&!err)say(M.cfg.opp.name+' throws up a lob.');else if(kind==='attack'&&!err)say(M.cfg.opp.name+' attacks the short ball'+(M.home[1].y<1?' and comes in.':'.'));else if(kind==='pass'&&!err)say('Passing shot from '+M.cfg.opp.name+'.');else if(kind==='wrongfoot'&&!err)say('Behind you: '+M.cfg.opp.name+' wrong-foots you.');else if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
@@ -1165,10 +1189,11 @@ function executeShot(){
   if(smh)type='drive';else if(!vol&&type!=='drop'&&opNet&&c.pw<0.35&&c.f>=0.6)type='lob';
   let Dm=Math.hypot((l.x-bp.x)*HW,(l.y-bp.y)*CL),spd=smh?(20+16*pw+S.power*1.0)*(Math.abs(bp.y-0.5)>0.32?0.8:1):type==='lob'?Math.sqrt(9.81*Dm)*1.08:type==='drop'?Math.max((vol?6:9)+2.5*pw,Math.sqrt(9.81*Dm)*(vol?1.15:1.3)):vol?11+12*pw+S.power*0.6:8+18*pw+S.power*1.3,w=smh?40:type==='lob'?140:type==='drop'?-170:vol?-70:170+70*(1-Math.min(pw,1))+S.control*6;
   const slc=!!c.slice&&type==='drive'&&!vol&&!smh;if(slc){spd*=0.82;w=-(150+50*Math.min(pw,1))}
-  const shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type,lob:type==='lob',slice:slc,recv:recvPos(1)});{const W=toW(bp.x,bp.y,bp.z);sndShot({pw:Math.min(1.2,spd/38),kind:smh?'smash':vol?'volley':type==='drop'?'drop':slc||type==='lob'?'slice':'top',q:tim==='perfect'?'perfect':tim==='late'&&mp>0.55&&Math.random()<0.5?'frame':'ok',who:'me',x:W.x,z:W.z})}tire(0,0.004+0.004*Math.min(pw,1));if(tim==='perfect')perfectFlash();onContact('me',toW(bp.x,bp.y,bp.z),spd,tim==='perfect');
+  let shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type,lob:type==='lob',slice:slc,recv:recvPos(1)});
+  if(!shot.net&&!M.drill&&type!=='lob'&&!smh&&landIn(shot,false)&&Math.random()<CORD_P){const cs=cordShot(bp,{x:shot.land.x,y:shot.land.y},spd,w,{who:'me',type,slice:slc,recv:recvPos(1)},rnd(0.08,0.97));if(cs)shot=cs}{const W=toW(bp.x,bp.y,bp.z);sndShot({pw:Math.min(1.2,spd/38),kind:smh?'smash':vol?'volley':type==='drop'?'drop':slc||type==='lob'?'slice':'top',q:tim==='perfect'?'perfect':tim==='late'&&mp>0.55&&Math.random()<0.5?'frame':'ok',who:'me',x:W.x,z:W.z})}tire(0,0.004+0.004*Math.min(pw,1));if(tim==='perfect')perfectFlash();onContact('me',toW(bp.x,bp.y,bp.z),spd,tim==='perfect');
   M.aim={x:c.x,y:c.y};M.land=shot.land;
   if(!judge(shot,false,true)){
-    const L=shot.land,why=shot.net?'Into the net. Swipe slower or a little longer.':Math.abs(L.x)>1?'Just wide.':'Long. Swipe a little shorter or slower.';
+    const L=shot.land,why=shot.cord&&shot.net?'It clipped the tape and fell back. Unlucky.':shot.net?'Into the net. Swipe slower or a little longer.':Math.abs(L.x)>1?'Just wide.':'Long. Swipe a little shorter or slower.';
     shot.err=true;M.shot=shot;M.t0=now();M.state='err';drillEvent({k:'hit',in:false,why,tim,slice:!!c.slice});
     after(()=>pointTo(1,why,shot.net?'NET':'OUT',mp>0.55?'fe':'ue'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
   if(c.pw>=0.85)M.stat.big++;
@@ -1191,6 +1216,9 @@ function doServe(a){
   let spd=(12.8+20*pw+S.serve*2.0+(hasPerk('server',3)?1.5:0))*(0.92+0.08*M.en[0])*SV.spd,w=SV.w;tire(0,0.006);
   const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss*(P[0].lefty?-1:1)});shot.svType=ty;onContact('me',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:second?'top':'serve',who:'me',x:C.x,z:C.z});
   M.aim={x:a.x,y:a.y};M.land=shot.land;
+  if(!M.drill&&!shot.net&&lineMargin(shot,true,true).d>0.02&&Math.random()<LET_P[second?1:0]){const lt=tryLet(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss*(P[0].lefty?-1:1)},true);
+    if(lt){M.shot=lt;M.land=null;M.t0=now();M.state='err';after(()=>{if(!M||M.lock)return;callOut('LET');say(second?'Let. Still a second serve.':'Let. Take your first serve again.');
+      after(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null},1100)},Math.min(1500,lt.tb*1000+250));return}}
   shot.second=second;
   if(!judge(shot,true,true)){
     const L=shot.land,why=shot.net?'into the net':L.y>0.772?'long':'wide';
@@ -1290,7 +1318,7 @@ function swingFor(pl,side,tHit,hz){const S=SWINGS[side];if(!pl.swing&&now()>=tHi
 function step(dt){
   const t=now(),sh=M.shot;let p=0;
   if(sh){p=(t-M.t0)/1000/sh.T;
-    if(sh.r&&p<1.4){const tt=p*sh.T,lt=sh._lt||0;for(const b of sh.r.bounces)if(b.t>lt&&b.t<=tt){sndBounce(-b.vy,b.x,b.z);if(W3.venue){puff(b.x,b.z,W3.venue.surf,-b.vy);ballMark(b.x,b.z,Math.atan2(b.x-sh.S[0],b.z-sh.S[2]))}}if(sh.r.net&&sh.r.net.t>lt&&sh.r.net.t<=tt)sndNet();sh._lt=tt}
+    if(sh.r&&p<1.4){const tt=p*sh.T,lt=sh._lt||0;for(const b of sh.r.bounces)if(b.t>lt&&b.t<=tt){sndBounce(-b.vy,b.x,b.z);if(W3.venue){puff(b.x,b.z,W3.venue.surf,-b.vy);ballMark(b.x,b.z,Math.atan2(b.x-sh.S[0],b.z-sh.S[2]))}}if(sh.r.net&&sh.r.net.t>lt&&sh.r.net.t<=tt){if(sh.r.cord)sndCord();else sndNet()}if(sh.r.cord&&!sh.r.net&&sh.r.cord.t>lt&&sh.r.cord.t<=tt){sndCord();if(!sh.serve&&sh.type!=='serve'&&!M.drill){sndCrowdVoice('ooh',0.55);say('Net cord! It trickles over.')}}sh._lt=tt}
     if(M.state==='op'){
       if(M.commit&&!sh.err&&!sh.unreach)swingFor(P[0],M.meSide,M.t0+0.9*sh.T*1000,sh.hz);
       updateStretch(0,sh,M.meSide);
@@ -1381,6 +1409,6 @@ function camera(dt){
 for(const ev of ['pointerdown','touchend','click','keydown'])document.addEventListener(ev,sndResume,{passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SND.ctx&&SND.ctx.state!=='running')SND.ctx.resume().catch(()=>{});if(SND.tag){if(document.hidden)SND.tag.pause();else if(SND.on)SND.tag.play().catch(()=>{})}});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},setWindXZ:(x,z)=>{WIND={x,z}},get chal(){return M&&M.chal},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},get RECS(){return RECS},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{doServe:a=>doServe(a),cordShot:(...a)=>cordShot(...a),tryLet:(...a)=>tryLet(...a),lineMargin:(...a)=>lineMargin(...a),startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},setWindXZ:(x,z)=>{WIND={x,z}},get chal(){return M&&M.chal},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},get RECS(){return RECS},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
