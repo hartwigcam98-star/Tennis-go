@@ -62,8 +62,8 @@ function collegeWeeks(id){const p=PROGRAMS.find(x=>x.id===id)||PROGRAMS[2],o=p.o
   {main:EV('Dual match: rival school','Dual match','hard',1,[4.5+o,4.5+o],60)},
   {main:EV('All-American Championships','National','hard',3,[5,6],200,{crank:60,topProgram:true}),alt:EV('Regional Championships','Regional','hard',3,[4+o,5+o],100)},
   {main:EV('Spring Clay Classic','College','clay',2,[4.5+o,5.5+o],120)},
-  {main:EV('Conference Championship','Conference','hard',3,[5+o,6+o],250)},
-  {main:EV('NCAA Singles Championship','National','hard',4,[5.5,7],500,{crank:64}),alt:EV('Summer Futures (as an amateur)','Futures','hard',3,[4.5,5.5],60)}
+  {main:EV('Conference Championship','Conference','hard',4,[5+o,6+o],250)},
+  {main:EV('NCAA Singles Championship','National','hard',5,[5.5,7],500,{crank:64}),alt:EV('Summer Futures (as an amateur)','Futures','hard',3,[4.5,5.5],60)}
 ]}
 const PRO_WEEKS=[
   ['Brisbane 250','Tour 250','hard',4,[6,7],250,{rank:80}],

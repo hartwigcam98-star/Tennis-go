@@ -249,7 +249,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 49 · big-win bonus</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 50 · bigger college finales</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -609,8 +609,8 @@ function collegeWeeks(id){const p=PROGRAMS.find(x=>x.id===id)||PROGRAMS[2],o=p.o
   {main:EV('Dual match: rival school','Dual match','hard',1,[4.5+o,4.5+o],60)},
   {main:EV('All-American Championships','National','hard',3,[5,6],200,{crank:60,topProgram:true}),alt:EV('Regional Championships','Regional','hard',3,[4+o,5+o],100)},
   {main:EV('Spring Clay Classic','College','clay',2,[4.5+o,5.5+o],120)},
-  {main:EV('Conference Championship','Conference','hard',3,[5+o,6+o],250)},
-  {main:EV('NCAA Singles Championship','National','hard',4,[5.5,7],500,{crank:64}),alt:EV('Summer Futures (as an amateur)','Futures','hard',3,[4.5,5.5],60)}
+  {main:EV('Conference Championship','Conference','hard',4,[5+o,6+o],250)},
+  {main:EV('NCAA Singles Championship','National','hard',5,[5.5,7],500,{crank:64}),alt:EV('Summer Futures (as an amateur)','Futures','hard',3,[4.5,5.5],60)}
 ]}
 const PRO_WEEKS=[
   ['Brisbane 250','Tour 250','hard',4,[6,7],250,{rank:80}],
@@ -2933,22 +2933,26 @@ function openRankings(){const st=save.stage,L=rankingList(st),meI=L.findIndex(e=
 const show_=id=>show(id);
 $('rkBack').onclick=()=>renderHub();
 function rngFrom(seed){let h=seed>>>0||1;return()=>{h^=h<<13;h^=h>>>17;h^=h<<5;return(h>>>0)/4294967296}}
-const FIELD_N={junior:32,college:32,pro:64};
+const FIELD_N={junior:32,college:48,pro:64};
 function fieldFor(stage){
   save.pool=save.pool||{};const N=FIELD_N[stage];
   if(save.pool[stage]&&save.pool[stage].length>N){// an older, larger field: keep N players spread across its levels, with their records
     const L=save.pool[stage].slice().sort((a,b)=>b.skill-a.skill),keep=[];for(let i=0;i<N;i++)keep.push(L[Math.round(i*(L.length-1)/(N-1))]);
     keep.forEach((p,i)=>p.rank=i+1);save.pool[stage]=keep;save.fieldV=(save.fieldV||0)+1}
+  if(save.pool[stage]&&save.pool[stage].length<N){// an older, smaller field: add new players (spread across the level) and keep everyone's records
+    const L=save.pool[stage],have=new Set(L.map(p=>p.name)),extra=genField(stage,N,save.seed+7,have).filter(p=>!have.has(p.name)).slice(0,N-L.length);
+    extra.forEach((p,i)=>{p.id=stage[0]+'x'+(L.length+i)});L.push(...extra);L.sort((a,b)=>b.skill-a.skill);L.forEach((p,i)=>p.rank=i+1);save.fieldV=(save.fieldV||0)+1}
   if(save.pool[stage])return save.pool[stage];
   if(!save.seed)save.seed=Math.floor(Math.random()*2147483647);
-  const r=rngFrom(save.seed+({junior:11,college:23,pro:37}[stage])),pk=a=>a[Math.floor(r()*a.length)],[s0,s1]=STAGE_SKILL[stage],used={};
+  const list=genField(stage,N,save.seed+({junior:11,college:23,pro:37}[stage]),new Set());save.pool[stage]=list;return list}
+function genField(stage,N,seed,usedNames){
+  const r=rngFrom(seed),pk=a=>a[Math.floor(r()*a.length)],[s0,s1]=STAGE_SKILL[stage],used={};for(const n of usedNames)used[n]=1;
   const list=[];
   for(let i=0;i<N;i++){const base=pk(FIELD_BASES),f=!!FEMALE_BASE[base];let name;do{name=pk(f?NAMES_F:NAMES_M)+' '+pk(SURNAMES)}while(used[name]);used[name]=1;
     const skill=Math.round(clamp(s1-(s1-s0)*Math.pow(i/(N-1),0.85)+(r()-0.5)*0.2,s0,s1)*10)/10;   // spread evenly from the top of the level down
     const nat=styleOfChar(RBYID[base]),style=r()<0.55?nat:pk(['server','baseliner','allcourt','counter']);
     list.push({id:stage[0]+i,name,base,nat:pk(NATS),style,skill,v:{h:Math.round(r()*360),t:Math.round(r()*360),a:Math.round((0.25+r()*0.35)*100)/100,l:Math.round((0.88+r()*0.24)*100)/100}})}
-  list.sort((a,b)=>b.skill-a.skill);list.forEach((p,i)=>p.rank=i+1);
-  save.pool[stage]=list;return list}
+  list.sort((a,b)=>b.skill-a.skill);list.forEach((p,i)=>p.rank=i+1);return list}
 /* standard bracket order: where seed k sits in a draw of n */
 function seedOrder(n){let s=[1,2];while(s.length<n){const m=s.length*2+1;s=s.flatMap(x=>[x,m-x])}return s}
 function setScore(f,winHigh){const g=f.g;const one=()=>{const lose=Math.random()<0.18?g:Math.floor(Math.random()*(g-1));return lose===g?[g+1,g]:[g,lose]};
@@ -3064,6 +3068,7 @@ function pickEntrants(ev,taken,need,main){const field=fieldFor(save.stage),RK={}
 /* who plays what this week; mine = the field players in your event (one place is yours) */
 function planWeek(myEv){const taken=new Set();for(const r of save.rivals||[])if(r.fid)taken.add(r.fid);   // rivals from the field only appear as rivals
   const evs=weekEvents(save.week);if(myEv&&!evs.some(e=>e.n===myEv.n))evs.unshift(myEv);
+  if(myEv){const i=evs.findIndex(e=>e.n===myEv.n);if(i>0)evs.unshift(evs.splice(i,1)[0])}   // your event fills first, so it is always complete
   const out={mine:[],others:[],taken};
   const mainN=(weeks()[save.week]||{}).main;
   for(const ev of evs){const size=1<<ev.rounds,mine=myEv&&ev.n===myEv.n,ids=pickEntrants(ev,taken,size-(mine?1:0),mainN&&ev.n===mainN.n);if(mine)out.mine=ids;else out.others.push({ev,ids})}
