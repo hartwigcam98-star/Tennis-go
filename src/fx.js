@@ -93,6 +93,7 @@ function replayTick(dtr){
   FX.tp.push(b.clone());if(FX.tp.length>14)FX.tp.shift()}
 /* which points earn a replay */
 function wantReplay(w,call){
+  if(M&&M.over&&!M.drill&&TUNE.replays!=='off')return true;   // match point always
   if(!M||!M.shot)return false;const sh=M.shot,big=(sh.speed||0)>=33,pt=M.pts[0]+M.pts[1]+M.sets.reduce((a,s)=>a+s[0]+s[1],0)*10;
   const momentous=M.over||M.sets.length>REP.setsN;REP.setsN=M.sets.length;
   let want=false;

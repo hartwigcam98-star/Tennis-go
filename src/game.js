@@ -213,7 +213,8 @@ $('selGo').onclick=()=>{
   if(selMode==='career'){openStyle();return}
   const lvl=+$('qmLevel').value,me=RBYID[selId],stats={};for(const [k] of STATS)stats[k]=clamp(me.st[k],1,10);
   const o=pick(ROSTER.filter(r=>r.id!==selId));
-  startMatch({surf:$('qmSurf').value,bo:1,g:6,stats,meId:selId,me:me.name,opp:{id:o.id,name:o.name,skill:lvl},label:'Quick match',style:null,perks:0,venue:$('qmVenue').value,mode:'quick',
+  const vq=$('qmVenue').value,nq=(vq==='tour'||vq==='masters'||vq.startsWith('major:'))&&Math.random()<0.3;
+  startMatch({surf:$('qmSurf').value,bo:1,g:6,stats,meId:selId,me:me.name,opp:{id:o.id,name:o.name,skill:lvl},label:'Quick match',style:null,perks:0,venue:vq,night:nq,weather:weatherFor({venue:vq},nq),mode:'quick',
     onEnd:quickEnd});
 };
 function openStyle(){
@@ -329,8 +330,8 @@ function playNext(){
   {const L=liveFor('career');if(L&&save.cur.opp){resumeLive(L);return}}
   if(!save.cur.opp)makeOpp();store();
   const c=save.cur,f=fmt(save.stage,c.ev);
-  const mr=c.round-c.qual;
-  startMatch({mode:'career',ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:careerStats(),fat:save.fat||0,ofat:mr>1?clamp(rnd(0.02,0.06)*(mr-1),0,0.22):0,meId:save.char,me:RBYID[save.char].name,opp:c.opp,style:save.style,perks:perkLevel(),
+  const mr=c.round-c.qual,night=nightFor(c.ev,c.total-c.round),weather=weatherFor({ev:c.ev},night);
+  startMatch({mode:'career',night,weather,final:c.round===c.total,ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:careerStats(),fat:save.fat||0,ofat:mr>1?clamp(rnd(0.02,0.06)*(mr-1),0,0.22):0,meId:save.char,me:RBYID[save.char].name,opp:c.opp,style:save.style,perks:perkLevel(),
     label:c.ev.n+' · '+roundName(c.round,c.total,c.qual),intro:c.opp.line?c.opp.name+': “'+c.opp.line+'”':null,onEnd:careerResult});
 }
 const SHORT={Semifinal:'SF',Quarterfinal:'QF','Round of 16':'R16','Round of 32':'R32','Round of 64':'R64'};
@@ -645,7 +646,7 @@ class Player{
     if(!this.legs)return;
     const W=this.W,PP=this.PP,D=this.D;this.fk(q,h);
     const foot=[],footW=[],hint=[];
-    for(const s of this.legs){const [u,l,f,sx]=s;foot.push(PP[f].clone().add(new T.Vector3(sx*widen,0,0)));footW.push(W[f].clone());hint.push(PP[l].clone().sub(PP[u]))}
+    const fo=this.footOff;this.legs.forEach((s,j)=>{const [u,l,f,sx]=s,o=fo&&fo[j];foot.push(PP[f].clone().add(new T.Vector3(sx*widen+(o?o.x:0),0,o?o.z:0)));footW.push(W[f].clone());hint.push(PP[l].clone().sub(PP[u]))});
     h[1]-=13*depth;
     const d2r=Math.PI/180,pel=(P?P.pel:0)*wT*d2r,shY=(P?P.sh:0)*wT*d2r,pit=0.26*depth+(P?P.pitch:0)*wT,rol=(P?P.roll:0)*wT*d2r;
     const Y=new T.Vector3(0,1,0),X=new T.Vector3(1,0,0),Z=new T.Vector3(0,0,1);
@@ -728,8 +729,19 @@ class Player{
     if(!P){if(this.post){this.post.t+=dt;const a=clamp(this.post.t/0.4,0,1),e=a*a*(3-2*a);P=mixP(this.post.P,READYS,e);wT=1-e;wA=Math.max(base,1-e);if(a>=1)this.post=null}
       else if(this.serveReady){this._sv0=this._sv0||sampleSwing(SWINGS.sv,0);this.ssW=Math.min(1,(this.ssW||0)+dt*4);P=mixP(READYS,this._sv0,this.ssW);wT=1;wA=1}
       else{P=READYS;wT=0;wA=base}}
+    if(this.trophyT!=null){P=trophyPose(this.trophyT);wT=1;wA=1}
     if(!this.serveReady)this.ssW=0;
     this.bodyYaw=(P.body||0)*Math.PI/180;
+    // stretching for a wide ball: lead foot steps out, hips drop, body leans in, racket reaches; the free arm counterbalances
+    let sA=0;this.footOff=null;
+    if(this.str&&this.swing&&this.swing.type!=='sv'&&this.swing.type!=='sm'){const S=SWINGS[this.swing.type],sm=x=>x*x*(3-2*x);
+      const env=u<0.15?0:u<S.cf?sm((u-0.15)/(S.cf-0.15)):u<S.cf+0.14?1:1-sm(clamp((u-S.cf-0.14)/(1-S.cf-0.14),0,1));sA=this.str.a*env}
+    if(sA>0.01){const st=this.str,lat=Math.abs(st.mx)>0.2?Math.sign(st.mx):0,j=lat>=0?0:1,dir=lat||-1,fz=clamp(st.mz,-0.4,1.4);
+      this.footOff=[null,null];this.footOff[j]={x:dir*sA*(lat?36:10),z:sA*(10+fz*14)};this.footOff[1-j]={x:-dir*sA*5,z:-sA*9};
+      P=Object.assign({},P,{roll:(P.roll||0)+dir*sA*16*(lat?1:0.3),pitch:(P.pitch||0)+sA*(fz<-0.1?-0.06:0.12),
+        hand:[P.hand[0]+lat*sA*18,P.hand[1]-sA*10,P.hand[2]+sA*(6+fz*6)],L:P.L?[P.L[0]-lat*sA*16,P.L[1]+sA*6,P.L[2]-sA*4]:P.L});
+      if(st.clay&&sA>0.45&&W3.venue){this._dust=(this._dust||0)-dt;if(this._dust<=0){this._dust=0.06;const lf=this.bones[this.legs[j][2]];if(lf){const wp=lf.getWorldPosition(new T.Vector3());puff(wp.x,wp.z,'clay',3+sA*3)}}}}
+    if(!this.swing&&this.str){if(this.str.a>0.7)this.land=0.25;this.str=null}
     // posture: low and wide, deeper as a stroke loads, extending up through contact
     let dT=this.react?0.1:this.relax?0.45:1;
     if(this.swing){const S=SWINGS[this.swing.type],sm=x=>x*x*(3-2*x);
@@ -739,7 +751,7 @@ class Player{
     if(this.hop>0){const a=1-this.hop/0.15;dT=a<1?0.55:dT}
     if(this.land>0){this.land-=dt;dT+=0.35*Math.sin(Math.PI*clamp(1-this.land/0.25,0,1))}
     this.depth+=(dT-this.depth)*Math.min(1,dt*(this.swing?18:9));
-    this.athletic(q,h,this.depth,9*this.depth*(1-this.wLoco),P,wT);
+    this.athletic(q,h,this.depth+sA*0.75,9*this.depth*(1-this.wLoco),P,wT);
     this.arms(q,h,P,wA);
     let hopY=0;if(this.hop>0){this.hop-=dt;hopY=Math.sin(Math.PI*clamp(1-this.hop/0.15,0,1))*0.05;if(this.hop<=0)this.land=0.25}
     const B=this.bones;for(let k=0;k<this.nb;k++)B[k].quaternion.set(q[k*4],q[k*4+1],q[k*4+2],q[k*4+3]);B[0].position.set(0,h[1],0);
@@ -813,7 +825,8 @@ function simulate(p0,v0,w,sf,maxT,firstBounceOnly){
   const rec=()=>{out.S.push(px,py,pz)};rec();
   while(t<maxT){
     const s=Math.hypot(vx,vy,vz)||1e-6,S=Math.min(r*Math.abs(w)/s,1),CD=0.55+0.12*S,CL=S>0.001?1/(2+1/S):0;
-    let ax=-KAIR*CD*s*vx,ay=-KAIR*CD*s*vy-BALL.g,az=-KAIR*CD*s*vz;
+    const rx=vx-WIND.x*WIND_K,rz=vz-WIND.z*WIND_K,sr=Math.hypot(rx,vy,rz)||1e-6;   // drag acts on the ball's speed through the air
+    let ax=-KAIR*CD*sr*rx,ay=-KAIR*CD*sr*vy-BALL.g,az=-KAIR*CD*sr*rz;
     if(w!==0){// lift acts perpendicular to the flight path in its vertical plane: down for topspin, up for backspin
       const ux=vx/s,uy=vy/s,uz=vz/s;let nx=-uy*ux,ny=1-uy*uy,nz=-uy*uz;const nl=Math.hypot(nx,ny,nz)||1;nx/=nl;ny/=nl;nz/=nl;
       const f=-Math.sign(w)*KAIR*CL*s*s;ax+=f*nx;ay+=f*ny;az+=f*nz}
@@ -855,10 +868,10 @@ function makeShot(from,tgt,speed,w,o){
   const st={x:from.x*HW,y:Math.max(0.25,(from.z!=null?from.z:0.5)*ZS),z:(0.5-from.y)*CL};
   const tw={x:tgt.x*HW,z:(0.5-tgt.y)*CL};
   SS=o.ss||0;
-  let aim={x:tw.x,z:tw.z},v=launch(st,aim,speed,w,sf,o.lob);
+  WIND_K=0.8;let aim={x:tw.x,z:tw.z},v=launch(st,aim,speed,w,sf,o.lob);
   for(let k=0;k<5&&v.short;k++){speed*=1.15;v=launch(st,aim,speed,w,sf,o.lob)}  // too slow to get there: the player swings a bit harder
-  if(SS)for(let k=0;k<3;k++){const q=simulate(st,v,w,sf,4,true).bounces[0];if(!q)break;aim.x+=tw.x-q.x;aim.z+=tw.z-q.z;v=launch(st,aim,speed,w,sf,o.lob)}  // aim off so the curve lands on target
-  const r=simulate(st,v,w,sf,5,false);SS=0;
+  if(SS||WIND.x||WIND.z)for(let k=0;k<3;k++){const q=simulate(st,v,w,sf,4,true).bounces[0];if(!q)break;aim.x+=tw.x-q.x;aim.z+=tw.z-q.z;v=launch(st,aim,speed,w,sf,o.lob)}  // aim off so the curve lands on target
+  WIND_K=1;const r=simulate(st,v,w,sf,5,false);SS=0;
   const toMe=tw.z>0,b=r.bounces[0];
   const sh=Object.assign({S:r.S,n:r.S.length/3,dt:PDT*SAMPLE,who:o.who,net:!!r.net,speed},o);
   if(b){sh.land={x:b.x/HW,y:0.5-b.z/CL};sh.tb=b.t}else{sh.land={x:tgt.x,y:tgt.y};sh.tb=r.T}
@@ -914,11 +927,11 @@ function beginMatch(cfg){
   M={cfg,surf:SURF[cfg.surf],S:cfg.stats,os:cfg.opp.skill,ostyle:cfg.opp.style||styleOfChar(RBYID[cfg.opp.id]),pat:[],readMe:false,readSaid:false,ostam:clamp(Math.round(((RBYID[cfg.opp.id]&&RBYID[cfg.opp.id].st.stamina)||5)*0.5+cfg.opp.skill*0.5),1,10),sets:[[0,0]],setsWon:[0,0],pts:[0,0],tb:false,server:Math.random()<0.5?0:1,tbFirst:0,
     state:'between',shot:null,t0:0,me:{x:0.4,y:-0.05},op:{x:-0.4,y:1.08},fault:false,sw:null,preview:null,samples:[],land:null,aim:null,lock:false,commit:null,pending:null,
     stat:{aces:0,winners:0,big:0,perfect:0,smashes:0,volleys:0,slices:0,rallyMax:0},svType:['flat','kick'],en:[1,1],cap:[1,1],run:[0,0],tiredSaid:[false,false],home:[{x:0,y:-0.05},{x:0,y:1.08}],meSide:'fh',opSide:'fh',mv:[{x:0,v:0,z:0,vz:0},{x:0,v:0,z:0,vz:0}],style:cfg.style,perks:cfg.perks||0,rally:0};
-  $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;$('bSurf').textContent=SURF[cfg.surf].name;
+  $('n0').textContent=cfg.me;$('n1').textContent=cfg.opp.name;$('bLabel').textContent=cfg.label;applyWeather(cfg);{const c=conditionsText(cfg);$('bSurf').textContent=SURF[cfg.surf].name+(c?' · '+c:'')}
   $('ptBadge').hidden=true;$('quit').textContent='Pause';M.quitArm=false;applyCosmetics();PAUSE.menu=false;syncPause();$('pauseMenu').hidden=true;
   msStart();if(cfg.fat){M.en[0]=M.cap[0]=1-cfg.fat}if(cfg.ofat){M.en[1]=M.cap[1]=1-cfg.ofat}
   if(cfg.resume){applyResume(cfg.resume);cfg.intro='Match resumed at '+scoreText(M.sets,M.pts,M.tb)+'.'}
-  renderBoard();{const O=OSTYLE[M.ostyle];say(cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))}
+  renderBoard();{const O=OSTYLE[M.ostyle],cs=conditionsSay(cfg);say((cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))+(cs?' '+cs:''))}
   REP.setsN=1;REP.lastPt=-9;REP.buf=[];perfReset();W3.camPos.set(0,4,22);
   if(cfg.drill){drillBegin(cfg);return}
   after(nextPoint,cfg.intro?2600:1100);
@@ -969,8 +982,12 @@ function pointTo(w,text,call,kind){
   {const g2=M.sets.reduce((a,x)=>a+x[0]+x[1],0);if(M.sets.length!==ps)for(let i=0;i<2;i++)M.en[i]=Math.min(M.cap[i],M.en[i]+0.2);else if(g2!==pg&&g2%2===1)for(let i=0;i<2;i++)recover(i,0.07);}
   renderEnergy();renderBoard();after(()=>umpireScore(pg,ps),1000);
   const rp=wantReplay(w,call);
-  if(M.over){crowdCheer(1,6,6);sndApplause(1.2);sndCrowdVoice('cheer',1.2);P[M.winner].startReact(M.winner===0?myDance():pick(['samba','uprock','robot']));P[1-M.winner].startReact('slump');if(rp)after(()=>{if(M)startReplay(3,()=>after(endMatch,1800))},1600);else after(endMatch,3200)}
-  else if(rp)after(()=>{if(M)startReplay(2.8,()=>after(nextPoint,500))},900);else after(nextPoint,1700);
+  if(M.over){crowdCheer(1,6,6);sndApplause(1.2);sndCrowdVoice('cheer',1.2);P[M.winner].startReact(M.winner===0?myDance():pick(['samba','uprock','robot']));P[1-M.winner].startReact('slump');if(rp)after(()=>{if(M)startReplay(3,()=>after(afterMatch,1200))},1600);else after(afterMatch,3200)}
+  else if(rp)after(()=>{if(M)startReplay(2.8,()=>after(nextPoint,500))},900);
+  else{// a stats card at changeovers (from the third game of a set) and when a set ends
+    const g=M.sets[M.sets.length-1],inSet=g[0]+g[1],setEnd=M.sets.length!==ps,gameEnd=M.sets.reduce((a,x)=>a+x[0]+x[1],0)!==pg;
+    if(!M.drill&&gameEnd&&(setEnd||(inSet%2===1&&inSet>=3))){after(()=>showStatCard(setEnd?'Set '+ps+' stats':'Changeover · match stats'),1300);M.cardFn=()=>{hideStatCard();nextPoint()};after(M.cardFn,7500)}
+    else after(nextPoint,1700)}
 }
 function gameWon(w){
   const o=1-w,g=M.sets[M.sets.length-1],G=M.cfg.g,wasTb=M.tb;M.lastGame=w;
@@ -1013,6 +1030,10 @@ function pressureOf(i,sh){const m=reachMargin(i,sh);const L=sh.land||{y:0.5},dee
   return clamp(clamp(1-m/0.7,0,1)*0.75+(sh.type==='serve'||sh.serve?clamp(((sh.speed||30)-paceRef(i,1))/45,0,0.25):clamp(((sh.speed||20)-paceRef(i,0))/30,0,0.45))+(Math.abs(sh.w||0)>260?0.08:0)+(deep?0.12:0)+((sh.hz||1)<0.62?0.1*({grass:1.3,hard:1,clay:0.6}[M.surf===SURF.grass?'grass':M.surf===SURF.clay?'clay':'hard']):0)+(sh.svType==='kick'?0.08:0),0,1)}
 function spotFor(i,sh,side){const hz=toW(0,sh.hy).z,off={fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[side]||0,zo=sh.smash?0.29:sh.volley?0.55:0.5;
   return i===0?{x:sh.hx*HW-off,z:hz+zo}:{x:sh.hx*HW+off,z:hz-zo}}
+/* how far a player is from where they'd like to meet the ball, in their own frame; drives the lunge. Frozen at contact */
+function updateStretch(i,sh,side){const pl=P[i];if(!pl||!pl.swing||!sh||side==='sm')return;const S=SWINGS[pl.swing.type];if(!S||pl.swing.t/S.dur>S.cf)return;
+  const sp=spotFor(i,sh,side),st=M.mv[i],gx=sp.x-st.x,gz=sp.z-st.z,right=i===0?gx:-gx,fwd=i===0?-gz:gz,d=Math.hypot(gx,gz);
+  pl.str={a:clamp((d-0.25)/1.0,0,1),mx:clamp(-right,-1.6,1.6),mz:clamp(fwd,-0.6,1.6),clay:M.surf===SURF.clay}}
 function contactPress(i,sh,side){const sp=spotFor(i,sh,side),st=M.mv[i];return clamp((Math.hypot(st.x-sp.x,st.z-sp.z)-0.35)/1.2,0,1)}
 function fallbackHit(i,sh){if((sh.volley||sh.smash)&&!canReach(i,sh)){const st=M.mv[i];chooseHit(sh,{x:st.x,z:st.z});if((sh.volley||sh.smash)&&!canReach(i,sh))chooseHit(sh,null)}}
 function setReach(sh){fallbackHit(0,sh);if(!canReach(0,sh))sh.unreach=true;else M.mePress=pressureOf(0,sh)}
@@ -1184,6 +1205,7 @@ function lp(e){const k=360/window.innerWidth;return{x:e.clientX*k,y:e.clientY*k}
 cv.addEventListener('pointerdown',e=>{
   if(CLK.paused)return;
   if(REP.on){e.preventDefault();endReplay();return}
+  if(CER.on){e.preventDefault();endCeremony();return}
   if(!M||(M.state!=='op'&&M.state!=='serveMe'&&M.state!=='me'))return;e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}
   M.sw=lp(e);M.preview=null;M.samples=[{x:M.sw.x,y:M.sw.y,t:now()}];
 });
@@ -1213,11 +1235,11 @@ function loop(t){
   const dt=dtr*CLK.ts;
   if(M&&!window.__FREEZE)step(dt);
   crowdTick(dtr);sndAmbience(!!M&&['op','me','oppServing','serving'].includes(M.state));
-  if(window.__POSE&&P[0]){const Q=window.__POSE,S=SWINGS[Q.type];P[0].swing={type:Q.type,t:Q.u*S.dur-dt};P[0].post=null;if(Q.type==='sv'&&Q.u<0.38){P[0].tossR=null}}
+  if(window.__POSE&&P[0]){if(window.__STR!==undefined)P[0].str=window.__STR;const Q=window.__POSE,S=SWINGS[Q.type];P[0].swing={type:Q.type,t:Q.u*S.dur-dt};P[0].post=null;if(Q.type==='sv'&&Q.u<0.38){P[0].tossR=null}}
   if(P[0]){P[0].serveReady=!!M&&M.state==='serveMe';P[1].serveReady=!!M&&M.state==='oppServe'}
   const rlx=!M||M.state==='between';P[0].relax=rlx;P[1].relax=rlx||(M&&(M.state==='serveMe'));
   P[0].update(dt,1,M?M.mv[0].v:0,M?M.mv[0].vz:0);P[1].update(dt,-1,M?M.mv[1].v:0,M?M.mv[1].vz:0);
-  camera(dtr);fxTick(dt);if(M&&!window.__FREEZE)recordFrame();
+  ceremonyTick(dtr);camera(dtr);fxTick(dt);if(M&&!window.__FREEZE)recordFrame();
   W3.r.render(W3.scene,W3.cam);
 }
 function swingFor(pl,side,tHit,hz){const S=SWINGS[side];if(!pl.swing&&now()>=tHit-S.dur*S.cf*1000){const yo=yoFor(side,hz);const off=Math.max(0,(now()-(tHit-S.dur*S.cf*1000))/1000);pl.startSwing(side,Math.min(off,S.dur*S.cf),yo)}}
@@ -1227,6 +1249,7 @@ function step(dt){
     if(sh.r&&p<1.4){const tt=p*sh.T,lt=sh._lt||0;for(const b of sh.r.bounces)if(b.t>lt&&b.t<=tt){sndBounce(-b.vy,b.x,b.z);if(W3.venue){puff(b.x,b.z,W3.venue.surf,-b.vy);ballMark(b.x,b.z,Math.atan2(b.x-sh.S[0],b.z-sh.S[2]))}}if(sh.r.net&&sh.r.net.t>lt&&sh.r.net.t<=tt)sndNet();sh._lt=tt}
     if(M.state==='op'){
       if(M.commit&&!sh.err&&!sh.unreach)swingFor(P[0],M.meSide,M.t0+0.9*sh.T*1000,sh.hz);
+      updateStretch(0,sh,M.meSide);
       if(M.commit&&p>=0.9){executeShot()}else{
         if(sh.err&&p>(sh.net?0.3:sh.pb+0.02)&&!sh.called){sh.called=true;callOut(sh.net?'NET':'OUT');say(sh.net?'Into the net!':'Out!')}
         if(sh.err&&p>1.0)pointTo(0,sh.net?'Their shot found the net.':'Their shot was out.',null,(sh.pr||0)>0.55?'fe':'ue');
@@ -1235,6 +1258,7 @@ function step(dt){
     }
     else if(M.state==='me'&&sh.who==='me'){
       if(M.returns)swingFor(P[1],M.opSide,M.t0+0.9*sh.T*1000,sh.hz);
+      updateStretch(1,sh,M.opSide);
       if(M.returns&&p>=0.9)oppHit(pos(sh,p));
       else if(!M.returns&&p>1.15){if(sh.type==='serve'){M.stat.aces++;pointTo(0,'Ace!','ACE')}else{M.stat.winners++;pointTo(0,'Winner!','WINNER','wn')}}
     }
@@ -1250,7 +1274,7 @@ function step(dt){
       if(M.returns){x1=sh.hx*HW+({fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[M.opSide]);z1=hz-(sh.smash?0.29:sh.volley?0.55:0.5)}else if(M.drill){x1=M.home[1].x*HW;z1=toW(0,M.home[1].y).z}else{const sp=spotFor(1,sh,M.opSide);x1=sp.x;z1=sp.z}
       if(sh.type!=='serve'){x0=M.home[0].x*HW;z0=toW(0,M.home[0].y).z}}
     drive2(mv[0],x0,z0,vm0,dt);drive2(mv[1],x1,z1,vm1,dt);sndMove(0,mv[0],dt);sndMove(1,mv[1],dt);
-    for(let i=0;i<2;i++){const sp=Math.hypot(mv[i].v,mv[i].vz),d=sp*dt;M.run[i]+=d;tire(i,d*0.0022*TUNE.drain*(0.55+0.45*Math.min(1,sp/(i?vm1:vm0))))}
+    for(let i=0;i<2;i++){const sp=Math.hypot(mv[i].v,mv[i].vz),d=sp*dt;M.run[i]+=d;tire(i,d*0.0022*TUNE.drain*heatFactor()*(0.55+0.45*Math.min(1,sp/(i?vm1:vm0))))}
     renderEnergy();
     for(let i=0;i<2;i++)if(M.en[i]<0.35&&!M.tiredSaid[i]&&M.state!=='between'){M.tiredSaid[i]=true;if(i===1)say(M.cfg.opp.name+' is breathing hard. Keep making them run.')}
   }else{mv[0].v=mv[0].vz=0;mv[1].v=mv[1].vz=0}
@@ -1290,6 +1314,7 @@ function step(dt){
   hint.textContent=ht;hint.className=warn?'warn':'';
 }
 function camera(dt){
+  if(CER.on&&ceremonyCam())return;
   if(window.__CAM){const c=window.__CAM,me=P[0].pos;W3.cam.position.set(me.x+c[0],c[1],me.z+c[2]);W3.cam.lookAt(me.x,c[3],me.z);return}
   const me=P[0].pos;const tp=new T.Vector3(me.x*0.75,11.5,me.z+12.5),tl=new T.Vector3(me.x*0.4,0,0.5);
   const k=Math.min(1,dt*3);W3.camPos.lerp(tp,k);W3.camLook.lerp(tl,k);W3.cam.position.copy(W3.camPos);const sk=shakeOffset();if(sk)W3.cam.position.add(sk);W3.cam.lookAt(W3.camLook);
@@ -1302,9 +1327,10 @@ function camera(dt){
 /*@SESSION*/
 /*@CAREER*/
 /*@STATS*/
+/*@MOMENTS*/
 for(const ev of ['pointerdown','touchend','click','keydown'])document.addEventListener(ev,sndResume,{passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SND.ctx&&SND.ctx.state!=='running')SND.ctx.resume().catch(()=>{});if(SND.tag){if(document.hidden)SND.tag.pause();else if(SND.on)SND.tag.play().catch(()=>{})}});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c)=>pointTo(w,t,c),nextPoint:()=>nextPoint(),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();

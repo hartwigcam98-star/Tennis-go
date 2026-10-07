@@ -11,7 +11,8 @@ const SURF_LOOK={hard:{court:0x2F6FB0,out:0x3E7A4B,wall:0x1C3A5E,seat:0x2B4C7E,s
   clay:{court:0xC9643A,out:0xB65A33,wall:0x24402B,seat:0x3B5F45,seat2:0x46705A,acc:0xE6A060},
   grass:{court:0x5E9A3A,out:0x4F8A33,wall:0x1E3B2A,seat:0x305C3D,seat2:0x3A6C48,acc:0xCFE3A0}};
 /* pick the venue for a match: an explicit quick-match choice, or from the career event */
-function venueFor(cfg){
+function venueFor(cfg){const V0=venueFor0(cfg);if(cfg.night!=null&&(V0.kind==='tour'||V0.kind==='major')){V0.night=!!cfg.night;if(V0.night)V0.sky=0x0A1430;else if(V0.sky===0x0A1430)delete V0.sky}return V0}
+function venueFor0(cfg){
   const surf=cfg.surf,ev=cfg.ev||{},tier=ev.tier||'',v=cfg.venue||'';
   const L=Object.assign({},SURF_LOOK[surf]);
   const short=(ev.n||'').replace(/ (Major|Masters|500|250|Open|Classic|Invitational|Championships?|Regional|Sectionals)$/,'').replace(/^(Challenger|Futures) /,'').toUpperCase();
