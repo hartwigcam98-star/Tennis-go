@@ -1057,7 +1057,7 @@ function renderEnergy(){for(let i=0;i<2;i++){const e=$('e'+i);if(!e)continue;con
 function reachMargin(i,sh){const st=M.mv[i],dx=sh.hx*HW-st.x,dz=toW(0,sh.hy).z-st.z,back=sh.smash?Math.max(0,i===0?dz:-dz):0;const dist=Math.max(0,Math.hypot(dx,dz)+back*0.7-(sh.smash?0.5:1.2)),vm=vmaxOf(i);
   const tNeed=dist<=vm*vm/(2*ACC)?Math.sqrt(2*dist/ACC):dist/vm+vm/(2*ACC);return 0.9*sh.T+0.18-reactOf(i,sh)-tNeed+(i===1&&M.readMe&&sh.type!=='serve'?0.12:0)}
 function reactOf(i,sh){if(sh.type!=='serve'&&!sh.serve)return 0;const sk=i===0?(M.S.speed+M.S.control)/2:M.os;
-  let r=i===0?0.33-sk*0.012:0.39-sk*0.02;if(i===1&&sh.type==='serve'&&!sh.second)r+=(hasPerk('server',1)?0.04:0)+(hasPerk('server',3)?0.04:0);return r}
+  let r=i===0?0.33-sk*0.012:sk<5?0.39-sk*0.02:0.29-(sk-5)*0.026;/* better returners read the serve sooner */if(i===1&&sh.type==='serve'&&!sh.second)r+=(hasPerk('server',1)?0.04:0)+(hasPerk('server',3)?0.04:0);return r}
 function canReach(i,sh){return reachMargin(i,sh)>=0}
 /* pressure 0..1: little spare time, pace, heavy spin and depth all rush the receiver */
 /* pace is judged against the speed of the game the receiver plays: a junior is rushed by a ball a pro would find routine */
@@ -1182,7 +1182,7 @@ function executeShot(){
 function doServe(a){
   if(!M||M.state!=='serving')return;
   const second=M.fault,ty=M.svType[second?1:0],SV=SVT[ty];
-  const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(Object.assign({},a,{r:a.r*SV.r})),C=P[0].tossC||P[0].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
+  const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(Object.assign({},a,{r:(a.r+(a.rp||0))*SV.r})),C=P[0].tossC||P[0].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
   const pw=Math.min(a.pw,1.1);
   let spd=(12.8+20*pw+S.serve*2.0+(hasPerk('server',3)?1.5:0))*(0.92+0.08*M.en[0])*SV.spd,w=SV.w;tire(0,0.006);
   const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss*(P[0].lefty?-1:1)});shot.svType=ty;onContact('me',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:second?'top':'serve',who:'me',x:C.x,z:C.z});
@@ -1218,12 +1218,12 @@ function aimFromSwipe(dx,dy,serve,spd){
   let tx,ty;
   if(serve){const ctr=side()==='deuce'?-0.5:0.5;tx=ctr+(dx/fwd)*0.9;ty=0.5+f*0.3}
   else{tx=M.me.x*0.25+(dx/fwd)*1.0;ty=0.54+f*0.44}
-  let r=0.03+pw*pw*(serve?0.15:0.2)*(1.15-S.control*0.07)+f*0.03;
+  let r=(serve?0.045:0.03)+pw*pw*(serve?0.19:0.2)*(1.15-S.control*0.07)+f*0.03;   // serves: about 60-70% of first serves land, fewer when you go for the lines
   if(serve&&M.fault&&hasPerk('server',2))r*=0.6;
   if(!serve&&ty>0.85&&hasPerk('baseliner',1))r*=0.75;
   if(hasPerk('allcourt',3))r*=0.9;
   // going for broke is a risk in itself: above ~80% power the stray circle grows; Control shrinks it but never removes it
-  const rp=serve?0:Math.pow(Math.max(0,pw-0.8),2)*1.4*(1.3-S.control*0.08);
+  const rp=Math.pow(Math.max(0,pw-0.8),2)*(serve?0.6:1.4)*(1.3-S.control*0.08);
   return{x:clamp(tx,-1.4,1.4),y:ty,f,pw,r,rp,slice:!serve&&swipeCurve()>=TUNE.slice};
 }
 function swipeSpeed(){const sm=M.samples;if(!sm||sm.length<2)return 0;const last=sm[sm.length-1];let first=last;for(let i=sm.length-1;i>=0;i--){if(last.t-sm[i].t>90)break;first=sm[i]}const dt=last.t-first.t;return dt>0?Math.hypot(last.x-first.x,last.y-first.y)/dt:0}
