@@ -17,7 +17,7 @@
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 43 · smoother, ready for recordings</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 44 · Hawk-Eye, lefties, goals</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -129,6 +129,7 @@
 
 <section id="style" class="wrap" hidden>
   <div class="hero"><p class="eyebrow">New career</p><h2>Choose your play style</h2><p class="muted">Your style unlocks three perks as you win matches: one now, one at 15 career wins, one at 40.</p></div>
+  <div class="card" id="custom"></div>
   <div class="roster" id="styles"></div>
   <div class="sticky row"><button class="go" id="styleGo" style="flex:1">Pick a play style</button><button class="ghost" id="styleBack">Back</button></div>
 </section>
@@ -138,6 +139,8 @@
   <div class="stepper" id="stepper"></div>
   <div class="card" id="playerCard"></div>
   <div class="card" id="nextCard"></div>
+  <div class="card" id="goalCard"></div>
+  <div class="card" id="newsCard"></div>
   <div class="card" id="statsCard"></div>
   <div class="card cal" id="calCard"></div>
   <div class="card" id="trophyCard"></div>
@@ -168,6 +171,8 @@
   <div id="dDone" hidden><div class="card"><p class="banner w" id="dDoneT">Lesson complete</p><p id="dDoneP"></p><div class="row"><button class="go" id="dNext">Next lesson</button><button class="ghost" id="dMenu">All lessons</button></div></div></div>
   <div id="cer" hidden><p class="eyebrow">Champion</p><h2 id="cerTitle"></h2><p id="cerSub"></p><small>Tap to continue</small></div>
   <div id="statCard" hidden></div>
+  <button id="chalBtn" hidden>Challenge</button>
+  <div id="hawk" hidden><p class="eyebrow">Hawk-Eye</p><div id="hkSvg"></div><h2 id="hkVerdict"></h2><p id="hkSub"></p></div>
   <div id="replay" hidden><i></i>Replay<small>Tap to skip</small></div>
   <div class="hud bot">
     <div id="power" hidden><b></b><i></i></div>

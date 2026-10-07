@@ -3,7 +3,7 @@
    (render resolution, then shadow detail, then crowd density, then shadows off) and remembers the level.
    Tuning: long-press the scoreboard (or Game settings on the title screen) for live fps and the feel numbers. */
 const KEY_TUNE='tennis-go-tune',KEY_Q='tennis-go-quality';
-const TUNE_DEF={perfect:0.42,slice:0.17,hitstop:1,replays:'normal',drain:1,gear:0.15,quality:'auto'};
+const TUNE_DEF={perfect:0.42,slice:0.17,hitstop:1,replays:'normal',drain:1,gear:0.15,quality:'auto',cam:'baseline'};
 let TUNE=Object.assign({},TUNE_DEF);try{Object.assign(TUNE,JSON.parse(localStorage.getItem(KEY_TUNE)||'{}'))}catch(e){}
 function storeTune(){try{localStorage.setItem(KEY_TUNE,JSON.stringify(TUNE))}catch(e){}}
 function applyTune(){PERFECT[1]=TUNE.perfect;GEAR_STEP=TUNE.gear}
@@ -45,8 +45,10 @@ function renderTune(){
   $('tBody').innerHTML='<p class="num" id="tFps" style="font-family:var(--display);font-size:20px"></p>'+
     '<label>Quality<select id="tQ"><option value="auto">Auto</option>'+QLV.map((q,i)=>'<option value="'+i+'">'+q.name+'</option>').join('')+'</select></label>'+
     TROWS.map(r=>'<label class="trow"><span><b>'+r.l+'</b><output id="o_'+r.k+'">'+r.f(TUNE[r.k])+'</output></span><input type="range" min="'+r.min+'" max="'+r.max+'" step="'+r.step+'" value="'+TUNE[r.k]+'" data-k="'+r.k+'"><small>'+r.d+'</small></label>').join('')+
+    '<label>Camera<select id="tCam"><option value="baseline">Behind the baseline</option><option value="broadcast">TV broadcast (high)</option><option value="close">Close behind you</option></select></label>'+
     '<label>Replays<select id="tRep"><option value="off">Off</option><option value="rare">Rare</option><option value="normal">Normal</option><option value="often">Often</option></select></label>';
-  $('tQ').value=TUNE.quality;$('tRep').value=TUNE.replays;
+  $('tQ').value=TUNE.quality;$('tRep').value=TUNE.replays;$('tCam').value=TUNE.cam||'baseline';
+  $('tCam').onchange=e=>{TUNE.cam=e.target.value;storeTune()};
   $('tQ').onchange=e=>{TUNE.quality=e.target.value;storeTune();if(TUNE.quality==='auto')perfReset();applyQuality()};
   $('tRep').onchange=e=>{TUNE.replays=e.target.value;storeTune()};
   $('tBody').querySelectorAll('input[type=range]').forEach(i=>i.oninput=()=>{const r=TROWS.find(x=>x.k===i.dataset.k);TUNE[r.k]=+i.value;$('o_'+r.k).textContent=r.f(TUNE[r.k]);applyTune();storeTune()});

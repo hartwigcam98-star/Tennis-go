@@ -154,7 +154,9 @@ function mkRoomTone(z,room,outdoor){const sr=SR(),len=6,n=Math.floor(sr*len),L=n
 function genBank(){const B={};B.hit={};for(const k of ['top','slice','volley','smash','serve','drop'])B.hit[k]=[0,1,2,3].map(()=>mkHit(k));
   B.ping=[0,1,2].map(mkPing);B.frame=[0,1,2].map(mkFrame);B.net=[0,1].map(mkNet);B.bounce={};for(const s of ['hard','clay','grass'])B.bounce[s]=[0,1,2,3].map(()=>mkBounce(s));
   B.whoosh=[0,1,2].map(mkWhoosh);B.squeak=[0,1,2,3].map(mkSqueak);B.slide=[0,1].map(mkSlide);B.scuff=[0,1].map(mkScuff);
-  B.step={};for(const s of ['hard','clay','grass'])B.step[s]=[0,1,2].map(()=>mkStep(s));B.grunt={m:[0,1,2].map(()=>mkGrunt(rng(105,140))),f:[0,1,2].map(()=>mkGrunt(rng(200,240)))};return B}
+  B.step={};for(const s of ['hard','clay','grass'])B.step[s]=[0,1,2].map(()=>mkStep(s));B.grunt={m:[0,1,2].map(()=>mkGrunt(rng(105,140))),f:[0,1,2].map(()=>mkGrunt(rng(200,240)))};B.clap1=[0,1,2].map(mkGroupClap);return B}
+/* a dozen people clapping together, for the Hawk-Eye slow clap */
+function mkGroupClap(){const L=arr(0.12);for(let k=0;k<12;k++){const ke=clapKernel(k%2===0,k<3?6000:3500),s0=Math.floor(rng(0,0.025)*SR()),g=rng(0.4,1);for(let i=0;i<ke.length&&s0+i<L.length;i++)L[s0+i]+=ke[i]*g}return mkBuf(norm(L,0.8))}
 function genVenue(C){if(!SND.bank.kern)SND.bank.kern=mkClapKernelsLR();const V={clap:mkApplauseLR(C.claps,C.clapLen,C.room[0],C.room[1],C.room[2])};
   if(C.voices){V.ooh=mkCrowdVoiceLR('ooh',C.voices,C.room);V.cheer=mkCrowdVoiceLR('cheer',C.voices,C.room)}V.babble=mkRoomToneLR(C.z,C.room,C.outdoor);return V}
 /*}DSP*/

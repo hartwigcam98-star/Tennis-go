@@ -22,6 +22,8 @@ Play it at https://hartwigcam98-star.github.io/Tennis-go/
 | `src/career.js` | Weekly schedule choice and rest weeks, fatigue between matches, Sim, aging, earned rivals, the Tour Finals. Inserted at `/*@CAREER*/` |
 | `src/stats.js` | Match statistics for you and every generated player (kept per league) and the Records screen. Inserted at `/*@STATS*/` |
 | `src/moments.js` | Match-point replay, title ceremony (trophy, confetti), changeover stats card, night sessions, wind and heat. Inserted at `/*@MOMENTS*/` |
+| `src/season.js` | Season goals (coach / agent) and the tour news feed. Inserted at `/*@SEASON*/` |
+| `src/hawk.js` | Line calls, occasional close miscalls and Hawk-Eye challenges. Inserted at `/*@HAWK*/` |
 | `src/audio.js` | Synthesised sound and officials' calls. Inserted at `/*@AUDIO*/` in game.js |
 | `sounds/` | Optional real crowd recordings (see `sounds/README.md`); the game falls back to its generated sounds |
 | `src/vendor/three.js` | three.js r170 |

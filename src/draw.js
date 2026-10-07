@@ -25,7 +25,7 @@ function rankingList(stage){stage=stage||save.stage;const my=roll(stage),key=sta
   const {N,K}=RANK_SCALE[stage],[,s1]=STAGE_SKILL[stage];
   const all=fieldFor(stage).map(p=>({id:p.id,name:p.name,nat:p.nat,style:p.style,pts:fieldPts(stage,p)}));
   (save.rivals||[]).forEach((rv,i)=>{const fi=rv.fid?all.findIndex(e=>e.id===rv.fid):-1;if(fi>=0)all.splice(fi,1);all.push({id:'rv'+i,name:rvName(rv),nat:'',style:rvStyle(rv),pts:rivalPts(stage,rv),rival:i})});
-  all.push({id:'me',name:RBYID[save.char].name,me:true,pts:my});
+  all.push({id:'me',name:myName(),me:true,pts:my});
   all.sort((a,b)=>b.pts-a.pts||(a.me?-1:b.me?1:0));let prev=0;for(const e of all){e.rank=Math.max(1,Math.round(N*Math.exp(-e.pts/K)),prev+1);prev=e.rank}
   RANK_CACHE={key,list:all};return all}
 function rankOf(id,stage){const e=rankingList(stage).find(x=>x.id===id);return e?e.rank:null}
@@ -74,7 +74,7 @@ function simPair(D,a,b){const A=D.players[a],B=D.players[b],p=1/(1+Math.exp(-(A.
 /* build a draw for the event you just entered */
 function makeDraw(c){
   const ev=c.ev,stage=save.stage,R=ev.rounds,size=1<<R,f=fmt(stage,ev),field=fieldFor(stage),[k0,k1]=ev.sk;
-  const players={me:{id:'me',name:RBYID[save.char].name,me:true,nat:'YOU',skill:0}},plan=planWeek(ev),picked=plan.taken;
+  const players={me:{id:'me',name:myName(),me:true,nat:'YOU',skill:0}},plan=planWeek(ev),picked=plan.taken;
   c.others=plan.others;
   for(const id of plan.mine)players[id]=Object.assign({},fieldFor(stage).find(p=>p.id===id));
   // a rival waits in the draw at the bigger events: the final, or the semifinal at a major
@@ -112,8 +112,11 @@ function drawRecord(D,k,won,score){const E=entrantsAt(D,k),res=[];
   if(!won)while(D.res.length<D.R){const k2=D.res.length,E2=entrantsAt(D,k2),r2=[];for(let i=0;i<E2.length;i+=2){const m=simPair(D,E2[i],E2[i+1]);r2.push({a:E2[i],b:E2[i+1],w:m.w,score:m.score})}D.res.push(r2)}}
 function drawSimAll(D){while(D.res.length<D.R){const k=D.res.length,E=entrantsAt(D,k),r=[];for(let i=0;i<E.length;i+=2){const m=simPair(D,E[i],E[i+1]);r.push({a:E[i],b:E[i+1],w:m.w,score:m.score})}D.res.push(r)}}
 /* the opponent object the match uses, from a draw player */
+/* about one in eight of the field play left-handed (fixed per player); roster characters and rivals keep their own */
+function isLefty(p){if(!p)return false;if(p.lefty!=null)return!!p.lefty;if(p.rival!=null){const rv=save.rivals[p.rival];if(rv)return rv.fid?!!rv.lefty:!!(RBYID[rv.id]&&RBYID[rv.id].lefty)}
+  let h=0;for(const ch of String(p.id))h=(h*31+ch.charCodeAt(0))>>>0;return h%8===3}
 function oppFrom(p,round,line){const skill=Math.round(clamp(p.skill,1,10)*10)/10;
-  return{id:p.base,fid:p.rival!=null?null:p.id,name:p.name,skill,rival:p.rival!=null?p.rival:null,line:line||null,v:p.v||null,style:p.style,nat:p.nat,seed:null}}
+  return{id:p.base,fid:p.rival!=null?null:p.id,name:p.name,lefty:isLefty(p),skill,rival:p.rival!=null?p.rival:null,line:line||null,v:p.v||null,style:p.style,nat:p.nat,seed:null}}
 
 /* ---- the bracket screen ---- */
 let drawBack=null;
@@ -185,5 +188,5 @@ function simEvent(o){const ev=o.ev,f=fmt(save.stage,ev),field=fieldFor(save.stag
   const players={};for(const id of o.ids){const p=field.find(x=>x.id===id);if(p)players[id]=Object.assign({},p)}
   let ids=Object.keys(players).sort((a,b)=>(RK[a]||999)-(RK[b]||999));const size=1<<Math.ceil(Math.log2(Math.max(2,ids.length)));if(ids.length<size)return;
   const slots=new Array(size);seedOrder(size).forEach((k,pos)=>{slots[pos]=ids[k-1]});
-  const D={size,R:Math.log2(size),f:{bo:f.bo,g:f.g},players,slots,seeds:{},res:[],ev:ev.n};drawSimAll(D);awardDrawPoints(D,ev)}
+  const D={size,R:Math.log2(size),f:{bo:f.bo,g:f.g},players,slots,seeds:{},res:[],ev:ev.n};drawSimAll(D);awardDrawPoints(D,ev);newsFromDraw(D,ev,false)}
 function simOtherEvents(list){const t0=performance.now();for(const o of list||[])try{simEvent(o)}catch(e){console.error(e)}(window.__SIMT=window.__SIMT||[]).push(Math.round(performance.now()-t0))}

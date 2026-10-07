@@ -87,8 +87,8 @@ function openRecords(back,stage){REC.back=back||REC.back||(()=>renderHub());REC.
 function allPlayers(stage){const L=rankingList(stage),out=[];
   for(const e of L){let line,info;
     if(e.me){line=myTotal(stage);info={me:true}}
-    else if(e.rival!=null){const rv=save.rivals[e.rival];const p=rv.fid&&poolById(rv.fid,stage);line=p?(p.st||stLine()):(rv.st&&rv.st[stage])||stLine();info={rival:e.rival,skill:p?p.skill:null}}
-    else{const p=poolById(e.id,stage);line=(p&&p.st)||stLine();info={skill:p&&p.skill,base:p&&p.base}}
+    else if(e.rival!=null){const rv=save.rivals[e.rival];const p=rv.fid&&poolById(rv.fid,stage);line=p?(p.st||stLine()):(rv.st&&rv.st[stage])||stLine();info={rival:e.rival,skill:p?p.skill:null,lefty:isLefty({rival:e.rival})}}
+    else{const p=poolById(e.id,stage);line=(p&&p.st)||stLine();info={skill:p&&p.skill,base:p&&p.base,lefty:p?isLefty(p):false}}
     out.push(Object.assign({id:e.id,name:e.name,nat:e.nat,style:e.style,rank:e.rank,line},info))}
   return out}
 function myTotal(stage){const S=(save.my&&save.my[stage])||{},t=stLine();for(const k in S)stAdd(t,S[k]);return t}
@@ -98,7 +98,7 @@ function renderRecords(){const st=REC.stage,tabs=stagesPlayed(),LBL={junior:'Jun
   if(REC.player){renderPlayerCard(REC.player);return}
   const me=myTotal(st),S=(save.my&&save.my[st])||{},seasons=Object.keys(S).map(Number).sort((a,b)=>a-b);
   const evs=save.history.filter(h=>h.stage===st);
-  let h='<div class="card"><p class="eyebrow">You · '+LBL[st]+'</p><h3>'+esc(RBYID[save.char].name)+'</h3>'+(me.m?stGrid(me):'<p class="muted">No matches recorded here yet. Stats are kept from Build 30 on.</p>')+
+  let h='<div class="card"><p class="eyebrow">You · '+LBL[st]+'</p><h3>'+esc(myName())+'</h3>'+(me.m?stGrid(me):'<p class="muted">No matches recorded here yet. Stats are kept from Build 30 on.</p>')+
     (seasons.length?'<table class="ftab"><tr><th>Season</th><th>W–L</th><th>Titles</th><th>Aces</th><th>Win/UE</th></tr>'+seasons.map(k=>{const L=S[k];return'<tr><td>Season '+k+'</td><td class="num">'+L.w+'–'+L.l+'</td><td class="num">'+L.t+'</td><td class="num">'+L.ace+'</td><td class="num">'+L.wn+'/'+L.ue+'</td></tr>'}).join('')+'</table>':'')+
     (evs.length?'<p class="muted" style="font-size:13px">'+evs.length+' events, '+evs.filter(e=>e.champ).length+' titles in '+LBL[st].toLowerCase()+'.</p>':'')+
     '<button class="ghost" id="recLog">Match log</button></div>';
@@ -120,7 +120,7 @@ function renderPlayerCard(pid){const st=REC.stage;
   const h2=meet.reduce((a,x)=>(a[x.w?0:1]++,a),[0,0]);
   const LBL={junior:'Junior',college:'College',pro:'World'};
   $('recBody').innerHTML='<div class="card"><div class="row between"><p class="eyebrow">'+LBL[st]+' #'+P.rank+(P.rival!=null?' · Rival':'')+'</p><button class="ghost" id="recPBack">Back</button></div><h3 style="font-size:26px">'+esc(P.name)+' <small class="nat">'+(P.me?'You':P.nat||'')+'</small></h3>'+
-    (P.me?'':'<p class="muted" style="font-size:14px">'+(OSTYLE[P.style]?OSTYLE[P.style].name:'')+(P.skill!=null?' · Rating '+(+P.skill).toFixed(1):'')+'</p>')+
+    (P.me?'':'<p class="muted" style="font-size:14px">'+(OSTYLE[P.style]?OSTYLE[P.style].name:'')+(P.skill!=null?' · Rating '+(+P.skill).toFixed(1):'')+(P.lefty?' · Left-handed':'')+'</p>')+
     (P.line.m?stGrid(P.line):'<p class="muted">No recorded matches yet. Their stats build up as they play in your events.</p>')+
     (P.me?'':'<h3 style="margin-top:6px">Against you</h3><p class="num" style="font-size:20px">'+h2[0]+'–'+h2[1]+'</p>'+(meet.length?'<ol class="rk-list">'+meet.slice().reverse().map(x=>'<li class="rk"><b class="num" style="font-size:16px;color:'+(x.w?'var(--win)':'var(--loss)')+'">'+(x.w?'W':'L')+'</b><span>'+esc(x.e)+'<small class="muted" style="display:block">'+esc(x.r)+' · Season '+x.se+'</small></span><small class="num">'+esc(x.sc)+'</small></li>').join('')+'</ol>':'<p class="muted" style="font-size:14px">You haven’t played each other yet.</p>'))+'</div>';
   $('recPBack').onclick=()=>{REC.player=null;renderRecords()}}

@@ -91,6 +91,11 @@ select{background:var(--panel-2);border:1px solid var(--line);border-radius:10px
 .note{font-size:14px;color:var(--chalk);background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .opp{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
 .stgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;margin:4px 0}.stgrid div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding:4px 0;font-size:14px}.stgrid small{color:var(--muted)}.stgrid strong{font-size:15px}
+.cf{display:flex!important;flex-direction:row!important;align-items:center;justify-content:space-between;gap:10px;font-size:15px;text-align:left}.cf input,.cf select{flex:1;max-width:60%;font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--chalk)}
+.swatches{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.sw{width:30px;height:30px;border-radius:50%;padding:0;border:2px solid var(--line)}.sw[aria-pressed=true]{border-color:var(--ball);box-shadow:0 0 0 2px var(--ball)}
+.pc.hand{padding:8px 12px;font-weight:600;font-size:14px}
+.goals,.news{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}.goals li{display:flex;gap:10px;align-items:flex-start;font-size:15px}.goals li>span:first-child{font-weight:800;color:var(--muted);width:16px}.goals li.on>span:first-child{color:var(--win)}.goals li.on>span:last-child{color:var(--muted);text-decoration:line-through}
+.news li{font-size:14px;border-bottom:1px solid var(--line);padding-bottom:6px}.news li small{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
 .wkpick{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:6px}
 .wkpick .pc{padding:10px;gap:2px}.wkpick .pc strong{font-size:15px;line-height:1.2}.wkpick .pc small{font-size:12px}
 .ftab{width:100%;border-collapse:collapse;font-size:14px}.ftab th{text-align:left;font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:4px 2px;border-bottom:1px solid var(--line)}
@@ -200,6 +205,13 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 #statCard .eyebrow{text-align:center;margin-bottom:6px}#statCard small{display:block;text-align:center;color:var(--muted);margin-top:8px}
 .sc-head,.sc-row{display:grid;grid-template-columns:64px 1fr 64px;align-items:center;gap:6px}.sc-head{font-family:var(--display);font-weight:700;font-size:15px;border-bottom:1px solid var(--line);padding-bottom:6px}.sc-head span:last-child{text-align:right}
 .sc-row{padding:4px 0;border-bottom:1px solid rgba(38,64,90,.5);font-size:14px}.sc-row span{text-align:center;color:var(--muted)}.sc-row b:last-child{text-align:right}.sc-row b.up{color:var(--ball)}
+#chalBtn{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);transform:translateX(-50%);z-index:6;background:#F5D04A;color:#1b1b10;border:0;border-radius:14px;padding:12px 26px 14px;font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 6px 20px rgba(0,0,0,.45);overflow:hidden;pointer-events:auto}
+#chalBtn small{display:block;font-size:12px;letter-spacing:.08em;opacity:.75}#chalBtn i{position:absolute;left:0;bottom:0;height:4px;width:100%;background:#1b1b10;transform-origin:left}#chalBtn.go2 i{animation:chalT 2.8s linear forwards}
+@keyframes chalT{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+#hawk{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:min(92vw,360px);background:rgba(5,12,20,.94);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center;z-index:6;box-shadow:0 8px 30px rgba(0,0,0,.55)}
+#hkSvg svg{display:block;border-radius:8px}#hkVerdict{font-family:var(--display);font-size:44px;line-height:1;margin:8px 0 2px;min-height:44px}#hkVerdict.in{color:var(--win)}#hkVerdict.out{color:var(--loss)}#hkSub{font-size:14px;color:var(--muted)}
+.hk-t{opacity:0;animation:hkIn .25s ease-out forwards}.hk-mark{opacity:0;transform-box:fill-box;transform-origin:center;animation:hkMark .5s ease-out 1.0s forwards}
+@keyframes hkIn{to{opacity:1}}@keyframes hkMark{0%{opacity:0;transform:scale(.3)}70%{opacity:1;transform:scale(1.15)}100%{opacity:1;transform:scale(1)}}
 #replay{position:absolute;left:12px;top:calc(env(safe-area-inset-top,0px) + 96px);display:flex;align-items:center;gap:8px;background:rgba(5,12,20,.86);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:.12em;text-transform:uppercase;pointer-events:none}
 #replay i{width:10px;height:10px;border-radius:50%;background:#F28A78;animation:blink 1s steps(2) infinite}
 #replay small{font-family:var(--body);font-weight:500;font-size:12px;letter-spacing:0;text-transform:none;color:var(--muted)}
@@ -233,7 +245,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 43 · smoother, ready for recordings</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 44 · Hawk-Eye, lefties, goals</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -345,6 +357,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
 
 <section id="style" class="wrap" hidden>
   <div class="hero"><p class="eyebrow">New career</p><h2>Choose your play style</h2><p class="muted">Your style unlocks three perks as you win matches: one now, one at 15 career wins, one at 40.</p></div>
+  <div class="card" id="custom"></div>
   <div class="roster" id="styles"></div>
   <div class="sticky row"><button class="go" id="styleGo" style="flex:1">Pick a play style</button><button class="ghost" id="styleBack">Back</button></div>
 </section>
@@ -354,6 +367,8 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="stepper" id="stepper"></div>
   <div class="card" id="playerCard"></div>
   <div class="card" id="nextCard"></div>
+  <div class="card" id="goalCard"></div>
+  <div class="card" id="newsCard"></div>
   <div class="card" id="statsCard"></div>
   <div class="card cal" id="calCard"></div>
   <div class="card" id="trophyCard"></div>
@@ -384,6 +399,8 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div id="dDone" hidden><div class="card"><p class="banner w" id="dDoneT">Lesson complete</p><p id="dDoneP"></p><div class="row"><button class="go" id="dNext">Next lesson</button><button class="ghost" id="dMenu">All lessons</button></div></div></div>
   <div id="cer" hidden><p class="eyebrow">Champion</p><h2 id="cerTitle"></h2><p id="cerSub"></p><small>Tap to continue</small></div>
   <div id="statCard" hidden></div>
+  <button id="chalBtn" hidden>Challenge</button>
+  <div id="hawk" hidden><p class="eyebrow">Hawk-Eye</p><div id="hkSvg"></div><h2 id="hkVerdict"></h2><p id="hkSub"></p></div>
   <div id="replay" hidden><i></i>Replay<small>Tap to skip</small></div>
   <div class="hud bot">
     <div id="power" hidden><b></b><i></i></div>
@@ -560,6 +577,7 @@ const ROSTER=[
  ['ch39','Master Ko','Ninety years old, still wins tiebreaks',1,7,6,8,8,3,2],
  ['ch42','Danny','Summer job stringing rackets',8,3,8,5,3,6,6]
 ].map(([id,name,nick,pow,ctl,imp,sg,putt,spin,sta])=>({id,name,nick,st:{power:pow,control:ctl,speed:Math.round((imp+sg)/2),serve:Math.round((pow+spin)/2),stamina:sta}}));
+for(const id of ['ch24','ch42'])(ROSTER.find(r=>r.id===id)||{}).lefty=true;   // a couple of the roster play left-handed
 const RBYID=Object.fromEntries(ROSTER.map(r=>[r.id,r]));
 const STATS=[['power','Power','Pace on drives'],['control','Control','Tighter stray circle'],['speed','Speed','Reach sharp angles'],['serve','Serve','Aces and serve pace'],['stamina','Stamina','Stay fresh in long rallies and long matches']];
 
@@ -648,6 +666,7 @@ save=load();
 if(save&&save.stats&&save.stats.stamina==null){const c=RBYID[save.char];save.stats.stamina=Math.max(1,Math.round(((c&&c.st.stamina)||5)*0.45));store()}
 /* rolling year: last season's points fade out week by week as this season's come in, so there is no cliff at a new season */
 function fadeW(k){if(!save||k!==save.stage)return 0.5;const n=weeks().length;return clamp(1-save.week/n,0,1)}
+function myName(){return save&&save.name||(save?RBYID[save.char].name:'')}
 const roll=k=>Math.round(save.pts[k].cur+fadeW(k)*save.pts[k].prev);
 /* share of the winner's points for the round you go out in (0 = lost the final), the same in every draw size */
 const REACH=[0.6,0.36,0.18,0.09,0.045,0.02];function reachFrac(left){return REACH[clamp(left,0,5)]}
@@ -680,7 +699,7 @@ function trainCost(l){return l*15}
 function stageName(){return{junior:'Juniors',college:'College',pro:'Pro tour'}[save.stage]}
 function renderTitle(){
   const has=!!save;$('btnContinue').hidden=!has;$('btnNewConfirm').hidden=true;$('btnNew').hidden=false;
-  $('careerChip').textContent=has?(RBYID[save.char].name+' · '+stageName()+' season '+save.season):'No save yet';
+  $('careerChip').textContent=has?(myName()+' · '+stageName()+' season '+save.season):'No save yet';
   $('btnNew').className=has?'':'go';renderSaveCard();learnCardState();lockerCardState();liveCardState();show('title');
 }
 $('btnContinue').onclick=()=>renderHub();
@@ -709,7 +728,7 @@ $('btnRestoreGo').onclick=()=>{
   if(!obj&&!(prof&&prof.v)){$('saveMsg').textContent='That code doesn’t look right. Copy the whole code, starting with TG.';return}
   const b=$('btnRestoreGo');if(save&&b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Tap again to replace your current career';return}
   if(obj){save=obj;store()}if(prof&&prof.v){PROF=Object.assign(PROF_NEW(),prof);storeProf()}if(learn&&learn.done){LEARN=learn;storeLearn()}
-  renderTitle();$('saveMsg').textContent='Restored'+(obj?': '+RBYID[save.char].name+', '+stageName()+' season '+save.season:'')+(prof&&prof.v?' · Level '+LV():'')+'.'};
+  renderTitle();$('saveMsg').textContent='Restored'+(obj?': '+myName()+', '+stageName()+' season '+save.season:'')+(prof&&prof.v?' · Level '+LV():'')+'.'};
 $('btnNew').onclick=()=>{if(save){$('btnNew').hidden=true;$('btnNewConfirm').hidden=false}else openSelect('career')};
 $('btnNewConfirm').onclick=()=>openSelect('career');
 $('btnQuick').onclick=()=>openSelect('quick');
@@ -739,10 +758,23 @@ $('selGo').onclick=()=>{
   const lvl=+$('qmLevel').value,me=RBYID[selId],stats={};for(const [k] of STATS)stats[k]=clamp(me.st[k],1,10);
   const o=pick(ROSTER.filter(r=>r.id!==selId));
   const vq=$('qmVenue').value,nq=(vq==='tour'||vq==='masters'||vq.startsWith('major:'))&&Math.random()<0.3;
-  startMatch({surf:$('qmSurf').value,bo:1,g:6,stats,meId:selId,me:me.name,opp:{id:o.id,name:o.name,skill:lvl},label:'Quick match',style:null,perks:0,venue:vq,night:nq,weather:weatherFor({venue:vq},nq),mode:'quick',
+  startMatch({surf:$('qmSurf').value,bo:1,g:6,stats,meId:selId,me:me.name,meLefty:!!me.lefty,opp:{id:o.id,name:o.name,skill:lvl,lefty:!!o.lefty},label:'Quick match',style:null,perks:0,venue:vq,night:nq,weather:weatherFor({venue:vq},nq),mode:'quick',
     onEnd:quickEnd});
 };
+/* your own player: name, country, outfit colours and handedness (the body comes from the character you picked) */
+const OUTFITS=[['Original',null,'#9aa6b2'],['Navy',{h:210,t:220,a:0.5,l:0.85},'#2b4a8b'],['Crimson',{h:330,t:0,a:0.55,l:0.95},'#b5333d'],['Forest',{h:120,t:130,a:0.5,l:0.9},'#2f7a46'],
+  ['Sunset',{h:30,t:30,a:0.55,l:1.05},'#e08a2e'],['Violet',{h:270,t:280,a:0.5,l:0.95},'#7a4bc2'],['Teal',{h:170,t:180,a:0.5,l:0.95},'#1f9a9a'],['Charcoal',{h:0,t:200,a:0.15,l:0.75},'#3a3f47']];
+let CUST={name:'',nat:'USA',outfit:0,lefty:false};
+function renderCustom(){const c=RBYID[selId];if(!CUST.name)CUST.name=c?c.name:'';
+  $('custom').innerHTML='<p class="eyebrow">Your player</p><label class="cf">Name<input id="cuName" maxlength="18" value="'+esc(CUST.name)+'"></label>'+
+    '<label class="cf">Country<select id="cuNat">'+NATS.slice().sort().map(n=>'<option'+(n===CUST.nat?' selected':'')+'>'+n+'</option>').join('')+'</select></label>'+
+    '<div class="cf"><span>Outfit</span><div class="swatches">'+OUTFITS.map((o,i)=>'<button class="sw" data-o="'+i+'" aria-pressed="'+(i===CUST.outfit)+'" title="'+o[0]+'" style="background:'+o[2]+'"></button>').join('')+'</div></div>'+
+    '<div class="cf"><span>Plays</span><div class="row" style="gap:6px"><button class="pc hand" data-h="0" aria-pressed="'+!CUST.lefty+'">Right-handed</button><button class="pc hand" data-h="1" aria-pressed="'+CUST.lefty+'">Left-handed</button></div></div>';
+  $('cuName').oninput=e=>{CUST.name=e.target.value};$('cuNat').onchange=e=>{CUST.nat=e.target.value};
+  $('custom').querySelectorAll('.sw').forEach(b=>b.onclick=()=>{CUST.outfit=+b.dataset.o;renderCustom()});
+  $('custom').querySelectorAll('.hand').forEach(b=>b.onclick=()=>{CUST.lefty=b.dataset.h==='1';renderCustom()})}
 function openStyle(){
+  CUST={name:RBYID[selId]?RBYID[selId].name:'',nat:'USA',outfit:0,lefty:!!(RBYID[selId]&&RBYID[selId].lefty)};renderCustom();
   styleId=null;
   $('styles').innerHTML=STYLES.map(s=>'<button class="pc" data-id="'+s.id+'" aria-pressed="false"><strong>'+s.name+'</strong><small>'+s.d+'</small><ol class="perks">'+s.perks.map((p,i)=>'<li><span class="muted">'+(i===0?'Start':PERK_AT[i]+' wins')+'</span> '+p+'</li>').join('')+'</ol></button>').join('');
   $('styles').querySelectorAll('.pc').forEach(b=>b.onclick=()=>{styleId=b.dataset.id;$('styles').querySelectorAll('.pc').forEach(x=>x.setAttribute('aria-pressed',x===b));$('styleGo').disabled=false;$('styleGo').textContent='Start career as a '+STYLES.find(s=>s.id===styleId).name});
@@ -753,7 +785,8 @@ $('styleGo').onclick=()=>{
   if(!styleId)return;
   const c=RBYID[selId],st=careerStart(c);
   const pool=ROSTER.filter(r=>r.id!==selId).sort(()=>Math.random()-0.5).slice(0,3);
-  save={char:selId,style:styleId,stats:st,xp:0,stage:'junior',season:1,week:0,age:16,
+  const nm=(CUST.name||'').trim().slice(0,18)||c.name;
+  save={char:selId,name:nm,nat:CUST.nat,v:OUTFITS[CUST.outfit][1],lefty:CUST.lefty,style:styleId,stats:st,xp:0,stage:'junior',season:1,week:0,age:16,
     pts:{junior:{cur:0,prev:0},college:{cur:0,prev:0},pro:{cur:0,prev:0}},juniorTotal:0,
     history:[],titles:[],majors:{},money:0,earnings:0,sponsors:[],
     rec:{titles:0,majors:0,masters:0,weeks1:0,best:9999},
@@ -776,7 +809,7 @@ function renderHub(){
   const stages=[['junior','Juniors'],['college','College'],['pro','Pro tour']],si=stages.findIndex(s=>s[0]===save.stage);
   $('stepper').innerHTML=stages.map((s,i)=>'<div class="step '+(i<si?'done':i===si?'now':'')+'">'+s[1]+'</div>').join('');
   const [sl,sv]=standing();
-  $('playerCard').innerHTML='<div style="min-width:0"><h2 style="font-size:32px">'+esc(C.name)+'</h2><p class="muted">'+S.name+' · Age '+save.age+' · '+stageName()+' season '+save.season+(save.stage==='college'?' · '+esc(program().name):'')+'</p></div>'+
+  $('playerCard').innerHTML='<div style="min-width:0"><h2 style="font-size:32px">'+esc(myName())+'</h2><p class="muted">'+(save.nat?save.nat+' · ':'')+(save.lefty?'Left-handed · ':'')+S.name+' · Age '+save.age+' · '+stageName()+' season '+save.season+(save.stage==='college'?' · '+esc(program().name):'')+'</p></div>'+
     '<div class="kv"><div><small>'+sl+'</small><strong class="num">'+sv+'</strong></div><div><small>Record</small><strong class="num">'+save.careerW+'–'+save.careerL+'</strong></div><div><small>'+(save.stage==='pro'?'Bank':'Titles')+'</small><strong class="num">'+(save.stage==='pro'?money(save.money):save.titles.length)+'</strong></div></div>';
   const W=weeks(),wk=save.week;let ev=null;
   if(FM){$('nextCard').innerHTML=finalsCard();$('btnPlay').onclick=playFinals;$('btnSim').onclick=simNow;{const L=liveFor('career');if(L)$('btnPlay').textContent='Resume match · '+liveScore(L)}}
@@ -817,6 +850,7 @@ function renderHub(){
       CAMPS.map((c,i)=>'<div class="row between"><span>'+c.n+' <span class="muted">+'+c.xp+' pts</span></span><button data-camp="'+i+'" '+(save.money<c.cost?'disabled':'')+'>'+money(c.cost)+'</button></div>').join(''):'');
   $('statsCard').querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k,c=trainCost(save.stats[k]);if(save.xp>=c&&save.stats[k]<10){save.xp-=c;save.stats[k]++;store();renderHub()}});
   $('statsCard').querySelectorAll('button[data-camp]').forEach(b=>b.onclick=()=>{const c=CAMPS[+b.dataset.camp];if(save.money>=c.cost){save.money-=c.cost;save.xp+=c.xp;store();renderHub()}});
+  $('goalCard').innerHTML=goalsCard();$('newsCard').innerHTML=newsCard();
   $('calCard').innerHTML='<h3>'+stageName()+' season '+save.season+'</h3><ul>'+W.map((w,i)=>{
     const h=save.history.find(x=>x.stage===save.stage&&x.season===save.season&&x.wk===i);
     const nm=h?h.name:(i===wk&&ev?ev.n:w.main.n);
@@ -856,7 +890,7 @@ function playNext(){
   if(!save.cur.opp)makeOpp();store();
   const c=save.cur,f=fmt(save.stage,c.ev);
   const mr=c.round-c.qual,night=nightFor(c.ev,c.total-c.round),weather=weatherFor({ev:c.ev},night);
-  startMatch({mode:'career',night,weather,final:c.round===c.total,ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:careerStats(),fat:save.fat||0,ofat:mr>1?clamp(rnd(0.02,0.06)*(mr-1),0,0.22):0,meId:save.char,me:RBYID[save.char].name,opp:c.opp,style:save.style,perks:perkLevel(),
+  startMatch({mode:'career',meV:save.v||null,meLefty:!!save.lefty,night,weather,final:c.round===c.total,ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:careerStats(),fat:save.fat||0,ofat:mr>1?clamp(rnd(0.02,0.06)*(mr-1),0,0.22):0,meId:save.char,me:myName(),opp:c.opp,style:save.style,perks:perkLevel(),
     label:c.ev.n+' · '+roundName(c.round,c.total,c.qual),intro:c.opp.line?c.opp.name+': “'+c.opp.line+'”':null,onEnd:careerResult});
 }
 const SHORT={Semifinal:'SF',Quarterfinal:'QF','Round of 16':'R16','Round of 32':'R32','Round of 64':'R64'};
@@ -902,7 +936,7 @@ function careerResult(won,score,st){
   save.xp+=xp;lines.unshift(['Training pts','+'+xp]);
   if(done){
     if(save.stage==='pro'){const r=proRank();save.rec.best=Math.min(save.rec.best,r);if(r===1)save.rec.weeks1++}
-    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,res:resLabel,champ});if(c.draw){if(!c.draw.res||c.draw.res.length<c.draw.R)drawSimAll(c.draw);awardDrawPoints(c.draw,ev)}if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};simOtherEvents(c.others);save.week++;save.cur=null;save.pick=null;weekOff();
+    save.history.push({stage:stageKey,season:save.season,wk:save.week,name:ev.n,tier:ev.tier,res:resLabel,champ});if(c.draw){if(!c.draw.res||c.draw.res.length<c.draw.R)drawSimAll(c.draw);awardDrawPoints(c.draw,ev)}if(c.draw)save.lastDraw={D:c.draw,t:ev.n+' · Season '+save.season};newsFromDraw(c.draw,ev,true);simOtherEvents(c.others);weekNews();checkGoals(lines);save.week++;save.cur=null;save.pick=null;weekOff();
     const before=perkLevel();checkSponsors(lines);
     if(c.rk0){const r1=myRankIn(stageKey);lines.push(['Ranking','#'+c.rk0+' → #'+r1+(r1<c.rk0?' ▲':r1>c.rk0?' ▼':'')])}
   }
@@ -919,7 +953,8 @@ function seasonScreen(eyebrow,title,text,buttons){
   $('seBtns').innerHTML='';buttons.forEach(([label,cls,fn])=>{const b=document.createElement('button');b.textContent=label;if(cls)b.className=cls;b.onclick=fn;$('seBtns').appendChild(b)});
   show('season');
 }
-function seasonSummary(){const hs=save.history.filter(h=>h.stage===save.stage&&h.season===save.season);const w=hs.filter(h=>h.champ).length;return hs.length+' events, '+w+(w===1?' title':' titles')}
+function seasonSummary(){const hs=save.history.filter(h=>h.stage===save.stage&&h.season===save.season);const w=hs.filter(h=>h.champ).length;checkGoals(null,true);const G=ensureGoals(),gd=G.list.filter(g=>g.done).length;store();
+  return hs.filter(h=>h.res!=='Rest').length+' events, '+w+(w===1?' title':' titles')+', '+gd+' of '+G.list.length+' season goals reached'}
 function seasonEnd(){
   const st=save.stage;
   if(st==='junior'){
@@ -947,7 +982,7 @@ function seasonEnd(){
 }
 function legacyText(){const R=save.rec,slam=MAJORS.every(m=>save.majors[m]);
   return R.titles+' titles, '+R.majors+' majors'+(R.finals?', '+R.finals+' Tour Finals':'')+(slam?' (a Career Slam)':'')+', best ranking #'+(R.best<9999?R.best:'–')+', '+R.weeks1+' weeks at No. 1, '+money(save.earnings)+' in earnings. Hall of Fame score '+hof()+(hof()>=600?': a first-ballot Hall of Famer.':hof()>=250?': Hall of Fame worthy.':'.')}
-function retire(){save.retired=true;store();seasonScreen('Career over','Thanks for the memories',RBYID[save.char].name+' retires at '+(save.age+1)+'. '+legacyText(),[['Back to menu','go',()=>renderTitle()],['Keep playing anyway','',()=>{save.retired=false;save.season++;save.week=0;save.age++;newSeasonPts('pro');store();renderHub()}]])}
+function retire(){save.retired=true;store();seasonScreen('Career over','Thanks for the memories',myName()+' retires at '+(save.age+1)+'. '+legacyText(),[['Back to menu','go',()=>renderTitle()],['Keep playing anyway','',()=>{save.retired=false;save.season++;save.week=0;save.age++;newSeasonPts('pro');store();renderHub()}]])}
 function turnPro(){save.stage='pro';save.season=1;save.week=0;save.age++;save.pts.pro={cur:Math.round(roll('college')*0.6),prev:0};store();
   seasonScreen('Welcome to the tour','Pro season 1','You start ranked #'+proRank()+'. Majors need a top-100 ranking for direct entry and top-200 for qualifying. Below that you play Challengers or Futures to climb.',[['Start pro season 1','go',()=>renderHub()]])}
 function renderRecruit(){
@@ -1224,7 +1259,7 @@ class Player{
   /* serve toss: in the tossing hand until release, then a parabola that peaks above and drops into the contact point */
   contactWorld(){const S=SWINGS.sv,k=S.keys.find(k=>Math.abs(k.t-S.cf)<1e-6),s=this.sz,r=V(...k.rd),hb=this.bones[0].position.y*0.985;
     const v=new T.Vector3(k.hand[0]*s+r.x*44*s,hb+(k.hand[1]-96)*s+r.y*44*s,k.hand[2]*s+r.z*44*s);
-    const m=new T.Matrix4().makeRotationY(this.yaw+(k.body||0)*Math.PI/180).scale(new T.Vector3(.01*PSCALE,.01*PSCALE,.01*PSCALE)).setPosition(this.pos.x,this.pos.y,this.pos.z);return v.applyMatrix4(m)}
+    const m=new T.Matrix4().makeRotationY(this.yaw+(this.lefty?-1:1)*(k.body||0)*Math.PI/180).scale(new T.Vector3((this.lefty?-1:1)*.01*PSCALE,.01*PSCALE,.01*PSCALE)).setPosition(this.pos.x,this.pos.y,this.pos.z);return v.applyMatrix4(m)}
   tossPos(u){const rel=0.38,cf=SWINGS.sv.cf;this.root.updateMatrixWorld(true);
     if(u<rel||!this.tossR){const hb=this.bones[this.idx.LeftHand];const p=hb?hb.getWorldPosition(new T.Vector3()):this.pos.clone().setY(1);if(u>=rel){this.tossR=p.clone();this.tossC=this.contactWorld()}return p}
     const R=this.tossR,C=this.tossC,s=clamp((u-rel)/(cf-rel),0,1.3),peak=C.y+0.45,hA=peak-(R.y+C.y)/2;
@@ -1280,7 +1315,7 @@ class Player{
     this.arms(q,h,P,wA);
     let hopY=0;if(this.hop>0){this.hop-=dt;hopY=Math.sin(Math.PI*clamp(1-this.hop/0.15,0,1))*0.05;if(this.hop<=0)this.land=0.25}
     const B=this.bones;for(let k=0;k<this.nb;k++)B[k].quaternion.set(q[k*4],q[k*4+1],q[k*4+2],q[k*4+3]);B[0].position.set(0,h[1],0);
-    const m=this.root.matrix;m.makeRotationY(this.yaw+this.yawOff+this.bodyYaw);m.scale(new T.Vector3(.01*PSCALE,.01*PSCALE,.01*PSCALE));m.setPosition(this.pos.x,this.pos.y+hopY,this.pos.z);this.root.matrixWorldNeedsUpdate=true;
+    const m=this.root.matrix;m.makeRotationY(this.yaw+this.yawOff+(this.lefty?-1:1)*this.bodyYaw);m.scale(new T.Vector3((this.lefty?-1:1)*.01*PSCALE,.01*PSCALE,.01*PSCALE));m.setPosition(this.pos.x,this.pos.y+hopY,this.pos.z);this.root.matrixWorldNeedsUpdate=true;
   }
 }
 
@@ -1752,11 +1787,13 @@ function mkRoomTone(z,room,outdoor){const sr=SR(),len=6,n=Math.floor(sr*len),L=n
 function genBank(){const B={};B.hit={};for(const k of ['top','slice','volley','smash','serve','drop'])B.hit[k]=[0,1,2,3].map(()=>mkHit(k));
   B.ping=[0,1,2].map(mkPing);B.frame=[0,1,2].map(mkFrame);B.net=[0,1].map(mkNet);B.bounce={};for(const s of ['hard','clay','grass'])B.bounce[s]=[0,1,2,3].map(()=>mkBounce(s));
   B.whoosh=[0,1,2].map(mkWhoosh);B.squeak=[0,1,2,3].map(mkSqueak);B.slide=[0,1].map(mkSlide);B.scuff=[0,1].map(mkScuff);
-  B.step={};for(const s of ['hard','clay','grass'])B.step[s]=[0,1,2].map(()=>mkStep(s));B.grunt={m:[0,1,2].map(()=>mkGrunt(rng(105,140))),f:[0,1,2].map(()=>mkGrunt(rng(200,240)))};return B}
+  B.step={};for(const s of ['hard','clay','grass'])B.step[s]=[0,1,2].map(()=>mkStep(s));B.grunt={m:[0,1,2].map(()=>mkGrunt(rng(105,140))),f:[0,1,2].map(()=>mkGrunt(rng(200,240)))};B.clap1=[0,1,2].map(mkGroupClap);return B}
+/* a dozen people clapping together, for the Hawk-Eye slow clap */
+function mkGroupClap(){const L=arr(0.12);for(let k=0;k<12;k++){const ke=clapKernel(k%2===0,k<3?6000:3500),s0=Math.floor(rng(0,0.025)*SR()),g=rng(0.4,1);for(let i=0;i<ke.length&&s0+i<L.length;i++)L[s0+i]+=ke[i]*g}return mkBuf(norm(L,0.8))}
 function genVenue(C){if(!SND.bank.kern)SND.bank.kern=mkClapKernelsLR();const V={clap:mkApplauseLR(C.claps,C.clapLen,C.room[0],C.room[1],C.room[2])};
   if(C.voices){V.ooh=mkCrowdVoiceLR('ooh',C.voices,C.room);V.cheer=mkCrowdVoiceLR('cheer',C.voices,C.room)}V.babble=mkRoomToneLR(C.z,C.room,C.outdoor);return V}
 /*}DSP*/
-const DSP_SRC="/*DSP{*/\nconst SR=()=>SND.srO||SND.ctx.sampleRate,rng=(a,b)=>a+Math.random()*(b-a),pickA=a=>a[Math.floor(Math.random()*a.length)];\n\n/* ---- offline DSP helpers ---- */\nfunction biq(type,f,Q,sr){const w=2*Math.PI*Math.min(f,sr*0.45)/sr,cs=Math.cos(w),sn=Math.sin(w),al=sn/(2*Q);let b0,b1,b2;\n  if(type==='lp'){b0=(1-cs)/2;b1=1-cs;b2=(1-cs)/2}else if(type==='hp'){b0=(1+cs)/2;b1=-(1+cs);b2=(1+cs)/2}else{b0=al;b1=0;b2=-al}\n  const a0=1+al;return{b0:b0/a0,b1:b1/a0,b2:b2/a0,a1:-2*cs/a0,a2:(1-al)/a0}}\nfunction filt(x,type,f,Q){const c=biq(type,f,Q||0.707,SR());let x1=0,x2=0,y1=0,y2=0;const y=new Float32Array(x.length);\n  for(let i=0;i<x.length;i++){const v=c.b0*x[i]+c.b1*x1+c.b2*x2-c.a1*y1-c.a2*y2;x2=x1;x1=x[i];y2=y1;y1=v;y[i]=v}return y}\nfunction noiseArr(n){const a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=Math.random()*2-1;return a}\nfunction arr(sec){return new Float32Array(Math.max(1,Math.floor(SR()*sec)))}\n/* damped sinusoid (a string, the ball, the frame) added at t0; glide = pitch drop at the start */\nfunction mode(out,f,tau,amp,t0,glide){const sr=SR(),s0=Math.floor((t0||0)*sr),n=Math.min(out.length-s0,Math.floor(tau*sr*7));let ph=Math.random()*6.283;\n  for(let i=0;i<n;i++){const t=i/sr;ph+=2*Math.PI*f*(1+(glide||0)*Math.exp(-t/0.008))/sr;out[s0+i]+=amp*Math.exp(-t/tau)*Math.sin(ph)}}\n/* filtered noise with an attack and an exponential tail; mod(t) can shape it further */\nfunction nz(out,type,f,Q,tau,amp,t0,attack,mod){const sr=SR(),s0=Math.floor((t0||0)*sr),n=Math.min(out.length-s0,Math.floor((tau*7+(attack||0))*sr));if(n<=0)return;\n  let x=noiseArr(n);if(type)x=filt(x,type,f,Q);const a=(attack||0)*sr;\n  for(let i=0;i<n;i++){const e=i<a?i/a:Math.exp(-(i-a)/(tau*sr));out[s0+i]+=amp*e*x[i]*(mod?mod(i/sr):1)}}\nfunction crackle(p){return()=>Math.random()<p?1:0.12}\nfunction norm(o,peak){let m=0;for(let i=0;i<o.length;i++)m=Math.max(m,Math.abs(o[i]));const k=(peak||0.9)/(m||1);for(let i=0;i<o.length;i++)o[i]*=k;return o}\n\n/* ---- the sound bank ---- */\nfunction mkHit(kind){const o=arr(0.25),soft=kind==='slice'||kind==='drop',vol=kind==='volley',f0=rng(470,600);\n  nz(o,'bp',rng(2500,3500),0.7,0.0011,soft?0.3:0.85);                         // the contact click\n  nz(o,'bp',rng(950,1250),3,0.0035,soft?0.35:0.9,0,0.0003);                   // the ball's hollow pock: resonant noise, not a tone\n  nz(o,'bp',rng(380,520),1.8,0.006*(vol?1.3:1),soft?0.45:0.8,0,0.0005);       // the string bed's thock\n  mode(o,f0,0.004,soft?0.08:0.12,0.0005,0.05);mode(o,f0*1.07,0.0035,0.07,0.0005);   // only a trace of string ring, detuned so it doesn't sing\n  nz(o,'lp',320,0.8,0.012*(vol?1.5:1),vol?0.9:0.6,0,0.001);                   // racket and arm\n  if(kind==='top')nz(o,'hp',3000,0.7,0.008,0.22,0.001,0.006);                 // strings brushing up the back of the ball\n  if(kind==='slice')nz(o,'bp',1600,0.9,0.018,0.45,0,0.012);                   // the chop under it\n  if(kind==='smash'||kind==='serve'){nz(o,'lp',5500,0.7,0.003,0.9,0);nz(o,'lp',200,0.8,0.02,0.7,0,0.001)}   // the crack and the weight behind it\n  return mkBuf(norm(o))}\n/* a perfect hit: a cleaner click and a deeper thump (not a ring) */\nfunction mkPing(){const o=arr(0.15);nz(o,'bp',3000,0.8,0.0008,0.6,0);nz(o,'lp',230,0.8,0.02,1,0,0.001);nz(o,'bp',600,1.5,0.006,0.4,0);return mkBuf(norm(o,0.8))}\nfunction mkFrame(){const o=arr(0.35);[[310,0.03,0.8],[820,0.02,0.5],[1490,0.014,0.3],[2640,0.01,0.15]].forEach(([f,t,a])=>mode(o,f*rng(0.95,1.05),t,a,0));\n  nz(o,'bp',900,2,0.04,0.35,0.002,0,t=>0.5+0.5*Math.sign(Math.sin(2*Math.PI*70*t)));nz(o,'bp',2500,0.8,0.0015,0.4,0);return mkBuf(norm(o))}\nfunction mkBounce(s){const o=arr(0.2);\n  if(s==='hard'){nz(o,'bp',3000,0.8,0.0009,0.8);nz(o,'bp',rng(1000,1250),3,0.0035,0.9,0,0.0003);nz(o,'lp',220,0.8,0.01,0.7,0,0.0008)}\n  else if(s==='clay'){nz(o,'bp',rng(800,950),2,0.003,0.45,0,0.0003);mode(o,rng(150,170),0.016,0.75,0);nz(o,'bp',2500,1,0.025,0.4,0.001,0.003,crackle(0.08))}\n  else{nz(o,'lp',200,0.8,0.016,0.9,0,0.001);nz(o,'lp',700,0.7,0.012,0.6,0)}\n  return mkBuf(norm(o))}\nfunction mkNet(){const o=arr(0.45);nz(o,'bp',1400,1.2,0.07,0.6,0,0.004,t=>0.6+0.4*Math.sin(2*Math.PI*35*t));mode(o,85,0.05,0.7,0);nz(o,'hp',4000,0.7,0.03,0.2,0.005);return mkBuf(norm(o))}\n/* a shoe squeak: rubber sticking and slipping on the court, a rough buzz (not a clean tone) through a shoe-sized resonance */\nfunction mkSqueak(){const sr=SR(),dur=rng(0.06,0.12),o=arr(dur+0.04),f0=rng(650,1050);let ph=0,j=0;\n  for(let i=0;i<o.length;i++){const t=i/sr,u=t/dur;if(i%Math.floor(sr/400)===0)j=(Math.random()-0.5)*0.16;const f=f0*(1+0.12*u+j);ph+=f/sr;if(ph>=1)ph-=1;\n    const e=Math.min(1,t/0.006)*(u<1?1:Math.exp(-(t-dur)/0.008));o[i]=e*((ph*2-1)*0.7+(Math.random()*2-1)*0.3)}\n  const a=filt(o,'bp',rng(1300,1800),2),b=filt(o,'bp',rng(2600,3200),3);for(let i=0;i<o.length;i++)o[i]=a[i]+0.4*b[i];\n  return mkBuf(norm(o,0.6))}\nfunction mkSlide(){const o=arr(0.5);nz(o,'bp',1300,0.8,0.12,0.7,0,0.03,crackle(0.15));nz(o,'lp',300,0.7,0.12,0.35,0,0.03);return mkBuf(norm(o,0.7))}\nfunction mkScuff(){const o=arr(0.18);nz(o,'lp',900,0.7,0.04,0.7,0,0.01);return mkBuf(norm(o,0.6))}\nfunction mkStep(s){const o=arr(0.08);\n  if(s==='hard'){mode(o,rng(200,240),0.008,0.6,0);nz(o,'bp',1800,1,0.002,0.4,0)}\n  else if(s==='clay'){nz(o,'bp',1500,0.7,0.012,0.5,0,0.002,crackle(0.2));mode(o,120,0.01,0.4,0)}\n  else{mode(o,110,0.012,0.5,0);nz(o,'lp',500,0.7,0.01,0.3,0)}\n  return mkBuf(norm(o,0.6))}\nfunction mkWhoosh(){const sr=SR(),len=0.22,o=arr(len),x=noiseArr(o.length);let x1=0,x2=0,y1=0,y2=0,c=null;\n  for(let i=0;i<o.length;i++){const u=i/o.length;if(i%32===0)c=biq('bp',350+1500*u*u,1.2,sr);const v=c.b0*x[i]+c.b1*x1+c.b2*x2-c.a1*y1-c.a2*y2;x2=x1;x1=x[i];y2=y1;y1=v;o[i]=v*Math.pow(Math.sin(Math.PI*u),2)}\n  return mkBuf(norm(o,0.7))}\n/* a voice: glottal pulses through vowel formants, with breath */\nfunction voiceSrc(n,f0a,f0b,t0,dur,amp,out){const sr=SR(),s0=Math.floor(t0*sr),m=Math.min(out.length-s0,Math.floor(dur*sr));let ph=0;const vib=rng(4,6),jit=rng(0.003,0.01);\n  for(let i=0;i<m;i++){const u=i/m,f=(f0a+(f0b-f0a)*u)*(1+jit*Math.sin(2*Math.PI*vib*i/sr));ph+=f/sr;if(ph>=1)ph-=1;\n    const p=ph<0.4?Math.sin(Math.PI*ph/0.4):0,e=Math.min(1,u/0.06)*Math.min(1,(1-u)/0.35);out[s0+i]+=amp*e*(p-0.25)}}\nfunction formants(src,F,breath){let o=new Float32Array(src.length);const parts=[[F[0],5,1],[F[1],6,0.55],[F[2],8,0.28]];\n  for(const [f,q,g] of parts){const y=filt(src,'bp',f,q);for(let i=0;i<o.length;i++)o[i]+=g*y[i]}\n  if(breath){const b=filt(noiseArr(src.length),'bp',1500,0.7);let env=0;for(let i=0;i<o.length;i++){env+=(Math.abs(src[i])-env)*0.002;o[i]+=breath*b[i]*Math.min(1,env*6)}}\n  return o}\nfunction mkGrunt(f0){const s=arr(0.36),dur=rng(0.18,0.28);voiceSrc(s,f0*1.12,f0*0.86,0.005,dur,1,s);return mkBuf(norm(formants(s,[rng(650,780),rng(1080,1250),rng(2400,2700)],0.45),0.8))}\n/* ---- the crowd ----\n   Real crowds sound the way they do because most of the people are far away (duller and quieter), every clap and\n   voice is a little different, and the whole lot is smeared by the stadium. So: near / middle / far clappers with\n   cupped and flat hands, voices with a soft breathy tone and their own \"yeah\" / \"woo\" / \"ooh\" shapes, and a reverb\n   rendered into each sound. */\n/* a small Freeverb (eight combs, four allpasses) run offline on a stereo pair */\nfunction verbOff(L,R,size,wet,tail){const sr=SR(),k=sr/44100,n=L.length+Math.floor(sr*(tail||0.8)),oL=new Float32Array(n),oR=new Float32Array(n);\n  const CB=[1116,1188,1277,1356,1422,1491,1557,1617],AP=[556,441,341,225],fb=0.7+0.28*size,damp=0.25;\n  for(const [src,out,spread] of [[L,oL,0],[R,oR,23]]){const wetBuf=new Float32Array(n);\n    for(const d0 of CB){const d=Math.floor((d0+spread)*k),buf=new Float32Array(d);let idx=0,f=0;\n      for(let i=0;i<n;i++){const x=i<src.length?src[i]:0,y=buf[idx];f=y*(1-damp)+f*damp;buf[idx]=x*0.015+f*fb;idx=(idx+1)%d;wetBuf[i]+=y}}\n    for(const a0 of AP){const d=Math.floor((a0+spread)*k),buf=new Float32Array(d);let idx=0;\n      for(let i=0;i<n;i++){const b=buf[idx],x=wetBuf[i];buf[idx]=x+b*0.5;wetBuf[i]=b-x;idx=(idx+1)%d}}\n    for(let i=0;i<n;i++)out[i]=(i<src.length?src[i]*(1-wet*0.5):0)+wetBuf[i]*wet}\n  return[oL,oR]}\nfunction lp1(x,fc){const a=1-Math.exp(-2*Math.PI*fc/SR());let y=0;for(let i=0;i<x.length;i++){y+=a*(x[i]-y);x[i]=y}return x}\nfunction scale2(l,r,peak){let m=0;for(let i=0;i<l.length;i++)m=Math.max(m,Math.abs(l[i]),Math.abs(r[i]));const k=(peak||0.85)/(m||1);for(let i=0;i<l.length;i++){l[i]*=k;r[i]*=k}}\n/* band-pass whose centre moves over time (a vowel changing shape) */\nfunction fvar(x,fFn,Q){const sr=SR(),y=new Float32Array(x.length);let x1=0,x2=0,y1=0,y2=0,c=null;\n  for(let i=0;i<x.length;i++){if(i%64===0)c=biq('bp',fFn(i/x.length),Q,sr);const v=c.b0*x[i]+c.b1*x1+c.b2*x2-c.a1*y1-c.a2*y2;x2=x1;x1=x[i];y2=y1;y1=v;y[i]=v}return y}\n/* one person: a soft (not buzzy) voice source with breath, shaped by a pitch contour and a vowel path */\nfunction person(dur,f0,pitch,F1,F2,breath){const sr=SR(),src=arr(dur+0.04),s0=0,m=Math.floor(dur*sr);let ph=0;const vib=rng(4.5,6.5),vd=rng(0.006,0.018);\n  for(let i=0;i<m;i++){const u=i/m,f=f0*pitch(u)*(1+vd*Math.sin(2*Math.PI*vib*i/sr));ph+=f/sr;if(ph>=1)ph-=1;\n    const g=ph<0.6?0.5-0.5*Math.cos(2*Math.PI*ph/0.6):0,e=Math.min(1,u/0.08)*Math.min(1,(1-u)/0.3);src[s0+i]=e*(g-0.3+breath*(Math.random()*2-1)*(0.3+g))}\n  lp1(src,f0*7);const a=fvar(src,u=>F1(Math.min(1,u*(dur+0.04)/dur)),4),b=fvar(src,u=>F2(Math.min(1,u*(dur+0.04)/dur)),5),c=filt(src,'bp',2600,6);\n  for(let i=0;i<src.length;i++)src[i]=a[i]+0.5*b[i]+0.15*c[i];return src}\nconst lerp=(a,b)=>u=>a+(b-a)*u;\nfunction addAt(L,R,v,t,g,pan){const s0=Math.floor(t*SR());for(let i=0;i<v.length&&s0+i<L.length;i++){const x=v[i]*g;L[s0+i]+=x*(1-pan*0.6);R[s0+i]+=x*(0.4+pan*0.6)}}\nconst SHOUT={\n  yeah:()=>({d:rng(0.35,0.8),p:u=>1+0.28*Math.sin(Math.PI*Math.min(1,u*1.4)),F1:lerp(rng(480,540),rng(720,800)),F2:lerp(rng(1800,2000),rng(1200,1300))}),\n  woo:()=>({d:rng(0.6,1.3),p:u=>1+0.55*Math.min(1,u*2.2)-0.15*Math.max(0,u-0.6),F1:()=>320,F2:lerp(700,800)}),\n  ahh:()=>({d:rng(0.5,1.1),p:u=>1+0.15*Math.sin(Math.PI*u),F1:()=>rng(720,780),F2:()=>1150}),\n  ooh:()=>({d:rng(0.7,1.3),p:u=>1+0.3*Math.sin(Math.PI*Math.min(1,u*1.3)),F1:()=>330,F2:lerp(780,860)}),\n  aww:()=>({d:rng(0.6,1.1),p:u=>1.15-0.25*u,F1:lerp(620,560),F2:lerp(1000,900)})};\n/* where each person sits: near (bright), middle, far (dull and quiet) */\nfunction seat(){const r=Math.random();return r<0.1?{g:1,lp:0}:r<0.4?{g:0.55,lp:4500}:{g:0.3,lp:2200}}\n/* crowds have no real treble, so they are rendered at a lower rate: two to three times quicker to build */\nfunction lowRate(f){return(...a)=>{SND.srO=22050;try{return f(...a)}finally{SND.srO=0}}}\nconst mkCrowdVoiceLR=lowRate((kind,n,room)=>mkCrowdVoice(kind,n,room)),mkRoomToneLR=lowRate((z,room,o)=>mkRoomTone(z,room,o)),mkApplauseLR=lowRate((n,l,z,w,t)=>mkApplause(n,l,z,w,t)),mkClapKernelsLR=lowRate(()=>mkClapKernels());\nfunction mkCrowdVoice(kind,nV,room){const len=kind==='ooh'?2:3.2,L=arr(len+0.1),R=arr(len+0.1),n=Math.max(4,Math.round((nV||40)*(kind==='ooh'?0.8:1))),mix=kind==='ooh'?['ooh','ooh','ooh','aww']:['yeah','yeah','woo','ahh','woo'];\n  for(let k=0;k<n;k++){const fem=Math.random()<0.45,f0=fem?rng(195,280):rng(100,155),S=SHOUT[pickA(mix)](),t0=rng(0,kind==='ooh'?0.18:0.45),d=Math.min(S.d,len-t0-0.05);\n    const v=person(d,f0,S.p,S.F1,S.F2,rng(0.15,0.45)),st=seat();if(st.lp)lp1(v,st.lp);const pan=Math.random(),a=st.g*rng(0.5,1);addAt(L,R,v,t0,a,pan);\n    if(kind!=='ooh'&&Math.random()<0.35){const S2=SHOUT[pickA(mix)](),t1=t0+d+rng(0.1,0.4);if(t1<len-0.4){const v2=person(Math.min(S2.d,len-t1-0.05),f0*rng(0.95,1.1),S2.p,S2.F1,S2.F2,0.3);if(st.lp)lp1(v2,st.lp);addAt(L,R,v2,t1,a,pan)}}}\n  if(kind!=='ooh')for(let w=0;w<3;w++){const sr=SR(),t0=rng(0.2,1.4),s0=Math.floor(t0*sr),d=rng(0.35,0.7),f=rng(2200,3000),st=seat(),pan=Math.random();let ph=0;   // a few whistles\n    for(let i=0;i<d*sr&&s0+i<L.length;i++){const u=i/(d*sr),fr=f*(1+0.2*Math.sin(Math.PI*u)+0.01*Math.sin(2*Math.PI*30*i/sr));ph+=2*Math.PI*fr/sr;const v=0.12*st.g*Math.sin(Math.PI*u)*Math.sin(ph);L[s0+i]+=v*(1-pan*0.6);R[s0+i]+=v*(0.4+pan*0.6)}}\n  const rm=room||[0.75,0.45,1],[l,r]=verbOff(L,R,rm[0],rm[1],rm[2]);scale2(l,r);return mkBuf(l,r)}\n/* applause */\nfunction clapKernel(cupped,lp){const o=arr(0.05);nz(o,'bp',2500,1,0.0005,0.25,0);   // a soft edge, not a bright click\n  if(cupped){nz(o,'bp',rng(600,1000),rng(2.5,4),rng(0.004,0.008),1,0,0.0004);mode(o,rng(330,450),0.005,0.35,0)}\n  else{nz(o,'bp',rng(1300,2200),rng(1.5,2.8),rng(0.0025,0.0045),1,0,0.0003);mode(o,rng(800,1100),0.002,0.2,0)}\n  nz(o,'bp',rng(700,1400),2,0.003,0.12,rng(0.006,0.012));   // the first reflection off the hands and body\n  if(lp)lp1(lp1(o,lp),lp*1.3);return norm(o)}\nfunction mkClapKernels(){const K={near:[],mid:[],far:[]};for(let k=0;k<8;k++){const c=k%2===0;K.near.push(clapKernel(c,7000));K.mid.push(clapKernel(c,3500));K.far.push(clapKernel(c,1800))}return K}\n/* clappers sit in loose groups that drift in and out of time with each other, like a real crowd; a few close ones stand out */\nfunction mkApplause(n,len,size,wet,tail){const sr=SR(),L=arr(len),R=arr(len),K=SND.bank.kern,small=n<30;\n  const one=(pos,g,rate,ph,pan,t0,t1)=>{const kern=pickA(K[pos]),gl=1-pan*0.7,gr=0.3+pan*0.7;\n    for(let t=t0+ph;t<t1;t+=(1/rate)*rng(0.94,1.06)){const s0=Math.floor(t*sr),u=(t-t0)/(t1-t0),e=g*rng(0.7,1)*Math.min(1,(t-t0)/0.15+0.3)*(1-0.3*u)*(t1-t<0.5?(t1-t)/0.5+0.2:1);\n      for(let i=0;i<kern.length&&s0+i<L.length;i++){const v=kern[i]*e;L[s0+i]+=v*gl;R[s0+i]+=v*gr}}};\n  let c=0;while(c<n){const gsz=Math.min(n-c,small?1+Math.floor(Math.random()*2):4+Math.floor(Math.random()*8)),rate=clamp(4.6+0.8*(Math.random()+Math.random()+Math.random()-1.5)*1.4,3,6.5),ph=Math.random()/rate;\n    for(let k=0;k<gsz;k++,c++){const r=Math.random(),pos=small?(r<0.45?'near':'mid'):r<0.2?'near':r<0.6?'mid':'far',g={near:1,mid:0.5,far:0.25}[pos]*rng(0.6,1);\n      const t0=-Math.log(1-Math.random()*0.95)*0.12,t1=len*(0.35+0.6*Math.pow(Math.random(),0.7));one(pos,g,rate*rng(0.97,1.03),ph+rng(-0.015,0.015),Math.random(),t0,t1)}}\n  for(let k=0;k<(small?1:6);k++)one('near',1.3,rng(4,5.5),Math.random()*0.2,Math.random(),rng(0,0.1),len*rng(0.6,0.95));   // the keen ones near you\n  const [l,r]=verbOff(filt(L,'hp',250,0.7),filt(R,'hp',250,0.7),size,wet!=null?wet:small?0.15:0.22,tail||(small?0.5:0.8));lp1(l,6000);lp1(r,6000);scale2(l,r);return mkBuf(l,r)}\n/* the sound of a venue between points, with no voices in it (voices babbling read as eerie): a warm room tone with a slow\n   swell and a soft rustle of people shifting in their seats; outdoors at the club, a light breeze instead */\nfunction mkRoomTone(z,room,outdoor){const sr=SR(),len=6,n=Math.floor(sr*len),L=new Float32Array(n),R=new Float32Array(n);\n  for(const [a,ph0] of [[L,0],[R,1.7]]){let b=0,p=0;const m1=rng(0.15,0.3),m2=rng(0.4,0.7);\n    for(let i=0;i<n;i++){const w=Math.random()*2-1;b=(b+0.02*w)/1.02;p=0.97*p+0.03*w;   // brown and a little pink\n      const t=i/sr,swell=1+0.18*Math.sin(2*Math.PI*m1*t+ph0)+0.08*Math.sin(2*Math.PI*m2*t);a[i]=(b*3*(outdoor?0.6:1)+p*(outdoor?0.6:0.25))*swell}}\n  let l=filt(filt(L,'hp',60,0.7),'lp',outdoor?900:650,0.7),r=filt(filt(R,'hp',60,0.7),'lp',outdoor?900:650,0.7);\n  if(!outdoor){const rs=[filt(noiseArr(n),'bp',2200,0.6),filt(noiseArr(n),'bp',2200,0.6)];   // rustle: little bursts, here and there\n    for(let k=0;k<Math.round(6+z*30);k++){const s0=Math.floor(Math.random()*(n-sr)),d=Math.floor(sr*rng(0.08,0.3)),g=rng(0.02,0.06)*(0.5+z),c=Math.random()<0.5?0:1;\n      for(let i=0;i<d;i++){const e=Math.sin(Math.PI*i/d);(c?r:l)[s0+i]+=rs[c][s0+i]*g*e}}}\n  const fade=Math.floor(sr*0.4);for(const a of [l,r])for(let i=0;i<fade;i++){const q=i/fade;a[i]=a[i]*q+a[n-fade+i]*(1-q)}   // seamless loop\n  scale2(l,r,0.8);return mkBuf(l,r)}\n/* what the background worker builds: the shot and footwork sounds, and a venue's crowd */\nfunction genBank(){const B={};B.hit={};for(const k of ['top','slice','volley','smash','serve','drop'])B.hit[k]=[0,1,2,3].map(()=>mkHit(k));\n  B.ping=[0,1,2].map(mkPing);B.frame=[0,1,2].map(mkFrame);B.net=[0,1].map(mkNet);B.bounce={};for(const s of ['hard','clay','grass'])B.bounce[s]=[0,1,2,3].map(()=>mkBounce(s));\n  B.whoosh=[0,1,2].map(mkWhoosh);B.squeak=[0,1,2,3].map(mkSqueak);B.slide=[0,1].map(mkSlide);B.scuff=[0,1].map(mkScuff);\n  B.step={};for(const s of ['hard','clay','grass'])B.step[s]=[0,1,2].map(()=>mkStep(s));B.grunt={m:[0,1,2].map(()=>mkGrunt(rng(105,140))),f:[0,1,2].map(()=>mkGrunt(rng(200,240)))};return B}\nfunction genVenue(C){if(!SND.bank.kern)SND.bank.kern=mkClapKernelsLR();const V={clap:mkApplauseLR(C.claps,C.clapLen,C.room[0],C.room[1],C.room[2])};\n  if(C.voices){V.ooh=mkCrowdVoiceLR('ooh',C.voices,C.room);V.cheer=mkCrowdVoiceLR('cheer',C.voices,C.room)}V.babble=mkRoomToneLR(C.z,C.room,C.outdoor);return V}\n";
+const DSP_SRC="/*DSP{*/\nconst SR=()=>SND.srO||SND.ctx.sampleRate,rng=(a,b)=>a+Math.random()*(b-a),pickA=a=>a[Math.floor(Math.random()*a.length)];\n\n/* ---- offline DSP helpers ---- */\nfunction biq(type,f,Q,sr){const w=2*Math.PI*Math.min(f,sr*0.45)/sr,cs=Math.cos(w),sn=Math.sin(w),al=sn/(2*Q);let b0,b1,b2;\n  if(type==='lp'){b0=(1-cs)/2;b1=1-cs;b2=(1-cs)/2}else if(type==='hp'){b0=(1+cs)/2;b1=-(1+cs);b2=(1+cs)/2}else{b0=al;b1=0;b2=-al}\n  const a0=1+al;return{b0:b0/a0,b1:b1/a0,b2:b2/a0,a1:-2*cs/a0,a2:(1-al)/a0}}\nfunction filt(x,type,f,Q){const c=biq(type,f,Q||0.707,SR());let x1=0,x2=0,y1=0,y2=0;const y=new Float32Array(x.length);\n  for(let i=0;i<x.length;i++){const v=c.b0*x[i]+c.b1*x1+c.b2*x2-c.a1*y1-c.a2*y2;x2=x1;x1=x[i];y2=y1;y1=v;y[i]=v}return y}\nfunction noiseArr(n){const a=new Float32Array(n);for(let i=0;i<n;i++)a[i]=Math.random()*2-1;return a}\nfunction arr(sec){return new Float32Array(Math.max(1,Math.floor(SR()*sec)))}\n/* damped sinusoid (a string, the ball, the frame) added at t0; glide = pitch drop at the start */\nfunction mode(out,f,tau,amp,t0,glide){const sr=SR(),s0=Math.floor((t0||0)*sr),n=Math.min(out.length-s0,Math.floor(tau*sr*7));let ph=Math.random()*6.283;\n  for(let i=0;i<n;i++){const t=i/sr;ph+=2*Math.PI*f*(1+(glide||0)*Math.exp(-t/0.008))/sr;out[s0+i]+=amp*Math.exp(-t/tau)*Math.sin(ph)}}\n/* filtered noise with an attack and an exponential tail; mod(t) can shape it further */\nfunction nz(out,type,f,Q,tau,amp,t0,attack,mod){const sr=SR(),s0=Math.floor((t0||0)*sr),n=Math.min(out.length-s0,Math.floor((tau*7+(attack||0))*sr));if(n<=0)return;\n  let x=noiseArr(n);if(type)x=filt(x,type,f,Q);const a=(attack||0)*sr;\n  for(let i=0;i<n;i++){const e=i<a?i/a:Math.exp(-(i-a)/(tau*sr));out[s0+i]+=amp*e*x[i]*(mod?mod(i/sr):1)}}\nfunction crackle(p){return()=>Math.random()<p?1:0.12}\nfunction norm(o,peak){let m=0;for(let i=0;i<o.length;i++)m=Math.max(m,Math.abs(o[i]));const k=(peak||0.9)/(m||1);for(let i=0;i<o.length;i++)o[i]*=k;return o}\n\n/* ---- the sound bank ---- */\nfunction mkHit(kind){const o=arr(0.25),soft=kind==='slice'||kind==='drop',vol=kind==='volley',f0=rng(470,600);\n  nz(o,'bp',rng(2500,3500),0.7,0.0011,soft?0.3:0.85);                         // the contact click\n  nz(o,'bp',rng(950,1250),3,0.0035,soft?0.35:0.9,0,0.0003);                   // the ball's hollow pock: resonant noise, not a tone\n  nz(o,'bp',rng(380,520),1.8,0.006*(vol?1.3:1),soft?0.45:0.8,0,0.0005);       // the string bed's thock\n  mode(o,f0,0.004,soft?0.08:0.12,0.0005,0.05);mode(o,f0*1.07,0.0035,0.07,0.0005);   // only a trace of string ring, detuned so it doesn't sing\n  nz(o,'lp',320,0.8,0.012*(vol?1.5:1),vol?0.9:0.6,0,0.001);                   // racket and arm\n  if(kind==='top')nz(o,'hp',3000,0.7,0.008,0.22,0.001,0.006);                 // strings brushing up the back of the ball\n  if(kind==='slice')nz(o,'bp',1600,0.9,0.018,0.45,0,0.012);                   // the chop under it\n  if(kind==='smash'||kind==='serve'){nz(o,'lp',5500,0.7,0.003,0.9,0);nz(o,'lp',200,0.8,0.02,0.7,0,0.001)}   // the crack and the weight behind it\n  return mkBuf(norm(o))}\n/* a perfect hit: a cleaner click and a deeper thump (not a ring) */\nfunction mkPing(){const o=arr(0.15);nz(o,'bp',3000,0.8,0.0008,0.6,0);nz(o,'lp',230,0.8,0.02,1,0,0.001);nz(o,'bp',600,1.5,0.006,0.4,0);return mkBuf(norm(o,0.8))}\nfunction mkFrame(){const o=arr(0.35);[[310,0.03,0.8],[820,0.02,0.5],[1490,0.014,0.3],[2640,0.01,0.15]].forEach(([f,t,a])=>mode(o,f*rng(0.95,1.05),t,a,0));\n  nz(o,'bp',900,2,0.04,0.35,0.002,0,t=>0.5+0.5*Math.sign(Math.sin(2*Math.PI*70*t)));nz(o,'bp',2500,0.8,0.0015,0.4,0);return mkBuf(norm(o))}\nfunction mkBounce(s){const o=arr(0.2);\n  if(s==='hard'){nz(o,'bp',3000,0.8,0.0009,0.8);nz(o,'bp',rng(1000,1250),3,0.0035,0.9,0,0.0003);nz(o,'lp',220,0.8,0.01,0.7,0,0.0008)}\n  else if(s==='clay'){nz(o,'bp',rng(800,950),2,0.003,0.45,0,0.0003);mode(o,rng(150,170),0.016,0.75,0);nz(o,'bp',2500,1,0.025,0.4,0.001,0.003,crackle(0.08))}\n  else{nz(o,'lp',200,0.8,0.016,0.9,0,0.001);nz(o,'lp',700,0.7,0.012,0.6,0)}\n  return mkBuf(norm(o))}\nfunction mkNet(){const o=arr(0.45);nz(o,'bp',1400,1.2,0.07,0.6,0,0.004,t=>0.6+0.4*Math.sin(2*Math.PI*35*t));mode(o,85,0.05,0.7,0);nz(o,'hp',4000,0.7,0.03,0.2,0.005);return mkBuf(norm(o))}\n/* a shoe squeak: rubber sticking and slipping on the court, a rough buzz (not a clean tone) through a shoe-sized resonance */\nfunction mkSqueak(){const sr=SR(),dur=rng(0.06,0.12),o=arr(dur+0.04),f0=rng(650,1050);let ph=0,j=0;\n  for(let i=0;i<o.length;i++){const t=i/sr,u=t/dur;if(i%Math.floor(sr/400)===0)j=(Math.random()-0.5)*0.16;const f=f0*(1+0.12*u+j);ph+=f/sr;if(ph>=1)ph-=1;\n    const e=Math.min(1,t/0.006)*(u<1?1:Math.exp(-(t-dur)/0.008));o[i]=e*((ph*2-1)*0.7+(Math.random()*2-1)*0.3)}\n  const a=filt(o,'bp',rng(1300,1800),2),b=filt(o,'bp',rng(2600,3200),3);for(let i=0;i<o.length;i++)o[i]=a[i]+0.4*b[i];\n  return mkBuf(norm(o,0.6))}\nfunction mkSlide(){const o=arr(0.5);nz(o,'bp',1300,0.8,0.12,0.7,0,0.03,crackle(0.15));nz(o,'lp',300,0.7,0.12,0.35,0,0.03);return mkBuf(norm(o,0.7))}\nfunction mkScuff(){const o=arr(0.18);nz(o,'lp',900,0.7,0.04,0.7,0,0.01);return mkBuf(norm(o,0.6))}\nfunction mkStep(s){const o=arr(0.08);\n  if(s==='hard'){mode(o,rng(200,240),0.008,0.6,0);nz(o,'bp',1800,1,0.002,0.4,0)}\n  else if(s==='clay'){nz(o,'bp',1500,0.7,0.012,0.5,0,0.002,crackle(0.2));mode(o,120,0.01,0.4,0)}\n  else{mode(o,110,0.012,0.5,0);nz(o,'lp',500,0.7,0.01,0.3,0)}\n  return mkBuf(norm(o,0.6))}\nfunction mkWhoosh(){const sr=SR(),len=0.22,o=arr(len),x=noiseArr(o.length);let x1=0,x2=0,y1=0,y2=0,c=null;\n  for(let i=0;i<o.length;i++){const u=i/o.length;if(i%32===0)c=biq('bp',350+1500*u*u,1.2,sr);const v=c.b0*x[i]+c.b1*x1+c.b2*x2-c.a1*y1-c.a2*y2;x2=x1;x1=x[i];y2=y1;y1=v;o[i]=v*Math.pow(Math.sin(Math.PI*u),2)}\n  return mkBuf(norm(o,0.7))}\n/* a voice: glottal pulses through vowel formants, with breath */\nfunction voiceSrc(n,f0a,f0b,t0,dur,amp,out){const sr=SR(),s0=Math.floor(t0*sr),m=Math.min(out.length-s0,Math.floor(dur*sr));let ph=0;const vib=rng(4,6),jit=rng(0.003,0.01);\n  for(let i=0;i<m;i++){const u=i/m,f=(f0a+(f0b-f0a)*u)*(1+jit*Math.sin(2*Math.PI*vib*i/sr));ph+=f/sr;if(ph>=1)ph-=1;\n    const p=ph<0.4?Math.sin(Math.PI*ph/0.4):0,e=Math.min(1,u/0.06)*Math.min(1,(1-u)/0.35);out[s0+i]+=amp*e*(p-0.25)}}\nfunction formants(src,F,breath){let o=new Float32Array(src.length);const parts=[[F[0],5,1],[F[1],6,0.55],[F[2],8,0.28]];\n  for(const [f,q,g] of parts){const y=filt(src,'bp',f,q);for(let i=0;i<o.length;i++)o[i]+=g*y[i]}\n  if(breath){const b=filt(noiseArr(src.length),'bp',1500,0.7);let env=0;for(let i=0;i<o.length;i++){env+=(Math.abs(src[i])-env)*0.002;o[i]+=breath*b[i]*Math.min(1,env*6)}}\n  return o}\nfunction mkGrunt(f0){const s=arr(0.36),dur=rng(0.18,0.28);voiceSrc(s,f0*1.12,f0*0.86,0.005,dur,1,s);return mkBuf(norm(formants(s,[rng(650,780),rng(1080,1250),rng(2400,2700)],0.45),0.8))}\n/* ---- the crowd ----\n   Real crowds sound the way they do because most of the people are far away (duller and quieter), every clap and\n   voice is a little different, and the whole lot is smeared by the stadium. So: near / middle / far clappers with\n   cupped and flat hands, voices with a soft breathy tone and their own \"yeah\" / \"woo\" / \"ooh\" shapes, and a reverb\n   rendered into each sound. */\n/* a small Freeverb (eight combs, four allpasses) run offline on a stereo pair */\nfunction verbOff(L,R,size,wet,tail){const sr=SR(),k=sr/44100,n=L.length+Math.floor(sr*(tail||0.8)),oL=new Float32Array(n),oR=new Float32Array(n);\n  const CB=[1116,1188,1277,1356,1422,1491,1557,1617],AP=[556,441,341,225],fb=0.7+0.28*size,damp=0.25;\n  for(const [src,out,spread] of [[L,oL,0],[R,oR,23]]){const wetBuf=new Float32Array(n);\n    for(const d0 of CB){const d=Math.floor((d0+spread)*k),buf=new Float32Array(d);let idx=0,f=0;\n      for(let i=0;i<n;i++){const x=i<src.length?src[i]:0,y=buf[idx];f=y*(1-damp)+f*damp;buf[idx]=x*0.015+f*fb;idx=(idx+1)%d;wetBuf[i]+=y}}\n    for(const a0 of AP){const d=Math.floor((a0+spread)*k),buf=new Float32Array(d);let idx=0;\n      for(let i=0;i<n;i++){const b=buf[idx],x=wetBuf[i];buf[idx]=x+b*0.5;wetBuf[i]=b-x;idx=(idx+1)%d}}\n    for(let i=0;i<n;i++)out[i]=(i<src.length?src[i]*(1-wet*0.5):0)+wetBuf[i]*wet}\n  return[oL,oR]}\nfunction lp1(x,fc){const a=1-Math.exp(-2*Math.PI*fc/SR());let y=0;for(let i=0;i<x.length;i++){y+=a*(x[i]-y);x[i]=y}return x}\nfunction scale2(l,r,peak){let m=0;for(let i=0;i<l.length;i++)m=Math.max(m,Math.abs(l[i]),Math.abs(r[i]));const k=(peak||0.85)/(m||1);for(let i=0;i<l.length;i++){l[i]*=k;r[i]*=k}}\n/* band-pass whose centre moves over time (a vowel changing shape) */\nfunction fvar(x,fFn,Q){const sr=SR(),y=new Float32Array(x.length);let x1=0,x2=0,y1=0,y2=0,c=null;\n  for(let i=0;i<x.length;i++){if(i%64===0)c=biq('bp',fFn(i/x.length),Q,sr);const v=c.b0*x[i]+c.b1*x1+c.b2*x2-c.a1*y1-c.a2*y2;x2=x1;x1=x[i];y2=y1;y1=v;y[i]=v}return y}\n/* one person: a soft (not buzzy) voice source with breath, shaped by a pitch contour and a vowel path */\nfunction person(dur,f0,pitch,F1,F2,breath){const sr=SR(),src=arr(dur+0.04),s0=0,m=Math.floor(dur*sr);let ph=0;const vib=rng(4.5,6.5),vd=rng(0.006,0.018);\n  for(let i=0;i<m;i++){const u=i/m,f=f0*pitch(u)*(1+vd*Math.sin(2*Math.PI*vib*i/sr));ph+=f/sr;if(ph>=1)ph-=1;\n    const g=ph<0.6?0.5-0.5*Math.cos(2*Math.PI*ph/0.6):0,e=Math.min(1,u/0.08)*Math.min(1,(1-u)/0.3);src[s0+i]=e*(g-0.3+breath*(Math.random()*2-1)*(0.3+g))}\n  lp1(src,f0*7);const a=fvar(src,u=>F1(Math.min(1,u*(dur+0.04)/dur)),4),b=fvar(src,u=>F2(Math.min(1,u*(dur+0.04)/dur)),5),c=filt(src,'bp',2600,6);\n  for(let i=0;i<src.length;i++)src[i]=a[i]+0.5*b[i]+0.15*c[i];return src}\nconst lerp=(a,b)=>u=>a+(b-a)*u;\nfunction addAt(L,R,v,t,g,pan){const s0=Math.floor(t*SR());for(let i=0;i<v.length&&s0+i<L.length;i++){const x=v[i]*g;L[s0+i]+=x*(1-pan*0.6);R[s0+i]+=x*(0.4+pan*0.6)}}\nconst SHOUT={\n  yeah:()=>({d:rng(0.35,0.8),p:u=>1+0.28*Math.sin(Math.PI*Math.min(1,u*1.4)),F1:lerp(rng(480,540),rng(720,800)),F2:lerp(rng(1800,2000),rng(1200,1300))}),\n  woo:()=>({d:rng(0.6,1.3),p:u=>1+0.55*Math.min(1,u*2.2)-0.15*Math.max(0,u-0.6),F1:()=>320,F2:lerp(700,800)}),\n  ahh:()=>({d:rng(0.5,1.1),p:u=>1+0.15*Math.sin(Math.PI*u),F1:()=>rng(720,780),F2:()=>1150}),\n  ooh:()=>({d:rng(0.7,1.3),p:u=>1+0.3*Math.sin(Math.PI*Math.min(1,u*1.3)),F1:()=>330,F2:lerp(780,860)}),\n  aww:()=>({d:rng(0.6,1.1),p:u=>1.15-0.25*u,F1:lerp(620,560),F2:lerp(1000,900)})};\n/* where each person sits: near (bright), middle, far (dull and quiet) */\nfunction seat(){const r=Math.random();return r<0.1?{g:1,lp:0}:r<0.4?{g:0.55,lp:4500}:{g:0.3,lp:2200}}\n/* crowds have no real treble, so they are rendered at a lower rate: two to three times quicker to build */\nfunction lowRate(f){return(...a)=>{SND.srO=22050;try{return f(...a)}finally{SND.srO=0}}}\nconst mkCrowdVoiceLR=lowRate((kind,n,room)=>mkCrowdVoice(kind,n,room)),mkRoomToneLR=lowRate((z,room,o)=>mkRoomTone(z,room,o)),mkApplauseLR=lowRate((n,l,z,w,t)=>mkApplause(n,l,z,w,t)),mkClapKernelsLR=lowRate(()=>mkClapKernels());\nfunction mkCrowdVoice(kind,nV,room){const len=kind==='ooh'?2:3.2,L=arr(len+0.1),R=arr(len+0.1),n=Math.max(4,Math.round((nV||40)*(kind==='ooh'?0.8:1))),mix=kind==='ooh'?['ooh','ooh','ooh','aww']:['yeah','yeah','woo','ahh','woo'];\n  for(let k=0;k<n;k++){const fem=Math.random()<0.45,f0=fem?rng(195,280):rng(100,155),S=SHOUT[pickA(mix)](),t0=rng(0,kind==='ooh'?0.18:0.45),d=Math.min(S.d,len-t0-0.05);\n    const v=person(d,f0,S.p,S.F1,S.F2,rng(0.15,0.45)),st=seat();if(st.lp)lp1(v,st.lp);const pan=Math.random(),a=st.g*rng(0.5,1);addAt(L,R,v,t0,a,pan);\n    if(kind!=='ooh'&&Math.random()<0.35){const S2=SHOUT[pickA(mix)](),t1=t0+d+rng(0.1,0.4);if(t1<len-0.4){const v2=person(Math.min(S2.d,len-t1-0.05),f0*rng(0.95,1.1),S2.p,S2.F1,S2.F2,0.3);if(st.lp)lp1(v2,st.lp);addAt(L,R,v2,t1,a,pan)}}}\n  if(kind!=='ooh')for(let w=0;w<3;w++){const sr=SR(),t0=rng(0.2,1.4),s0=Math.floor(t0*sr),d=rng(0.35,0.7),f=rng(2200,3000),st=seat(),pan=Math.random();let ph=0;   // a few whistles\n    for(let i=0;i<d*sr&&s0+i<L.length;i++){const u=i/(d*sr),fr=f*(1+0.2*Math.sin(Math.PI*u)+0.01*Math.sin(2*Math.PI*30*i/sr));ph+=2*Math.PI*fr/sr;const v=0.12*st.g*Math.sin(Math.PI*u)*Math.sin(ph);L[s0+i]+=v*(1-pan*0.6);R[s0+i]+=v*(0.4+pan*0.6)}}\n  const rm=room||[0.75,0.45,1],[l,r]=verbOff(L,R,rm[0],rm[1],rm[2]);scale2(l,r);return mkBuf(l,r)}\n/* applause */\nfunction clapKernel(cupped,lp){const o=arr(0.05);nz(o,'bp',2500,1,0.0005,0.25,0);   // a soft edge, not a bright click\n  if(cupped){nz(o,'bp',rng(600,1000),rng(2.5,4),rng(0.004,0.008),1,0,0.0004);mode(o,rng(330,450),0.005,0.35,0)}\n  else{nz(o,'bp',rng(1300,2200),rng(1.5,2.8),rng(0.0025,0.0045),1,0,0.0003);mode(o,rng(800,1100),0.002,0.2,0)}\n  nz(o,'bp',rng(700,1400),2,0.003,0.12,rng(0.006,0.012));   // the first reflection off the hands and body\n  if(lp)lp1(lp1(o,lp),lp*1.3);return norm(o)}\nfunction mkClapKernels(){const K={near:[],mid:[],far:[]};for(let k=0;k<8;k++){const c=k%2===0;K.near.push(clapKernel(c,7000));K.mid.push(clapKernel(c,3500));K.far.push(clapKernel(c,1800))}return K}\n/* clappers sit in loose groups that drift in and out of time with each other, like a real crowd; a few close ones stand out */\nfunction mkApplause(n,len,size,wet,tail){const sr=SR(),L=arr(len),R=arr(len),K=SND.bank.kern,small=n<30;\n  const one=(pos,g,rate,ph,pan,t0,t1)=>{const kern=pickA(K[pos]),gl=1-pan*0.7,gr=0.3+pan*0.7;\n    for(let t=t0+ph;t<t1;t+=(1/rate)*rng(0.94,1.06)){const s0=Math.floor(t*sr),u=(t-t0)/(t1-t0),e=g*rng(0.7,1)*Math.min(1,(t-t0)/0.15+0.3)*(1-0.3*u)*(t1-t<0.5?(t1-t)/0.5+0.2:1);\n      for(let i=0;i<kern.length&&s0+i<L.length;i++){const v=kern[i]*e;L[s0+i]+=v*gl;R[s0+i]+=v*gr}}};\n  let c=0;while(c<n){const gsz=Math.min(n-c,small?1+Math.floor(Math.random()*2):4+Math.floor(Math.random()*8)),rate=clamp(4.6+0.8*(Math.random()+Math.random()+Math.random()-1.5)*1.4,3,6.5),ph=Math.random()/rate;\n    for(let k=0;k<gsz;k++,c++){const r=Math.random(),pos=small?(r<0.45?'near':'mid'):r<0.2?'near':r<0.6?'mid':'far',g={near:1,mid:0.5,far:0.25}[pos]*rng(0.6,1);\n      const t0=-Math.log(1-Math.random()*0.95)*0.12,t1=len*(0.35+0.6*Math.pow(Math.random(),0.7));one(pos,g,rate*rng(0.97,1.03),ph+rng(-0.015,0.015),Math.random(),t0,t1)}}\n  for(let k=0;k<(small?1:6);k++)one('near',1.3,rng(4,5.5),Math.random()*0.2,Math.random(),rng(0,0.1),len*rng(0.6,0.95));   // the keen ones near you\n  const [l,r]=verbOff(filt(L,'hp',250,0.7),filt(R,'hp',250,0.7),size,wet!=null?wet:small?0.15:0.22,tail||(small?0.5:0.8));lp1(l,6000);lp1(r,6000);scale2(l,r);return mkBuf(l,r)}\n/* the sound of a venue between points, with no voices in it (voices babbling read as eerie): a warm room tone with a slow\n   swell and a soft rustle of people shifting in their seats; outdoors at the club, a light breeze instead */\nfunction mkRoomTone(z,room,outdoor){const sr=SR(),len=6,n=Math.floor(sr*len),L=new Float32Array(n),R=new Float32Array(n);\n  for(const [a,ph0] of [[L,0],[R,1.7]]){let b=0,p=0;const m1=rng(0.15,0.3),m2=rng(0.4,0.7);\n    for(let i=0;i<n;i++){const w=Math.random()*2-1;b=(b+0.02*w)/1.02;p=0.97*p+0.03*w;   // brown and a little pink\n      const t=i/sr,swell=1+0.18*Math.sin(2*Math.PI*m1*t+ph0)+0.08*Math.sin(2*Math.PI*m2*t);a[i]=(b*3*(outdoor?0.6:1)+p*(outdoor?0.6:0.25))*swell}}\n  let l=filt(filt(L,'hp',60,0.7),'lp',outdoor?900:650,0.7),r=filt(filt(R,'hp',60,0.7),'lp',outdoor?900:650,0.7);\n  if(!outdoor){const rs=[filt(noiseArr(n),'bp',2200,0.6),filt(noiseArr(n),'bp',2200,0.6)];   // rustle: little bursts, here and there\n    for(let k=0;k<Math.round(6+z*30);k++){const s0=Math.floor(Math.random()*(n-sr)),d=Math.floor(sr*rng(0.08,0.3)),g=rng(0.02,0.06)*(0.5+z),c=Math.random()<0.5?0:1;\n      for(let i=0;i<d;i++){const e=Math.sin(Math.PI*i/d);(c?r:l)[s0+i]+=rs[c][s0+i]*g*e}}}\n  const fade=Math.floor(sr*0.4);for(const a of [l,r])for(let i=0;i<fade;i++){const q=i/fade;a[i]=a[i]*q+a[n-fade+i]*(1-q)}   // seamless loop\n  scale2(l,r,0.8);return mkBuf(l,r)}\n/* what the background worker builds: the shot and footwork sounds, and a venue's crowd */\nfunction genBank(){const B={};B.hit={};for(const k of ['top','slice','volley','smash','serve','drop'])B.hit[k]=[0,1,2,3].map(()=>mkHit(k));\n  B.ping=[0,1,2].map(mkPing);B.frame=[0,1,2].map(mkFrame);B.net=[0,1].map(mkNet);B.bounce={};for(const s of ['hard','clay','grass'])B.bounce[s]=[0,1,2,3].map(()=>mkBounce(s));\n  B.whoosh=[0,1,2].map(mkWhoosh);B.squeak=[0,1,2,3].map(mkSqueak);B.slide=[0,1].map(mkSlide);B.scuff=[0,1].map(mkScuff);\n  B.step={};for(const s of ['hard','clay','grass'])B.step[s]=[0,1,2].map(()=>mkStep(s));B.grunt={m:[0,1,2].map(()=>mkGrunt(rng(105,140))),f:[0,1,2].map(()=>mkGrunt(rng(200,240)))};B.clap1=[0,1,2].map(mkGroupClap);return B}\n/* a dozen people clapping together, for the Hawk-Eye slow clap */\nfunction mkGroupClap(){const L=arr(0.12);for(let k=0;k<12;k++){const ke=clapKernel(k%2===0,k<3?6000:3500),s0=Math.floor(rng(0,0.025)*SR()),g=rng(0.4,1);for(let i=0;i<ke.length&&s0+i<L.length;i++)L[s0+i]+=ke[i]*g}return mkBuf(norm(L,0.8))}\nfunction genVenue(C){if(!SND.bank.kern)SND.bank.kern=mkClapKernelsLR();const V={clap:mkApplauseLR(C.claps,C.clapLen,C.room[0],C.room[1],C.room[2])};\n  if(C.voices){V.ooh=mkCrowdVoiceLR('ooh',C.voices,C.room);V.cheer=mkCrowdVoiceLR('cheer',C.voices,C.room)}V.babble=mkRoomToneLR(C.z,C.room,C.outdoor);return V}\n";
 /* sound building runs on a background thread (a Web Worker made from the code above) so the game never stutters;
    without workers it falls back to building here */
 function rawToBuf(o){if(!o||(typeof AudioBuffer!=='undefined'&&o instanceof AudioBuffer))return o;
@@ -2020,7 +2057,7 @@ function startMatch(cfg){
   let got={};const done=()=>{if(!('me' in got&&'op' in got))return;
     for(const p of P)if(p)p.dispose(W3.scene);
     const mk2=(D,id,v)=>{try{return new Player(D||R3BOSS,!D||id==='boss',W3.scene,v)}catch(e){console.error(e);return new Player(R3BOSS,true,W3.scene)}};
-    P=[mk2(got.me,cfg.meId,cfg.meV),mk2(got.op,cfg.opp.id,cfg.opp.v)];
+    P=[mk2(got.me,cfg.meId,cfg.meV),mk2(got.op,cfg.opp.id,cfg.opp.v)];P[0].lefty=!!cfg.meLefty;P[1].lefty=!!cfg.opp.lefty;
     $('loading').hidden=true;beginMatch(cfg)};
   loadChar(cfg.meId,D=>{got.me=D;done()});loadChar(cfg.opp.id,D=>{got.op=D;done()});
 }
@@ -2061,7 +2098,7 @@ function nextPoint(){
 }
 function pointTo(w,text,call,kind){
   if(M&&M.drill){drillPoint(w,text,call);return}
-  if(!M||M.lock)return;msPoint(w,call,kind);M.lock=true;$('ptBadge').hidden=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
+  if(!M||M.lock)return;$('chalBtn').hidden=true;if(hawkPoint(w,text,call,kind))return;msPoint(w,call,kind);M.lock=true;$('ptBadge').hidden=true;M.state='between';slowMo(false);REP.endT=GT;M.stat.rallyMax=Math.max(M.stat.rallyMax,(M.rally||0)*2+1);if(text)say(text);if(call)callOut(call);if(w===0&&(call==='WINNER'||call==='ACE'))haptic([18,40,26]);
   // the crowd saves itself for the good stuff: aces, winners, long rallies, the end of a game (louder for a break)
   {const rl=M.rally||0,ace=call==='ACE',win=call==='WINNER'||kind==='wn',miss=call==='OUT'||call==='NET'||kind==='ue'||kind==='fe',gp=!M.tb&&pointWins(w)>0||M.tb&&pointWins(w)>1,brk=gp&&!M.tb&&w!==M.server,long=rl>=4,epic=rl>=7;
     let clap=0,voice=null;
@@ -2129,17 +2166,17 @@ function canReach(i,sh){return reachMargin(i,sh)>=0}
 function paceRef(i,serve){return i===0?(serve?34:22):serve?26+M.os:15+M.os*0.9}
 function pressureOf(i,sh){const m=reachMargin(i,sh);const L=sh.land||{y:0.5},deep=i===1?L.y>0.86:L.y<0.14;
   return clamp(clamp(1-m/0.7,0,1)*0.75+(sh.type==='serve'||sh.serve?clamp(((sh.speed||30)-paceRef(i,1))/45,0,0.25):clamp(((sh.speed||20)-paceRef(i,0))/30,0,0.45))+(Math.abs(sh.w||0)>260?0.08:0)+(deep?0.12:0)+((sh.hz||1)<0.62?0.1*({grass:1.3,hard:1,clay:0.6}[M.surf===SURF.grass?'grass':M.surf===SURF.clay?'clay':'hard']):0)+(sh.svType==='kick'?0.08:0),0,1)}
-function spotFor(i,sh,side){const hz=toW(0,sh.hy).z,off={fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[side]||0,zo=sh.smash?0.29:sh.volley?0.55:0.5;
+function spotFor(i,sh,side){const hz=toW(0,sh.hy).z,off=({fh:0.75,bh:-0.45,fv:0.62,bv:-0.55,sm:0.31}[side]||0)*(P[i]&&P[i].lefty?-1:1),zo=sh.smash?0.29:sh.volley?0.55:0.5;
   return i===0?{x:sh.hx*HW-off,z:hz+zo}:{x:sh.hx*HW+off,z:hz-zo}}
 /* how far a player is from where they'd like to meet the ball, in their own frame; drives the lunge. Frozen at contact */
 function updateStretch(i,sh,side){const pl=P[i];if(!pl||!pl.swing||!sh||side==='sm')return;const S=SWINGS[pl.swing.type];if(!S||pl.swing.t/S.dur>S.cf)return;
   const sp=spotFor(i,sh,side),st=M.mv[i],gx=sp.x-st.x,gz=sp.z-st.z,right=i===0?gx:-gx,fwd=i===0?-gz:gz,d=Math.hypot(gx,gz);
-  pl.str={a:clamp((d-0.25)/1.0,0,1),mx:clamp(-right,-1.6,1.6),mz:clamp(fwd,-0.6,1.6),clay:M.surf===SURF.clay}}
+  pl.str={a:clamp((d-0.25)/1.0,0,1),mx:clamp((pl.lefty?1:-1)*right,-1.6,1.6),mz:clamp(fwd,-0.6,1.6),clay:M.surf===SURF.clay}}
 function contactPress(i,sh,side){const sp=spotFor(i,sh,side),st=M.mv[i];return clamp((Math.hypot(st.x-sp.x,st.z-sp.z)-0.35)/1.2,0,1)}
 function fallbackHit(i,sh){if((sh.volley||sh.smash)&&!canReach(i,sh)){const st=M.mv[i];chooseHit(sh,{x:st.x,z:st.z});if((sh.volley||sh.smash)&&!canReach(i,sh))chooseHit(sh,null)}}
 function setReach(sh){fallbackHit(0,sh);if(!canReach(0,sh))sh.unreach=true;else M.mePress=pressureOf(0,sh)}
 const SMH=1.95; // racket-centre height at smash contact
-function sideFor(who,hx,volley,smash){if(smash)return'sm';const f=who===0?hx>-0.12:hx<0.12;return volley?(f?'fv':'bv'):(f?'fh':'bh')}
+function sideFor(who,hx,volley,smash){if(smash)return'sm';const L=P[who]&&P[who].lefty,f=who===0?(L?hx<0.12:hx>-0.12):(L?hx>-0.12:hx<0.12);return volley?(f?'fv':'bv'):(f?'fh':'bh')}
 function yoFor(side,hz){return(side==='fv'||side==='bv')?clamp(((hz||1.05)-1.05)/(0.01*PSCALE),-45,95):side==='sm'?clamp(((hz||SMH)-SMH)/(0.01*PSCALE),-40,40):0}
 function oppServeStart(){
   if(!M||M.state!=='oppServe')return;
@@ -2150,7 +2187,7 @@ function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
   const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,C=P[1].tossC||P[1].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
   const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:sec?'top':'serve',who:'op',x:C.x,z:C.z});
-  const oppFault=()=>{M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('FAULT');say('Fault. Second serve.');M.oFault=true;M.shot=null;M.state='oppServe';after(oppServeStart,1000)},sh0.net?600:900)};let sh0=null;
+  const oppFault=()=>{M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('FAULT');const go=()=>{say('Fault. Second serve.');M.oFault=true;M.shot=null;M.state='oppServe';after(oppServeStart,1000)};if(!(sh0&&sh0.hawk&&hawkFault(sh0,1,go)))go()},sh0.net?600:900)};let sh0=null;
   // first serves miss about a third of the time (less for better players); double faults only happen on the second
   if(!sec&&!M.drill&&Math.random()<clamp(0.4-s*0.022,0.18,0.4)){sh0=M.shot=makeShot(from,{x:(lo+hi)/2+rnd(-0.35,0.35),y:Math.random()<0.5?0.5:0.17},spd,OV.w,{who:'op',err:true});oppFault();return}
   if(sec&&Math.random()<Math.max(0.02,0.1-s*0.007)*O.df){
@@ -2158,11 +2195,11 @@ function oppServeLaunch(){
     after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}
   // smarter servers mix the T and out wide, and go after the receiver's backhand
   const tact=Math.random()<clamp(0.25+s*0.085,0.3,0.97),wide=Math.random()<O.wide+s*0.03;
-  const bx=wide?(d?(Math.random()<0.5?0.1:0.88):(Math.random()<0.5?-0.1:-0.88)):tact&&Math.random()<0.5?(d?0.12:-0.6):lo+0.25+Math.random()*0.5;
+  const bx=wide?(d?(Math.random()<0.5?0.1:0.88):(Math.random()<0.5?-0.1:-0.88)):tact&&Math.random()<0.5?(P[0].lefty?(d?0.6:-0.12):(d?0.12:-0.6)):lo+0.25+Math.random()*0.5;
   const by=0.24+Math.random()*0.1;
-  let sh=null;for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),OV.w+k*70,{who:'op',serve:true,recv:null,ss:OV.ss});sh.svType=oty;if(!sh.net&&sh.land.y>0.2&&sh.land.y<0.5)break}
+  let sh=null;for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),OV.w+k*70,{who:'op',serve:true,recv:null,ss:OV.ss*(P[1].lefty?-1:1)});sh.svType=oty;if(!sh.net&&sh.land.y>0.2&&sh.land.y<0.5)break}
   M.shot=sh;
-  {const L=sh.land,inBox=!sh.net&&L.x>=lo-0.01&&L.x<=hi+0.01&&L.y>=0.228&&L.y<=0.5;if(!inBox){sh.err=true;if(!sec&&!M.drill){sh0=sh;oppFault();return}M.t0=now();M.state='oppErr';after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
+  sh.second=sec;{const inBox=judge(sh,true,false);if(!inBox){sh.err=true;if(!sec&&!M.drill){sh0=sh;oppFault();return}M.t0=now();M.state='oppErr';after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
   setReach(M.shot);if(M.shot.unreach)M.shot.ace=true;
   if(Math.random()<O.sv*(0.6+s*0.05)){M.home[1]={x:0,y:0.72};say(M.cfg.opp.name+' serves and volleys.')}else M.home[1]={x:0,y:1.08};
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);M.t0=now();M.state='op';P[0].hop=0.15;
@@ -2192,7 +2229,7 @@ function oppHit(from){
     else if(pr<0.5&&r<O.angle+s*0.01){kind='angle';bx=(tact?open:(Math.random()<0.5?-1:1))*rnd(0.65,0.9);by=rnd(0.28,0.38);spd=13+s*1.5;w=300}
     else if(tact){const q=Math.random();
       if(Math.abs(mvx)>2.2&&q<O.wrong){kind='wrongfoot';bx=clamp(mx-Math.sign(mvx)*0.6,-0.85,0.85);by=rnd(0.08,0.24)}  // behind the runner
-      else if(q<O.wrong+O.bh){kind='backhand';bx=clamp(mx-rnd(0.45,0.75),-edge(O.agg),0.6);by=rnd(0.06,0.22)}
+      else if(q<O.wrong+O.bh){kind='backhand';const bd=P[0].lefty?1:-1;bx=bd<0?clamp(mx-rnd(0.45,0.75),-edge(O.agg),0.6):clamp(mx+rnd(0.45,0.75),-0.6,edge(O.agg));by=rnd(0.06,0.22)}
       else if(q<0.78){kind='open';bx=open*edge(O.agg)*rnd(0.6,0.95);by=rnd(0.06,0.24)}
       else{bx=(from.x>0?-1:1)*rnd(0.3,0.7);by=rnd(0.05,0.2)}}  // deep cross-court rally ball
     else{bx=(Math.random()*2-1)*span;by=rnd(0.06,0.28)}
@@ -2207,6 +2244,7 @@ function oppHit(from){
   {const L=sh.land;sh.err=sh.net||Math.abs(L.x)>1.012||L.y<-0.004||L.y>0.5}  // the physics decides in or out
   M.shot=sh;sh.kind=kind;sh.pr=pr;sh.w=w;sh.slice=!!M.oSlice;M.oSlice=false;onContact('op',toW(from.x,from.y,from.z),sh.speed,false);tire(1,0.004+0.004*clamp((sh.speed-18)/20,0,1));{const W=toW(from.x,from.y,from.z);sndShot({pw:Math.min(1.2,sh.speed/38),kind:osm?'smash':ovol?'volley':sh.slice||w<0?'slice':'top',q:pr>0.75&&Math.random()<0.25?'frame':'ok',who:'op',x:W.x,z:W.z})}
   {const oy=from.y,app=ovol||osm||(kind==='attack'&&Math.random()<O.approach)||(oy<0.82&&Math.random()<O.approach*0.5);M.home[1]=app?{x:0,y:0.72}:{x:0,y:1.08};if(osm)say(M.cfg.opp.name+' smashes it!');else if(kind==='defend'&&!err)say(M.cfg.opp.name+' is on the run and slices it back.');else if(pr>0.55&&!err&&kind==='deep')say('Weak reply. Go after it.');else if(kind==='lob'&&!err)say(M.cfg.opp.name+' throws up a lob.');else if(kind==='attack'&&!err)say(M.cfg.opp.name+' attacks the short ball'+(M.home[1].y<1?' and comes in.':'.'));else if(kind==='pass'&&!err)say('Passing shot from '+M.cfg.opp.name+'.');else if(kind==='wrongfoot'&&!err)say('Behind you: '+M.cfg.opp.name+' wrong-foots you.');else if(M.home[1].y<1)say(M.cfg.opp.name+' is coming in.')}
+  if(!sh.err&&!sh.net&&!judge(sh,false,false))sh.err=true;   // a close one may be called out
   if(!sh.err){setReach(M.shot);if(M.shot.unreach&&pointWins(1)===2)slowMo(true)}
   M.meSide=sideFor(0,M.shot.hx,M.shot.volley,M.shot.smash);
   M.t0=now();M.state='op';M.land=null;M.aim=null;M.commit=null;
@@ -2227,7 +2265,7 @@ function executeShot(){
   const slc=!!c.slice&&type==='drive'&&!vol&&!smh;if(slc){spd*=0.82;w=-(150+50*Math.min(pw,1))}
   const shot=makeShot(bp,{x:l.x,y:l.y},spd,w,{who:'me',type,lob:type==='lob',slice:slc,recv:recvPos(1)});{const W=toW(bp.x,bp.y,bp.z);sndShot({pw:Math.min(1.2,spd/38),kind:smh?'smash':vol?'volley':type==='drop'?'drop':slc||type==='lob'?'slice':'top',q:tim==='perfect'?'perfect':tim==='late'&&mp>0.55&&Math.random()<0.5?'frame':'ok',who:'me',x:W.x,z:W.z})}tire(0,0.004+0.004*Math.min(pw,1));if(tim==='perfect')perfectFlash();onContact('me',toW(bp.x,bp.y,bp.z),spd,tim==='perfect');
   M.aim={x:c.x,y:c.y};M.land=shot.land;
-  if(!landIn(shot,false)){
+  if(!judge(shot,false,true)){
     const L=shot.land,why=shot.net?'Into the net. Swipe slower or a little longer.':Math.abs(L.x)>1?'Just wide.':'Long. Swipe a little shorter or slower.';
     shot.err=true;M.shot=shot;M.t0=now();M.state='err';drillEvent({k:'hit',in:false,why,tim,slice:!!c.slice});
     after(()=>pointTo(1,why,shot.net?'NET':'OUT',mp>0.55?'fe':'ue'),shot.net?700:Math.min(1600,shot.tb*1000+250));return}
@@ -2249,14 +2287,15 @@ function doServe(a){
   const S=M.S,d=side()==='deuce',lo=d?-1:0,hi=d?0:1,l=scatter(Object.assign({},a,{r:a.r*SV.r})),C=P[0].tossC||P[0].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
   const pw=Math.min(a.pw,1.1);
   let spd=(12.8+20*pw+S.serve*2.0+(hasPerk('server',3)?1.5:0))*(0.92+0.08*M.en[0])*SV.spd,w=SV.w;tire(0,0.006);
-  const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss});shot.svType=ty;onContact('me',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:second?'top':'serve',who:'me',x:C.x,z:C.z});
+  const shot=makeShot(from,{x:l.x,y:l.y},spd,w,{who:'me',type:'serve',ss:SV.ss*(P[0].lefty?-1:1)});shot.svType=ty;onContact('me',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:second?'top':'serve',who:'me',x:C.x,z:C.z});
   M.aim={x:a.x,y:a.y};M.land=shot.land;
-  if(!landIn(shot,true)){
+  shot.second=second;
+  if(!judge(shot,true,true)){
     const L=shot.land,why=shot.net?'into the net':L.y>0.772?'long':'wide';
     shot.err=true;M.shot=shot;M.t0=now();M.state='err';
     if(M.drill){drillEvent({k:'serve',in:false,why,ty});after(drillNext,1300);return}
     if(M.fault)after(()=>pointTo(1,'Double fault, '+why+'.','DOUBLE FAULT'),900);
-    else{M.fault=true;callOut('FAULT');after(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null;say('Fault, '+why+'. Second serve: kick is the safe choice.')},1100)}
+    else{callOut('FAULT');const go=()=>{M.fault=true;after(()=>{if(!M||M.lock)return;M.state='serveMe';M.shot=null;M.land=null;M.aim=null;say('Fault, '+why+'. Second serve: kick is the safe choice.')},1100)};if(!hawkFault(shot,0,go))go()}
     return}
   if(a.pw>=0.85)M.stat.big++;
   shot.second=second;shot.w=w;M.shot=shot;fallbackHit(1,shot);M.returns=canReach(1,shot);if(M.drill){M.returns=false;drillEvent({k:'serve',in:true,mph:Math.round(spd*2.237),ty})}M.oppPress=M.returns?pressureOf(1,shot):0;M.t0=now();M.state='me';P[1].hop=0.15;
@@ -2417,7 +2456,11 @@ function step(dt){
 function camera(dt){
   if(CER.on&&ceremonyCam())return;
   if(window.__CAM){const c=window.__CAM,me=P[0].pos;W3.cam.position.set(me.x+c[0],c[1],me.z+c[2]);W3.cam.lookAt(me.x,c[3],me.z);return}
-  const me=P[0].pos;const tp=new T.Vector3(me.x*0.75,11.5,me.z+12.5),tl=new T.Vector3(me.x*0.4,0,0.5);
+  // three views (Game settings): behind your baseline, a higher TV broadcast view, or close behind you
+  const me=P[0].pos,cm=TUNE.cam||'baseline';let tp,tl;
+  if(cm==='broadcast'){tp=new T.Vector3(me.x*0.25,17,CL/2+15);tl=new T.Vector3(me.x*0.15,0,-1)}
+  else if(cm==='close'){tp=new T.Vector3(me.x*0.8,4.4,me.z+8.8);tl=new T.Vector3(me.x*0.6,0.4,me.z-11)}
+  else{tp=new T.Vector3(me.x*0.75,11.5,me.z+12.5);tl=new T.Vector3(me.x*0.4,0,0.5)}
   const k=Math.min(1,dt*3);W3.camPos.lerp(tp,k);W3.camLook.lerp(tl,k);W3.cam.position.copy(W3.camPos);const sk=shakeOffset();if(sk)W3.cam.position.add(sk);W3.cam.lookAt(W3.camLook);
   W3.sun.target.position.set(0,0,0);
 }
@@ -2758,7 +2801,7 @@ function myDance(){const d=cosOf('dance');return d?d.clip:'samba'}
    (render resolution, then shadow detail, then crowd density, then shadows off) and remembers the level.
    Tuning: long-press the scoreboard (or Game settings on the title screen) for live fps and the feel numbers. */
 const KEY_TUNE='tennis-go-tune',KEY_Q='tennis-go-quality';
-const TUNE_DEF={perfect:0.42,slice:0.17,hitstop:1,replays:'normal',drain:1,gear:0.15,quality:'auto'};
+const TUNE_DEF={perfect:0.42,slice:0.17,hitstop:1,replays:'normal',drain:1,gear:0.15,quality:'auto',cam:'baseline'};
 let TUNE=Object.assign({},TUNE_DEF);try{Object.assign(TUNE,JSON.parse(localStorage.getItem(KEY_TUNE)||'{}'))}catch(e){}
 function storeTune(){try{localStorage.setItem(KEY_TUNE,JSON.stringify(TUNE))}catch(e){}}
 function applyTune(){PERFECT[1]=TUNE.perfect;GEAR_STEP=TUNE.gear}
@@ -2800,8 +2843,10 @@ function renderTune(){
   $('tBody').innerHTML='<p class="num" id="tFps" style="font-family:var(--display);font-size:20px"></p>'+
     '<label>Quality<select id="tQ"><option value="auto">Auto</option>'+QLV.map((q,i)=>'<option value="'+i+'">'+q.name+'</option>').join('')+'</select></label>'+
     TROWS.map(r=>'<label class="trow"><span><b>'+r.l+'</b><output id="o_'+r.k+'">'+r.f(TUNE[r.k])+'</output></span><input type="range" min="'+r.min+'" max="'+r.max+'" step="'+r.step+'" value="'+TUNE[r.k]+'" data-k="'+r.k+'"><small>'+r.d+'</small></label>').join('')+
+    '<label>Camera<select id="tCam"><option value="baseline">Behind the baseline</option><option value="broadcast">TV broadcast (high)</option><option value="close">Close behind you</option></select></label>'+
     '<label>Replays<select id="tRep"><option value="off">Off</option><option value="rare">Rare</option><option value="normal">Normal</option><option value="often">Often</option></select></label>';
-  $('tQ').value=TUNE.quality;$('tRep').value=TUNE.replays;
+  $('tQ').value=TUNE.quality;$('tRep').value=TUNE.replays;$('tCam').value=TUNE.cam||'baseline';
+  $('tCam').onchange=e=>{TUNE.cam=e.target.value;storeTune()};
   $('tQ').onchange=e=>{TUNE.quality=e.target.value;storeTune();if(TUNE.quality==='auto')perfReset();applyQuality()};
   $('tRep').onchange=e=>{TUNE.replays=e.target.value;storeTune()};
   $('tBody').querySelectorAll('input[type=range]').forEach(i=>i.oninput=()=>{const r=TROWS.find(x=>x.k===i.dataset.k);TUNE[r.k]=+i.value;$('o_'+r.k).textContent=r.f(TUNE[r.k]);applyTune();storeTune()});
@@ -2842,7 +2887,7 @@ function rankingList(stage){stage=stage||save.stage;const my=roll(stage),key=sta
   const {N,K}=RANK_SCALE[stage],[,s1]=STAGE_SKILL[stage];
   const all=fieldFor(stage).map(p=>({id:p.id,name:p.name,nat:p.nat,style:p.style,pts:fieldPts(stage,p)}));
   (save.rivals||[]).forEach((rv,i)=>{const fi=rv.fid?all.findIndex(e=>e.id===rv.fid):-1;if(fi>=0)all.splice(fi,1);all.push({id:'rv'+i,name:rvName(rv),nat:'',style:rvStyle(rv),pts:rivalPts(stage,rv),rival:i})});
-  all.push({id:'me',name:RBYID[save.char].name,me:true,pts:my});
+  all.push({id:'me',name:myName(),me:true,pts:my});
   all.sort((a,b)=>b.pts-a.pts||(a.me?-1:b.me?1:0));let prev=0;for(const e of all){e.rank=Math.max(1,Math.round(N*Math.exp(-e.pts/K)),prev+1);prev=e.rank}
   RANK_CACHE={key,list:all};return all}
 function rankOf(id,stage){const e=rankingList(stage).find(x=>x.id===id);return e?e.rank:null}
@@ -2891,7 +2936,7 @@ function simPair(D,a,b){const A=D.players[a],B=D.players[b],p=1/(1+Math.exp(-(A.
 /* build a draw for the event you just entered */
 function makeDraw(c){
   const ev=c.ev,stage=save.stage,R=ev.rounds,size=1<<R,f=fmt(stage,ev),field=fieldFor(stage),[k0,k1]=ev.sk;
-  const players={me:{id:'me',name:RBYID[save.char].name,me:true,nat:'YOU',skill:0}},plan=planWeek(ev),picked=plan.taken;
+  const players={me:{id:'me',name:myName(),me:true,nat:'YOU',skill:0}},plan=planWeek(ev),picked=plan.taken;
   c.others=plan.others;
   for(const id of plan.mine)players[id]=Object.assign({},fieldFor(stage).find(p=>p.id===id));
   // a rival waits in the draw at the bigger events: the final, or the semifinal at a major
@@ -2929,8 +2974,11 @@ function drawRecord(D,k,won,score){const E=entrantsAt(D,k),res=[];
   if(!won)while(D.res.length<D.R){const k2=D.res.length,E2=entrantsAt(D,k2),r2=[];for(let i=0;i<E2.length;i+=2){const m=simPair(D,E2[i],E2[i+1]);r2.push({a:E2[i],b:E2[i+1],w:m.w,score:m.score})}D.res.push(r2)}}
 function drawSimAll(D){while(D.res.length<D.R){const k=D.res.length,E=entrantsAt(D,k),r=[];for(let i=0;i<E.length;i+=2){const m=simPair(D,E[i],E[i+1]);r.push({a:E[i],b:E[i+1],w:m.w,score:m.score})}D.res.push(r)}}
 /* the opponent object the match uses, from a draw player */
+/* about one in eight of the field play left-handed (fixed per player); roster characters and rivals keep their own */
+function isLefty(p){if(!p)return false;if(p.lefty!=null)return!!p.lefty;if(p.rival!=null){const rv=save.rivals[p.rival];if(rv)return rv.fid?!!rv.lefty:!!(RBYID[rv.id]&&RBYID[rv.id].lefty)}
+  let h=0;for(const ch of String(p.id))h=(h*31+ch.charCodeAt(0))>>>0;return h%8===3}
 function oppFrom(p,round,line){const skill=Math.round(clamp(p.skill,1,10)*10)/10;
-  return{id:p.base,fid:p.rival!=null?null:p.id,name:p.name,skill,rival:p.rival!=null?p.rival:null,line:line||null,v:p.v||null,style:p.style,nat:p.nat,seed:null}}
+  return{id:p.base,fid:p.rival!=null?null:p.id,name:p.name,lefty:isLefty(p),skill,rival:p.rival!=null?p.rival:null,line:line||null,v:p.v||null,style:p.style,nat:p.nat,seed:null}}
 
 /* ---- the bracket screen ---- */
 let drawBack=null;
@@ -3002,7 +3050,7 @@ function simEvent(o){const ev=o.ev,f=fmt(save.stage,ev),field=fieldFor(save.stag
   const players={};for(const id of o.ids){const p=field.find(x=>x.id===id);if(p)players[id]=Object.assign({},p)}
   let ids=Object.keys(players).sort((a,b)=>(RK[a]||999)-(RK[b]||999));const size=1<<Math.ceil(Math.log2(Math.max(2,ids.length)));if(ids.length<size)return;
   const slots=new Array(size);seedOrder(size).forEach((k,pos)=>{slots[pos]=ids[k-1]});
-  const D={size,R:Math.log2(size),f:{bo:f.bo,g:f.g},players,slots,seeds:{},res:[],ev:ev.n};drawSimAll(D);awardDrawPoints(D,ev)}
+  const D={size,R:Math.log2(size),f:{bo:f.bo,g:f.g},players,slots,seeds:{},res:[],ev:ev.n};drawSimAll(D);awardDrawPoints(D,ev);newsFromDraw(D,ev,false)}
 function simOtherEvents(list){const t0=performance.now();for(const o of list||[])try{simEvent(o)}catch(e){console.error(e)}(window.__SIMT=window.__SIMT||[]).push(Math.round(performance.now()-t0))}
 
 /* ================= pause, game-time timers, and picking a match back up =================
@@ -3106,7 +3154,7 @@ function pickerHtml(wk){const o=weekOptions(wk),k=pickOf(wk);
     [x.E.ev.n,x.E.ev.tier+' · '+x.E.ev.pts+' pts'+(save.stage==='pro'&&PRIZE[x.E.ev.tier]?' · '+money(PRIZE[x.E.ev.tier]):'')+(x.E.how==='qual'?' · qualifying':'')];
   return'<p class="eyebrow">This week</p><div class="wkpick">'+o.map(x=>{const [a,b]=lab(x);return'<button class="pc" data-pick="'+x.k+'" aria-pressed="'+(x.k===k)+'"><strong>'+esc(a)+'</strong><small class="muted">'+esc(b)+'</small></button>'}).join('')+'</div>'}
 function wirePicker(wk){document.querySelectorAll('#nextCard [data-pick]').forEach(b=>b.onclick=()=>{save.pick={wk,season:save.season,stage:save.stage,k:b.dataset.pick};store();renderHub()})}
-function restWeek(){const xp=restXP();save.xp+=xp;save.fat=0;simOtherEvents(planWeek(null).others);
+function restWeek(){const xp=restXP();save.xp+=xp;save.fat=0;simOtherEvents(planWeek(null).others);weekNews();
   save.history.push({stage:save.stage,season:save.season,wk:save.week,name:'Rest week',res:'Rest',champ:false});save.week++;save.pick=null;store();
   seasonScreen('Week '+save.week+' · '+stageName(),'A week off','You skip the event, train and recover. +'+xp+' training points, and you are back to full fitness.',[['Back to hub','go',()=>renderHub()]])}
 
@@ -3140,7 +3188,7 @@ function maybeNewRival(o,c,lines){if(!o.fid||o.rival!=null)return null;const h=s
   save.rivals.forEach((r,i)=>{const fresh=r.since!=null&&n-r.since<15;const sc=(r.w+r.l)+(fresh?100:0)+(r.fid?0:-0.5);if(sc<best){best=sc;slot=i}});
   if(slot<0||best>=100)return null;
   const old=rvName(save.rivals[slot]);
-  save.rivals[slot]={fid:o.fid,id:o.id,base:o.id,name:o.name,v:o.v||null,nat:o.nat||'',style:o.style||'baseliner',edge:clamp(0.9+(o.skill-myRating())*0.2,0.6,1.3),type:STYLE_RIVAL[o.style]!=null?STYLE_RIVAL[o.style]:1,w:h.w,l:h.l,last:'l',since:n};
+  save.rivals[slot]={fid:o.fid,id:o.id,base:o.id,name:o.name,lefty:!!o.lefty,v:o.v||null,nat:o.nat||'',style:o.style||'baseliner',edge:clamp(0.9+(o.skill-myRating())*0.2,0.6,1.3),type:STYLE_RIVAL[o.style]!=null?STYLE_RIVAL[o.style]:1,w:h.w,l:h.l,last:'l',since:n};
   save.rivalSeason=sk;lines.push(['New rival',o.name]);return{name:o.name,old}}
 
 /* ---- Tour Finals ---- */
@@ -3184,7 +3232,7 @@ function finOppId(F){if(F.phase==='rr'){const G=F.groups.find(g=>g.includes('me'
 function finalsOpp(F){const p=F.P[finOppId(F)];const o=oppFrom(p,1,p.rival!=null?pick(RIVAL_TYPES[save.rivals[p.rival].type].lines):null);o.seed=p.seed;o.rk=p.rank;F.next=p.id;return o}
 function playFinals(){const F=finalsMode();if(!F)return;{const L=liveFor('career');if(L){resumeLive(L);return}}
   const o=finalsOpp(F);store();
-  startMatch({mode:'career',night:true,weather:weatherFor({ev:FIN_EV},true),final:F.phase==='f',ev:FIN_EV,stage:'pro',surf:'hard',bo:3,g:6,stats:careerStats(),meId:save.char,me:RBYID[save.char].name,opp:o,style:save.style,perks:perkLevel(),
+  startMatch({mode:'career',meV:save.v||null,meLefty:!!save.lefty,night:true,weather:weatherFor({ev:FIN_EV},true),final:F.phase==='f',ev:FIN_EV,stage:'pro',surf:'hard',bo:3,g:6,stats:careerStats(),meId:save.char,me:myName(),opp:o,style:save.style,perks:perkLevel(),
     fat:save.fat||0,ofat:F.phase==='rr'?0.04*F.day:0.1,label:'Tour Finals · '+finRoundName(F),intro:o.line?o.name+': “'+o.line+'”':'Tour Finals. The best eight players of the season.',onEnd:careerResult})}
 function finalsResult(won,score,st){const F=finalsMode(),lines=[],xp=Math.round((won?60:20)*(SIMMED?0.6:1));let text,champ=false,out=false;
   const opp=F.P[F.next],stageKey='pro';statMine(opp,won,score,lines,'Tour Finals',finRoundName(F));
@@ -3202,14 +3250,14 @@ function finalsResult(won,score,st){const F=finalsMode(),lines=[],xp=Math.round(
     if(!champ&&F.champ&&F.P[F.champ])stTitle(F.P[F.champ]);
     if(champ){myLine().t++;save.titles.push('Tour Finals '+save.season);save.rec.titles++;save.rec.finals=(save.rec.finals||0)+1;careerMilestone(FIN_EV,true)}
     const res=champ?'W':F.phase==='done'&&!champ&&F.fin&&F.fin.includes('me')?'F':F.sfRes&&F.sf.some(p=>p.includes('me'))?'SF':'RR';
-    save.history.push({stage:stageKey,season:save.season,wk:weeks().length,name:'Tour Finals',res,champ});
+    save.history.push({stage:stageKey,season:save.season,wk:weeks().length,name:'Tour Finals',tier:'Finals',res,champ});newsAdd(champ?'You win the Tour Finals!':(F.P[F.champ]?F.P[F.champ].name+' wins the Tour Finals.':'The Tour Finals are over.'));
     const r=proRank();save.rec.best=Math.min(save.rec.best,r)}
   if(F.done)finBank(F);
   save.pts.pro.cur+=pts;if(pts)lines.push(['Points','+'+pts]);
   if(pay){save.money+=pay;save.earnings+=pay;lines.push(['Prize money',money(pay)])}
   save.xp+=xp;lines.unshift(['Training pts','+'+xp]);
   save.fat=LAST_LOAD!=null?LAST_LOAD:save.fat;LAST_LOAD=null;sleepOff();
-  if(F.done)checkSponsors(lines);
+  if(F.done)checkSponsors(lines);checkGoals(lines);
   store();showResult(won,score,st,(SIMMED?'Simulated. ':'')+text,lines,'Back to hub',()=>renderHub(),champ)}
 function finalsCard(){const F=finalsMode(),me=F.P.me;
   const tbl=g=>{const t=finTable(F,g);return'<table class="ftab"><tr><th>Group '+(g?'B':'A')+'</th><th>W–L</th><th>Sets</th></tr>'+t.map((r,i)=>{const p=F.P[r.id];return'<tr class="'+(p.me?'me':'')+(i<2&&F.day===3?' q':'')+'"><td><small class="seed">'+p.seed+'</small>'+esc(p.name)+' <small class="nat">'+(p.me?'You':p.rival!=null?'Rival':p.nat||'')+'</small></td><td class="num">'+r.w+'–'+r.l+'</td><td class="num">'+r.sw+'–'+r.sl+'</td></tr>'}).join('')+'</table>'};
@@ -3311,8 +3359,8 @@ function openRecords(back,stage){REC.back=back||REC.back||(()=>renderHub());REC.
 function allPlayers(stage){const L=rankingList(stage),out=[];
   for(const e of L){let line,info;
     if(e.me){line=myTotal(stage);info={me:true}}
-    else if(e.rival!=null){const rv=save.rivals[e.rival];const p=rv.fid&&poolById(rv.fid,stage);line=p?(p.st||stLine()):(rv.st&&rv.st[stage])||stLine();info={rival:e.rival,skill:p?p.skill:null}}
-    else{const p=poolById(e.id,stage);line=(p&&p.st)||stLine();info={skill:p&&p.skill,base:p&&p.base}}
+    else if(e.rival!=null){const rv=save.rivals[e.rival];const p=rv.fid&&poolById(rv.fid,stage);line=p?(p.st||stLine()):(rv.st&&rv.st[stage])||stLine();info={rival:e.rival,skill:p?p.skill:null,lefty:isLefty({rival:e.rival})}}
+    else{const p=poolById(e.id,stage);line=(p&&p.st)||stLine();info={skill:p&&p.skill,base:p&&p.base,lefty:p?isLefty(p):false}}
     out.push(Object.assign({id:e.id,name:e.name,nat:e.nat,style:e.style,rank:e.rank,line},info))}
   return out}
 function myTotal(stage){const S=(save.my&&save.my[stage])||{},t=stLine();for(const k in S)stAdd(t,S[k]);return t}
@@ -3322,7 +3370,7 @@ function renderRecords(){const st=REC.stage,tabs=stagesPlayed(),LBL={junior:'Jun
   if(REC.player){renderPlayerCard(REC.player);return}
   const me=myTotal(st),S=(save.my&&save.my[st])||{},seasons=Object.keys(S).map(Number).sort((a,b)=>a-b);
   const evs=save.history.filter(h=>h.stage===st);
-  let h='<div class="card"><p class="eyebrow">You · '+LBL[st]+'</p><h3>'+esc(RBYID[save.char].name)+'</h3>'+(me.m?stGrid(me):'<p class="muted">No matches recorded here yet. Stats are kept from Build 30 on.</p>')+
+  let h='<div class="card"><p class="eyebrow">You · '+LBL[st]+'</p><h3>'+esc(myName())+'</h3>'+(me.m?stGrid(me):'<p class="muted">No matches recorded here yet. Stats are kept from Build 30 on.</p>')+
     (seasons.length?'<table class="ftab"><tr><th>Season</th><th>W–L</th><th>Titles</th><th>Aces</th><th>Win/UE</th></tr>'+seasons.map(k=>{const L=S[k];return'<tr><td>Season '+k+'</td><td class="num">'+L.w+'–'+L.l+'</td><td class="num">'+L.t+'</td><td class="num">'+L.ace+'</td><td class="num">'+L.wn+'/'+L.ue+'</td></tr>'}).join('')+'</table>':'')+
     (evs.length?'<p class="muted" style="font-size:13px">'+evs.length+' events, '+evs.filter(e=>e.champ).length+' titles in '+LBL[st].toLowerCase()+'.</p>':'')+
     '<button class="ghost" id="recLog">Match log</button></div>';
@@ -3344,7 +3392,7 @@ function renderPlayerCard(pid){const st=REC.stage;
   const h2=meet.reduce((a,x)=>(a[x.w?0:1]++,a),[0,0]);
   const LBL={junior:'Junior',college:'College',pro:'World'};
   $('recBody').innerHTML='<div class="card"><div class="row between"><p class="eyebrow">'+LBL[st]+' #'+P.rank+(P.rival!=null?' · Rival':'')+'</p><button class="ghost" id="recPBack">Back</button></div><h3 style="font-size:26px">'+esc(P.name)+' <small class="nat">'+(P.me?'You':P.nat||'')+'</small></h3>'+
-    (P.me?'':'<p class="muted" style="font-size:14px">'+(OSTYLE[P.style]?OSTYLE[P.style].name:'')+(P.skill!=null?' · Rating '+(+P.skill).toFixed(1):'')+'</p>')+
+    (P.me?'':'<p class="muted" style="font-size:14px">'+(OSTYLE[P.style]?OSTYLE[P.style].name:'')+(P.skill!=null?' · Rating '+(+P.skill).toFixed(1):'')+(P.lefty?' · Left-handed':'')+'</p>')+
     (P.line.m?stGrid(P.line):'<p class="muted">No recorded matches yet. Their stats build up as they play in your events.</p>')+
     (P.me?'':'<h3 style="margin-top:6px">Against you</h3><p class="num" style="font-size:20px">'+h2[0]+'–'+h2[1]+'</p>'+(meet.length?'<ol class="rk-list">'+meet.slice().reverse().map(x=>'<li class="rk"><b class="num" style="font-size:16px;color:'+(x.w?'var(--win)':'var(--loss)')+'">'+(x.w?'W':'L')+'</b><span>'+esc(x.e)+'<small class="muted" style="display:block">'+esc(x.r)+' · Season '+x.se+'</small></span><small class="num">'+esc(x.sc)+'</small></li>').join('')+'</ol>':'<p class="muted" style="font-size:14px">You haven’t played each other yet.</p>'))+'</div>';
   $('recPBack').onclick=()=>{REC.player=null;renderRecords()}}
@@ -3441,10 +3489,115 @@ function nightFor(ev,roundsLeft,venueKind){if(!ev)return false;if(ev.tier==='Fin
   if(['Masters','Tour 500','Tour 250'].includes(ev.tier))return roundsLeft===0?Math.random()<0.6:Math.random()<0.2;
   return false}
 
+/* ================= season goals and the tour news feed =================
+   Each season your coach (juniors, college) or agent (pro) sets three goals sized to where you are: win a title,
+   reach a major quarterfinal, finish in the top 50... Each one pays training points (and money on tour) the moment
+   you reach it; "finish" goals are judged when the season ends. The news feed follows the whole tour week by week. */
+const DEPTH={W:7,F:6,SF:5,QF:4,R16:3,R32:2,R64:1,R1:1};
+function niceRank(r){const L=[1,3,5,10,15,20,25,30,40,50,75,100,150,200,300];for(const x of L)if(x>=r)return x;return 300}
+function goalTemplates(){const st=save.stage,r=myRankIn(st)||999,s=save.season,G=[];
+  const rk=(k,xp,money)=>({id:'rank',type:'rank',max:k,text:k===1?'Finish the season as No. 1':'Finish the season in the top '+k,xp,money:money||0,atEnd:true});
+  if(st==='junior'){G.push({id:'title',type:'title',text:'Win a junior title',xp:40});
+    G.push(s>=2?{id:'jm',type:'reach',tier:'Junior major',depth:5,text:'Reach the Junior Major semifinals',xp:70}:{id:'nat',type:'reach',tier:'National',depth:4,text:'Reach a national quarterfinal',xp:50});
+    G.push(rk(niceRank(Math.max(5,Math.round(r*(s>=2?0.4:0.6)))),50))}
+  else if(st==='college'){G.push({id:'ncaa',type:'play',name:'NCAA Singles Championship',text:'Play in the NCAA Singles Championship',xp:70});
+    G.push({id:'conf',type:'reach',tier:'Conference',depth:5,text:'Reach the Conference Championship semifinals',xp:50});
+    G.push(rk(niceRank(Math.max(3,Math.round(r*0.5))),60))}
+  else{if(r>150){G.push({id:'ch',type:'title',tiers:['Challenger','Futures'],text:'Win a Challenger or Futures title',xp:60,money:20000});G.push({id:'mj',type:'reach',tier:'Major',depth:1,text:'Play in a major main draw',xp:80,money:30000});G.push(rk(100,100,50000))}
+    else if(r>50){G.push({id:'t5',type:'reach',tiers:['Tour 250','Tour 500'],depth:5,text:'Reach a 250 or 500 semifinal',xp:80,money:50000});G.push({id:'mjw',type:'reach',tier:'Major',depth:2,text:'Win a match at a major',xp:80,money:50000});G.push(rk(50,120,100000))}
+    else if(r>10){G.push({id:'mqf',type:'reach',tier:'Major',depth:4,text:'Reach a major quarterfinal',xp:120,money:150000});G.push({id:'big',type:'title',tiers:['Masters','Tour 500'],text:'Win a Masters or 500 title',xp:120,money:200000});G.push(rk(niceRank(Math.max(10,Math.round(r*0.5))),150,250000))}
+    else{G.push({id:'maj',type:'title',tiers:['Major'],text:'Win a major',xp:200,money:500000});G.push({id:'fin',type:'finals',text:'Qualify for the Tour Finals',xp:120,money:200000});G.push(rk(r<=3?1:5,200,500000))}}
+  return G}
+function ensureGoals(){const key=save.stage+save.season;if(save.goals&&save.goals.key===key)return save.goals;save.goals={key,list:goalTemplates().map(g=>Object.assign(g,{done:false}))};store();return save.goals}
+function goalMet(g){const H=save.history.filter(h=>h.stage===save.stage&&h.season===save.season);
+  if(g.type==='title')return H.some(h=>h.champ&&(!g.tiers||g.tiers.includes(h.tier)));
+  if(g.type==='reach')return H.some(h=>(g.tier?h.tier===g.tier:g.tiers.includes(h.tier))&&(DEPTH[h.res]||0)>=g.depth);
+  if(g.type==='play')return H.some(h=>h.name===g.name&&!/^Q\d/.test(h.res));
+  if(g.type==='finals')return!!(save.finals&&save.finals.season===save.season&&save.finals.in);
+  if(g.type==='rank')return(myRankIn(save.stage)||999)<=g.max;return false}
+/* check after every event (and at season end for "finish" goals); pays out and adds lines to the result screen */
+function checkGoals(lines,seasonEnd){const G=ensureGoals();let got=[];
+  for(const g of G.list){if(g.done||(g.atEnd&&!seasonEnd))continue;if(goalMet(g)){g.done=true;save.xp+=g.xp;if(g.money){save.money+=g.money;save.earnings+=g.money}got.push(g)}}
+  for(const g of got){if(lines)lines.push(['Goal reached',g.text]);newsAdd('Goal reached: '+g.text+'. +'+g.xp+' training pts'+(g.money?', '+money(g.money):''))}
+  return got}
+function goalsCard(){const G=ensureGoals(),who=save.stage==='pro'?'Your agent':'Your coach';
+  return'<div class="row between"><h3>Season goals</h3><span class="chip">'+G.list.filter(g=>g.done).length+'/'+G.list.length+'</span></div><p class="muted" style="font-size:13px;margin-top:-6px">'+who+' set these for season '+save.season+'.</p>'+
+    '<ul class="goals">'+G.list.map(g=>'<li class="'+(g.done?'on':'')+'"><span>'+(g.done?'✓':'○')+'</span><span>'+esc(g.text)+'<small class="muted" style="display:block">+'+g.xp+' training pts'+(g.money?' · '+money(g.money):'')+(g.atEnd&&!g.done?' · judged at season end':'')+'</small></span></li>').join('')+'</ul>'}
+
+/* ---- news ---- */
+function newsAdd(t){save.news=save.news||[];save.news.push({w:stageName()+' S'+save.season+' W'+Math.min(save.week+1,weeks().length+1),t});if(save.news.length>40)save.news.splice(0,save.news.length-40)}
+/* headlines from a finished draw: who won, and the biggest upset */
+function newsFromDraw(D,ev,mine){if(!D||!D.res||D.res.length<D.R)return;const RK={};for(const e of rankingList(save.stage))RK[e.id]=e.rank;
+  const champ=D.res[D.R-1][0].w,P=D.players[champ];const big=['Major','Masters','Tour 500','Tour 250','Finals','Junior major','National','Conference','College'].includes(ev.tier);
+  if(P&&!P.me&&(big||mine||P.rival!=null))newsAdd((P.rival!=null?'Your rival ':'')+P.name+(RK[champ]?' (#'+RK[champ]+')':'')+' wins the '+ev.n+'.');
+  let up=null;for(const r of D.res)for(const m of r){const l=m.w===m.a?m.b:m.a,rw=RK[m.w]||999,rl=RK[l]||999;if(l==='me'||m.w==='me')continue;if(rl<=8&&rw>=rl*4&&(!up||rw/rl>up.k))up={k:rw/rl,w:m.w,l,rw,rl}}
+  if(up&&big)newsAdd('Upset at the '+ev.n+': #'+up.rw+' '+D.players[up.w].name+' knocks out #'+up.rl+' '+D.players[up.l].name+'.')}
+/* once a week: a new No. 1, and your own milestones */
+function weekNews(){const L=rankingList(save.stage),top=L[0],me=L.find(e=>e.me);
+  if(top&&save.no1!==top.id){if(save.no1)newsAdd(top.me?'You are the new No. 1!':top.name+' is the new No. 1.');save.no1=top.id}
+  if(me){const marks=[100,50,20,10,5],k=save.stage+'best';save.mk=save.mk||{};for(const x of marks)if(me.rank<=x&&(save.mk[k]||9999)>x){newsAdd('You break into the top '+x+'.');save.mk[k]=x;break}}}
+function newsCard(){const N=(save.news||[]).slice(-6).reverse();
+  return'<h3>Tour news</h3>'+(N.length?'<ul class="news">'+N.map(n=>'<li><small class="muted">'+esc(n.w)+'</small>'+esc(n.t)+'</li>').join('')+'</ul>':'<p class="muted" style="font-size:14px">News from around the tour shows up here as the season goes on.</p>')}
+
+/* ================= line calls and Hawk-Eye challenges =================
+   At tour events and majors, a ball within about 5 cm of a line is now and then miscalled. The player the call goes
+   against can challenge: three per set, one more in a tiebreak, kept when the challenge is right. The Hawk-Eye
+   close-up shows where the ball landed. An overturned "out" gives the point to the hitter if the shot couldn't have
+   been returned and otherwise replays it; an overturned "in" makes it out (a fault on a first serve). */
+function hawkVenue(){return!!(M&&!M.drill&&hasOfficials())}
+/* signed distance (metres) from the ball to the line that matters; positive = in */
+function lineMargin(sh,serve,toOpp){const l=sh.land;if(!l)return{d:9,line:'base'};const de=side()==='deuce';let c;
+  if(serve){if(toOpp){const lo=de?-1:0,hi=de?0:1;c=[[(l.x-(lo-0.01))*HW,lo<0?'side':'center'],[((hi+0.01)-l.x)*HW,hi>0?'side':'center'],[(0.772-l.y)*CL,'service']]}
+    else{const lo=de?0:-1,hi=de?1:0;c=[[(l.x-(lo-0.01))*HW,lo<0?'side':'center'],[((hi+0.01)-l.x)*HW,hi>0?'side':'center'],[(l.y-0.228)*CL,'service']]}}
+  else c=[[(1.012-Math.abs(l.x))*HW,'side'],[toOpp?(1.004-l.y)*CL:(l.y+0.004)*CL,'base']];
+  let m=c[0];for(const x of c)if(x[0]<m[0])m=x;return{d:m[0],line:m[1]}}
+/* the line judge's call: right almost always, but now and then wrong on a ball that is very close */
+function judge(sh,serve,toOpp){if(sh.net)return false;const r=lineMargin(sh,serve,toOpp),realIn=r.d>=0;let calledIn=realIn;
+  if(hawkVenue()&&Math.abs(r.d)<0.05&&Math.random()<0.32*(1-Math.abs(r.d)/0.05))calledIn=!realIn;
+  sh.hawk={d:r.d,line:r.line,realIn,calledIn,serve:!!serve};return calledIn}
+function chalReset(){M.chal=[3,3];M.chalSet=M.sets.length;M.chalTb=false}
+function chalCheck(){if(!M.chal||M.chalSet!==M.sets.length)chalReset();if(M.tb&&!M.chalTb){M.chal[0]++;M.chal[1]++;M.chalTb=true}}
+/* a close call has gone against `loser`: offer (or decide) a challenge. Returns true if the challenge flow takes over */
+function hawkOffer(sh,loser,onStand,onOverturn){if(!hawkVenue()||!sh||!sh.hawk||Math.abs(sh.hawk.d)>=0.06)return false;chalCheck();if(M.chal[loser]<=0)return false;
+  if(loser===1){const wrong=sh.hawk.realIn!==sh.hawk.calledIn,p=wrong?0.75:Math.abs(sh.hawk.d)<0.03?0.2:0.04;if(Math.random()>=p)return false;
+    M.lock=true;M.state='review';say(M.cfg.opp.name+' challenges the call.');after(()=>hawkReview(1,sh,onStand,onOverturn),900);return true}
+  M.lock=true;M.state='review';const b=$('chalBtn');b.innerHTML='Challenge<small>'+M.chal[0]+' left</small><i></i>';b.hidden=false;b.classList.remove('go2');void b.offsetWidth;b.classList.add('go2');
+  let taken=false;b.onclick=e=>{e.stopPropagation();if(taken)return;taken=true;b.hidden=true;hawkReview(0,sh,onStand,onOverturn)};
+  after(()=>{if(taken)return;taken=true;b.hidden=true;onStand()},2800);return true}
+/* the review: Hawk-Eye close-up, a slow clap, then the verdict */
+function hawkReview(who,sh,onStand,onOverturn){const h=sh.hawk,over=h.realIn!==h.calledIn;if(!over)M.chal[who]--;
+  hawkDraw(h);$('hawk').hidden=false;slowClap();
+  after(()=>{const v=$('hkVerdict');v.textContent=h.realIn?'IN':'OUT';v.className=h.realIn?'in':'out';
+    $('hkSub').textContent=(h.realIn?(h.d<0.01?'Just touching the line':'In by '+(h.d*100).toFixed(1)+' cm'):'Out by '+(-h.d*100).toFixed(1)+' cm')+' · '+(over?'call overturned':'call stands')+(who===0?' · '+M.chal[0]+' challenge'+(M.chal[0]===1?'':'s')+' left':'');
+    $('hawk').classList.add('done');sndCrowdVoice(over?'cheer':'ooh',0.7);if(hasOfficials())speak(over?'Call overturned.':'The call stands.',{rate:1})},2300);
+  after(()=>{$('hawk').hidden=true;$('hawk').classList.remove('done');(over?onOverturn:onStand)()},4300)}
+function hawkDraw(h){const S=3.6,vert=h.line==='side'||h.line==='center',r=3.3,c=r-h.d*100;   // cm; c = ball centre measured outward from the line's outer edge
+  const W=320,H=190,lineW=5*S,mid=vert?W/2:H/2,edge=mid+lineW/2,cx=vert?edge+c*S:W/2,cy=vert?H/2:edge+c*S,surf=(W3.venue&&W3.venue.court)||0x2F62B0,col='#'+surf.toString(16).padStart(6,'0');
+  const line=vert?'<rect x="'+(mid-lineW/2)+'" y="0" width="'+lineW+'" height="'+H+'" fill="#f4f4ee"/>':'<rect x="0" y="'+(mid-lineW/2)+'" width="'+W+'" height="'+lineW+'" fill="#f4f4ee"/>';
+  const trail=[0.2,0.4,0.6,0.8].map((t,i)=>'<circle class="hk-t" style="animation-delay:'+(0.25+i*0.15)+'s" cx="'+(vert?cx-40*(1-t):cx+60*(1-t))+'" cy="'+(vert?cy+70*(1-t):cy-40*(1-t))+'" r="'+(r*S*(0.5+0.4*t))+'" fill="rgba(211,232,107,.45)"/>').join('');
+  $('hkSvg').innerHTML='<svg viewBox="0 0 '+W+' '+H+'" width="100%"><rect width="'+W+'" height="'+H+'" fill="'+col+'"/>'+line+'<text x="'+(vert?mid-lineW/2-10:12)+'" y="'+(vert?18:mid-lineW/2-8)+'" fill="rgba(255,255,255,.6)" font-size="12" text-anchor="'+(vert?'end':'start')+'">IN</text><text x="'+(vert?edge+10:12)+'" y="'+(vert?18:edge+18)+'" fill="rgba(255,255,255,.6)" font-size="12">OUT</text>'+trail+
+    '<ellipse class="hk-mark" cx="'+cx+'" cy="'+cy+'" rx="'+(vert?r*S:r*S*1.6)+'" ry="'+(vert?r*S*1.6:r*S)+'" fill="#D3E86B" stroke="#7c8c22" stroke-width="2"/></svg>';
+  $('hkVerdict').textContent='';$('hkSub').textContent='Hawk-Eye';}
+function slowClap(){const B=SND.bank;if(!sndReady()||!B.clap1)return;let t=0,gap=0.55;for(let k=0;k<9;k++){play(pickA(B.clap1),{gain:0.25+k*0.06,rate:rng(0.95,1.05),when:t,wet:1});t+=gap;gap*=0.8}}
+/* the corrected outcome after an overturned call */
+function hawkCorrect(sh){const h=sh.hawk,hitter=sh.who==='me'?0:1,recv=1-hitter,serve=h.serve,bypass=(w,t,c,k)=>{M.lock=false;M.hawkBypass=true;pointTo(w,t,c,k)};
+  if(!h.calledIn&&h.realIn){// called out but it was in
+    const reach=hitter===0?canReach(1,sh):canReach(0,sh);
+    if(!reach){if(hitter===0){if(serve)M.stat.aces++;else M.stat.winners++}bypass(hitter,serve?'In on review: an ace.':'In on review: a winner.',serve?'ACE':'WINNER','wn')}
+    else{M.lock=false;say('The ball was in. Replay the point.');const second=serve&&sh.second;nextPoint();if(second){if(hitter===0)M.fault=true;else M.oFault=true}}}
+  else{// called in but it was out
+    if(serve&&!sh.second){M.lock=false;say('Out on review: fault. Second serve.');nextPoint();if(hitter===0)M.fault=true;else M.oFault=true}
+    else bypass(recv,serve?'Out on review: double fault.':'Out on review.',serve?'DOUBLE FAULT':'OUT',serve?null:'ue')}}
+/* a point is about to be scored: if the call that decided it was close and went against someone, they may challenge */
+function hawkPoint(w,text,call,kind){if(M.hawkBypass){M.hawkBypass=false;return false}const sh=M.shot;if(!sh||!sh.hawk)return false;
+  return hawkOffer(sh,1-w,()=>{M.lock=false;M.hawkBypass=true;pointTo(w,text,call,kind)},()=>hawkCorrect(sh))}
+/* a first-serve fault (no point is scored): the server may challenge */
+function hawkFault(sh,server,go){return hawkOffer(sh,server,()=>{M.lock=false;go()},()=>hawkCorrect(sh))}
+
 for(const ev of ['pointerdown','touchend','click','keydown'])document.addEventListener(ev,sndResume,{passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SND.ctx&&SND.ctx.state!=='running')SND.ctx.resume().catch(()=>{});if(SND.tag){if(document.hidden)SND.tag.pause();else if(SND.on)SND.tag.play().catch(()=>{})}});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},get RECS(){return RECS},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},get chal(){return M&&M.chal},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},get RECS(){return RECS},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
 </script>
