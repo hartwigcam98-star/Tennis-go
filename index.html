@@ -209,6 +209,33 @@ ol.perks .muted{display:inline-block;min-width:54px;font-family:var(--display);t
 .pips{display:flex;gap:3px;margin-top:6px}.pips i{flex:1;height:6px;border-radius:3px;background:var(--panel-2);border:1px solid var(--line)}.pips i.on{background:var(--ball);border-color:var(--ball)}
 .pips.sm i{height:5px}
 .sw{display:block;height:14px;border-radius:7px;border:1px solid rgba(255,255,255,.25)}.tip b{display:block;font-family:var(--display);font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--ball)}.lesson.done .eyebrow{color:var(--win)}
+#walk{position:absolute;inset:0;z-index:6;cursor:pointer}
+#walkSkip{position:absolute;right:14px;top:calc(env(safe-area-inset-top,0px) + 14px);font-family:var(--display);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px;color:rgba(238,241,230,.75);background:rgba(5,10,16,.55);padding:5px 10px;border-radius:999px}
+#walkCard{position:absolute;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 34px);max-width:460px;padding:12px 16px 12px 20px;background:linear-gradient(100deg,rgba(6,12,20,.94),rgba(10,22,36,.86));border-left:5px solid var(--ball);border-radius:4px 14px 14px 4px;box-shadow:0 10px 30px rgba(0,0,0,.45);color:var(--chalk);transform-origin:left center}
+#walkCard.in{animation:wkIn .55s cubic-bezier(.2,.9,.25,1)}
+#walkCard .eyebrow{color:var(--ball);font-size:12px}
+#walkCard h2{font-family:var(--display);font-weight:800;font-size:38px;line-height:1;text-transform:uppercase;margin:3px 0 4px;letter-spacing:.01em}
+#walkCard h2 small{font-size:16px;color:var(--muted);letter-spacing:.12em;vertical-align:middle}
+#walkCard p{margin:2px 0;font-size:14px;color:#C9D4DD}
+#walkCard .wk-stats{font-family:var(--display);font-size:15px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.12)}
+#walkCard .wk-stats b{color:var(--chalk);font-size:17px}
+@keyframes wkIn{0%{opacity:0;transform:translateX(-40px) scaleX(.85)}60%{opacity:1}100%{opacity:1;transform:none}}
+#tape{position:absolute;left:50%;top:50%;width:min(92vw,440px);max-height:86dvh;overflow:auto;transform:translate(-50%,-50%);padding:16px 16px 12px;border-radius:18px;background:linear-gradient(180deg,rgba(7,13,21,.95),rgba(10,20,32,.92));border:1px solid rgba(211,232,107,.25);box-shadow:0 18px 50px rgba(0,0,0,.55);color:var(--chalk);text-align:center}
+#tape.in{animation:tpIn .6s cubic-bezier(.2,.9,.25,1)}
+#tape h3{font-family:var(--display);font-weight:800;font-size:30px;text-transform:uppercase;letter-spacing:.06em;margin:2px 0 10px;color:var(--ball)}
+#tape .tp-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:8px;margin-bottom:6px}
+#tape .tp-head span{font-family:var(--display);font-weight:800;font-size:21px;line-height:1.05;text-transform:uppercase}
+#tape .tp-head span small{display:block;font-size:12px;letter-spacing:.14em;color:var(--muted);margin-top:2px}
+#tape .tp-head i{font-style:normal;font-family:var(--display);font-weight:800;color:var(--ball);font-size:18px;padding-bottom:6px}
+#tape .tp-row{display:grid;grid-template-columns:1fr 1.15fr 1fr;align-items:center;padding:6px 0;border-top:1px solid rgba(255,255,255,.08);opacity:0;animation:tpRow .4s ease-out forwards}
+#tape .tp-row span{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+#tape .tp-row b{font-family:var(--display);font-weight:700;font-size:18px}
+#tape .tp-row b.up{color:var(--ball)}
+#tape .tp-row:nth-child(4){animation-delay:.25s}#tape .tp-row:nth-child(5){animation-delay:.33s}#tape .tp-row:nth-child(6){animation-delay:.41s}#tape .tp-row:nth-child(7){animation-delay:.49s}#tape .tp-row:nth-child(8){animation-delay:.57s}#tape .tp-row:nth-child(9){animation-delay:.65s}#tape .tp-row:nth-child(10){animation-delay:.73s}#tape .tp-row:nth-child(11){animation-delay:.81s}#tape .tp-row:nth-child(12){animation-delay:.89s}
+#tape .tp-h2h{margin:10px 0 2px;font-family:var(--display);font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}#tape .tp-h2h b{color:var(--chalk)}
+#tape>small{display:block;margin-top:8px;color:var(--muted);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+@keyframes tpIn{0%{opacity:0;transform:translate(-50%,-46%) scale(.94)}100%{opacity:1;transform:translate(-50%,-50%)}}
+@keyframes tpRow{to{opacity:1}}
 #cer{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 40px);text-align:center;pointer-events:none;animation:cerIn .8s ease-out}
 #cer h2{font-family:var(--display);font-size:40px;line-height:1;color:#F5D04A;text-shadow:0 3px 18px rgba(0,0,0,.65);text-transform:uppercase;margin:4px 0}
 #cer .eyebrow{color:var(--chalk);text-shadow:0 2px 8px rgba(0,0,0,.6);letter-spacing:.3em}#cer p{text-shadow:0 2px 8px rgba(0,0,0,.6)}#cer small{display:block;margin-top:10px;color:var(--muted);text-shadow:0 1px 6px rgba(0,0,0,.6)}
@@ -258,7 +285,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 61 · real hits and bounces</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 62 · big-match walkouts</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -412,6 +439,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   </div>
   <div id="call"></div>
   <div id="dDone" hidden><div class="card"><p class="banner w" id="dDoneT">Lesson complete</p><p id="dDoneP"></p><div class="row"><button class="go" id="dNext">Next lesson</button><button class="ghost" id="dMenu">All lessons</button></div></div></div>
+  <div id="walk" hidden><div id="walkCard" hidden></div><div id="tape" hidden></div><small id="walkSkip">Tap to skip</small></div>
   <div id="cer" hidden><p class="eyebrow">Champion</p><h2 id="cerTitle"></h2><p id="cerSub"></p><small>Tap to continue</small></div>
   <div id="statCard" hidden></div>
   <button id="chalBtn" hidden>Challenge</button>
@@ -917,7 +945,7 @@ function playNext(){
   if(!save.cur.opp)makeOpp();store();
   const c=save.cur,f=fmt(save.stage,c.ev);
   const mr=c.round-c.qual,night=nightFor(c.ev,c.total-c.round),weather=weatherFor({ev:c.ev},night);
-  startMatch({mode:'career',meV:save.v||null,meLefty:!!save.lefty,night,weather,final:c.round===c.total,ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:careerStats(),fat:save.fat||0,ofat:mr>1?clamp(rnd(0.02,0.06)*(mr-1),0,0.22):0,meId:save.char,me:myName(),opp:c.opp,style:save.style,perks:perkLevel(),
+  startMatch({mode:'career',meV:save.v||null,meLefty:!!save.lefty,night,weather,final:c.round===c.total,walkout:walkoutWanted(c.ev,c.round,c.total,c.qual,c.opp),ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:careerStats(),fat:save.fat||0,ofat:mr>1?clamp(rnd(0.02,0.06)*(mr-1),0,0.22):0,meId:save.char,me:myName(),opp:c.opp,style:save.style,perks:perkLevel(),
     label:c.ev.n+' · '+roundName(c.round,c.total,c.qual),intro:c.opp.line?c.opp.name+': “'+c.opp.line+'”':null,onEnd:careerResult});
 }
 const SHORT={Semifinal:'SF',Quarterfinal:'QF','Round of 16':'R16','Round of 32':'R32','Round of 64':'R64'};
@@ -1312,7 +1340,7 @@ class Player{
       this.blend(q,h,qb,hb,this.wLoco)}
     if(this.react){this.react.t+=dt;const r=this.react,w=Math.min(1,r.t/0.2,(r.dur-r.t)/0.3);if(r.t>=r.dur)this.react=null;else if(this.sample(r.name,r.t,qb,hb,false))this.blend(q,h,qb,hb,clamp(w,0,1))}
     // stroke parameters: swing keys, or the ready position; blended in, and eased back to ready after the finish
-    let P=null,wT=0,wA=0,u=0;const base=this.react?0:(1-0.55*this.wLoco)*(this.relax?0.5:1);
+    let P=null,wT=0,wA=0,u=0;const base=this.react?0:(1-0.55*this.wLoco)*(this.stroll?0.22:this.relax?0.5:1);   // stroll: the walk-on, racket carried loosely
     if(this.swing){const s=this.swing,S=SWINGS[s.type];s.t+=dt;u=s.t/S.dur;
       if(u>=1){this.post={P:this.lastP||READYS,t:0};this.swing=null}
       else{let Pk=sampleSwing(S,u);if(s.yo){const bell=Math.sin(Math.PI*clamp(u,0,1));Pk.hand[1]+=s.yo*bell;Pk.L[1]+=s.yo*bell*0.6}const wi=s.type==='sv'?1:Math.min(1,u/0.08);if(wi<1)Pk=mixP(READYS,Pk,wi);P=Pk;this.lastP=Pk;wT=1;wA=1}}
@@ -1333,7 +1361,7 @@ class Player{
       if(st.clay&&sA>0.45&&W3.venue){this._dust=(this._dust||0)-dt;if(this._dust<=0){this._dust=0.06;const lf=this.bones[this.legs[j][2]];if(lf){const wp=lf.getWorldPosition(new T.Vector3());puff(wp.x,wp.z,'clay',3+sA*3)}}}}
     if(!this.swing&&this.str){if(this.str.a>0.7)this.land=0.25;this.str=null}
     // posture: low and wide, deeper as a stroke loads, extending up through contact
-    let dT=this.react?0.1:this.relax?0.45:1;
+    let dT=this.react?0.1:this.stroll?0.05:this.relax?0.45:1;
     if(this.swing){const S=SWINGS[this.swing.type],sm=x=>x*x*(3-2*x);
       if(this.swing.type==='sm')dT=u<0.44?0.7+0.6*sm(clamp(u/0.44,0,1)):u<0.6?1.3-1.15*sm((u-0.44)/0.16):0.15+0.65*sm(clamp((u-0.6)/0.4,0,1));
       else if(this.swing.type==='sv')dT=u<0.52?0.4+0.9*sm(clamp(u/0.52,0,1)):u<0.66?1.3-1.2*sm((u-0.52)/0.14):0.1+0.5*sm(clamp((u-0.66)/0.34,0,1));
@@ -1486,6 +1514,20 @@ function boardWall(G,V,P,h,off){
   G.add(new T.Mesh(g,new T.MeshLambertMaterial({map:tex,side:T.DoubleSide})))
 }
 /* the radar-gun speed board: a dark LED panel that lights up with the speed of every serve */
+/* a players' tunnel set into the end wall: a dark mouth that fades back into shadow, a framed opening and a sign */
+/* a players' tunnel set into a side wall: a dark mouth that fades back into shadow, a framed opening, a sign and a
+   pool of warm light on the floor. ry turns it to face the court; n is the direction it faces, t runs along the wall */
+function playerTunnel(G,V,x,z,ry,wallH,fence){const w=2.0,h=Math.min(wallH-0.32,1.95),n={x:Math.sin(ry),z:Math.cos(ry)},t={x:Math.cos(ry),z:-Math.sin(ry)};
+  const at=(along,out)=>[x+t.x*along+n.x*out,z+t.z*along+n.z*out];
+  const mouth=canvasTex(256,256,(g,cw,ch)=>{const gr=g.createLinearGradient(0,0,0,ch);gr.addColorStop(0,'#0E1116');gr.addColorStop(0.55,'#05070A');gr.addColorStop(1,'#1A1E24');g.fillStyle=gr;g.fillRect(0,0,cw,ch);
+    const rg=g.createRadialGradient(cw/2,ch*0.95,4,cw/2,ch*0.95,cw*0.7);rg.addColorStop(0,'rgba(255,214,150,0.25)');rg.addColorStop(1,'rgba(255,214,150,0)');g.fillStyle=rg;g.fillRect(0,0,cw,ch);   // warm light from inside
+    g.fillStyle='rgba(255,255,255,0.05)';for(let i=1;i<6;i++)g.fillRect(0,ch*0.18*i,cw,1)});
+  {const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({map:mouth}));const p=at(0,0.04);m.position.set(p[0],h/2,p[1]);m.rotation.y=ry;G.add(m)}
+  const fm=new T.MeshStandardMaterial({color:fence?0x2A3036:shade(V.wall,0.55),metalness:0.35,roughness:0.5});
+  for(const [al,dy,bw,bh] of [[-w/2-0.07,h/2+0.035,0.14,h+0.07],[w/2+0.07,h/2+0.035,0.14,h+0.07],[0,h+0.07,w+0.28,0.14]]){const b=new T.Mesh(new T.BoxGeometry(bw,bh,0.16),fm);const p=at(al,0.08);b.position.set(p[0],dy,p[1]);b.rotation.y=ry;G.add(b)}
+  {const p=at(0,0.07);textPlane(G,'PLAYERS',1.3,0.24,0xF4F1E6,0x101418,p[0],Math.min(h+0.32,wallH-0.14),p[1],ry)}
+  {const gl=new T.Mesh(new T.PlaneGeometry(w*0.9,1.1),new T.MeshBasicMaterial({color:0xFFE2B0,transparent:true,opacity:0.09,depthWrite:false}));gl.rotation.order='YXZ';gl.rotation.y=ry;gl.rotation.x=-Math.PI/2;const p=at(0,0.6);gl.position.set(p[0],0.008,p[1]);G.add(gl)}
+  return{x,z,nx:n.x,nz:n.z}}
 function radarBoard(G,x,y,z,ry,w,h){const c=document.createElement('canvas');c.width=512;c.height=Math.round(512*h/w);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;
   const fr=new T.Mesh(new T.BoxGeometry(w+0.12,h+0.12,0.06),new T.MeshLambertMaterial({color:0x15181C}));fr.position.set(x,y,z);fr.rotation.y=ry;G.add(fr);
   const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({map:t,toneMapped:false}));m.position.set(x+Math.sin(ry)*0.035,y,z+Math.cos(ry)*0.035);m.rotation.y=ry;G.add(m);
@@ -1559,7 +1601,7 @@ function buildCourt(surf,cfg){
   const V=W3.venue=venueFor(Object.assign({},cfg||{},{surf}));venueLight(V);
   const hz=CL/2,people=[];
   const stadium=V.kind==='tour'||V.kind==='major';
-  const xS=stadium?(V.kind==='major'?10.2:9.7):V.kind==='college'?9.2:8.9,zF=stadium?(V.kind==='major'?18.6:18.3):18.3;
+  const xS=stadium?(V.kind==='major'?10.2:9.7):V.kind==='college'?9.2:8.9,zF=stadium?(V.kind==='major'?18.6:18.3):18.3;W3.dims={xS,zF};
   // ground: the painted surface inside the walls, plain ground outside
   const outer=new T.PlaneGeometry(260,260);outer.rotateX(-Math.PI/2);
   {const om=new T.Mesh(outer,new T.MeshLambertMaterial({color:stadium?shade(V.wall,0.8):0x5C8A45}));om.position.y=-0.02;G.add(om)}
@@ -1592,13 +1634,14 @@ function buildCourt(surf,cfg){
     {const wh=V.kind==='major'?2.4:2.2;textPlane(G,V.title,17.4,wh,0xF4F1E6,V.wall,0,wh/2,-zF+0.03,0,null,0.42)}
     umpireChair(G,V,-(postX+0.9),people);
     {const wh=V.kind==='major'?2.4:2.2;radarBoard(G,5.6,wh*0.5,-zF+0.07,0,2.9,wh*0.62);radarBoard(G,-5.6,wh*0.5,zF-0.07,Math.PI,2.9,wh*0.62)}   // speed panels set into the base of each end wall
+    {const wh=V.kind==='major'?2.4:2.2;W3.tunnels={op:playerTunnel(G,V,-xS,-7,Math.PI/2,wh),me:playerTunnel(G,V,xS,7,-Math.PI/2,wh)}}   // tunnels in the side walls
     // ball kids: two crouched at the net posts, two at the far corners
     for(const [x,z,yw] of[[postX+0.5,0.6,-Math.PI/2],[-(postX+0.4),-1.2,Math.PI/2],[-4.5,-(hz+4.6),0],[4.5,-(hz+4.6),0]])people.push({x,y:0.02,z,yaw:yw,ex:0.15,shirt:V.acc,staff:1});
     // line judges seated against the back wall
     if(V.kind==='major')for(const x of[-6.5,6.5])people.push({x,y:0.45,z:-(zF-0.6),yaw:0,ex:0,shirt:shade(V.wall,1.6),staff:1});
   }else{
     const club=V.kind==='club';
-    fenceRect(G,V,xS,zF,3.6,club?2.2:2.4,club?null:V.windText);
+    fenceRect(G,V,xS,zF,3.6,club?2.2:2.4,club?null:V.windText);W3.tunnels={op:playerTunnel(G,V,-xS,-7,Math.PI/2,club?2.2:2.4,true),me:playerTunnel(G,V,xS,7,-Math.PI/2,club?2.2:2.4,true)};
     if(club){neighbourCourt(G,V,-18.3,0);neighbourCourt(G,V,18.3,0);
       seats=seats.concat(bleacher(G,-(xS+1.4),-6,8,3,Math.PI/2,[]),bleacher(G,-2.5,-(zF-1.2),7,2,0,[]),bleacher(G,0,zF+1.3,6,2,Math.PI,[]));
       const tp=[];for(let i=0;i<46;i++){const a=Math.random()*Math.PI*2,r=34+Math.random()*16;tp.push([Math.cos(a)*r,Math.sin(a)*r*1.1-6])}trees(G,tp);
@@ -2147,6 +2190,7 @@ function beginMatch(cfg){
   renderBoard();{const O=OSTYLE[M.ostyle],cs=conditionsSay(cfg);say((cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))+(cs?' '+cs:''))}
   REP.setsN=1;REP.lastPt=-9;REP.buf=[];perfReset();W3.camPos.set(0,4,22);
   if(cfg.drill){drillBegin(cfg);return}
+  if(cfg.walkout&&!cfg.resume){after(startWalkout,350);return}
   after(nextPoint,cfg.intro?2600:1100);
 }
 function ptLabel(i){const a=M.pts[i],b=M.pts[1-i];if(M.tb)return String(a);if(a>=3&&b>=3)return a===b?'40':a>b?'AD':'40';return['0','15','30','40'][Math.min(a,3)]}
@@ -2472,13 +2516,14 @@ function loop(t){
   crowdTick(dtr);sndAmbience(!!M&&['op','me','oppServing','serving'].includes(M.state));
   if(window.__POSE&&P[0]){if(window.__STR!==undefined)P[0].str=window.__STR;const Q=window.__POSE,S=SWINGS[Q.type];P[0].swing={type:Q.type,t:Q.u*S.dur-dt};P[0].post=null;if(Q.type==='sv'&&Q.u<0.38){P[0].tossR=null}}
   if(P[0]){P[0].serveReady=!!M&&M.state==='serveMe';P[1].serveReady=!!M&&M.state==='oppServe'}
-  const rlx=!M||M.state==='between';P[0].relax=rlx;P[1].relax=rlx||(M&&(M.state==='serveMe'));
+  const rlx=!M||M.state==='between'||M.state==='walkout';P[0].relax=rlx;P[1].relax=rlx||(M&&(M.state==='serveMe'));
   P[0].update(dt,1,M?M.mv[0].v:0,M?M.mv[0].vz:0);P[1].update(dt,-1,M?M.mv[1].v:0,M?M.mv[1].vz:0);
   ceremonyTick(dtr);advTick(dtr);camera(dtr);fxTick(dt);if(M&&!window.__FREEZE)recordFrame();
   W3.r.render(W3.scene,W3.cam);
 }
 function swingFor(pl,side,tHit,hz){const S=SWINGS[side];if(!pl.swing&&now()>=tHit-S.dur*S.cf*1000){const yo=yoFor(side,hz);const off=Math.max(0,(now()-(tHit-S.dur*S.cf*1000))/1000);pl.startSwing(side,Math.min(off,S.dur*S.cf),yo)}}
 function step(dt){
+  if(M.state==='walkout'){walkTick(dt);return}
   const t=now(),sh=M.shot;let p=0;
   if(sh){p=(t-M.t0)/1000/sh.T;
     if(sh.r&&p<1.4){const tt=p*sh.T,lt=sh._lt||0;for(const b of sh.r.bounces)if(b.t>lt&&b.t<=tt){sndBounce(-b.vy,b.x,b.z);if(W3.venue){puff(b.x,b.z,W3.venue.surf,-b.vy);ballMark(b.x,b.z,Math.atan2(b.x-sh.S[0],b.z-sh.S[2]))}}if(sh.r.net&&sh.r.net.t>lt&&sh.r.net.t<=tt){if(sh.r.cord)sndCord();else sndNet()}if(sh.r.cord&&!sh.r.net&&sh.r.cord.t>lt&&sh.r.cord.t<=tt){sndCord();if(!sh.serve&&sh.type!=='serve'&&!M.drill){sndCrowdVoice('ooh',0.55);say('Net cord! It trickles over.')}}sh._lt=tt}
@@ -2550,6 +2595,7 @@ function step(dt){
 }
 function camera(dt){
   if(CER.on&&ceremonyCam())return;
+  if(WALK.on&&walkCam(dt))return;
   if(window.__CAM){const c=window.__CAM,me=P[0].pos;W3.cam.position.set(me.x+c[0],c[1],me.z+c[2]);W3.cam.lookAt(me.x,c[3],me.z);return}
   // three views (Game settings): behind your baseline, a higher TV broadcast view, or close behind you
   const me=P[0].pos,cm=TUNE.cam||'baseline';let tp,tl;
@@ -3332,7 +3378,7 @@ function finOppId(F){if(F.phase==='rr'){const G=F.groups.find(g=>g.includes('me'
 function finalsOpp(F){const p=F.P[finOppId(F)];const o=oppFrom(p,1,p.rival!=null?pick(RIVAL_TYPES[save.rivals[p.rival].type].lines):null);o.seed=p.seed;o.rk=p.rank;F.next=p.id;return o}
 function playFinals(){const F=finalsMode();if(!F)return;{const L=liveFor('career');if(L){resumeLive(L);return}}
   const o=finalsOpp(F);store();
-  startMatch({mode:'career',meV:save.v||null,meLefty:!!save.lefty,night:true,weather:weatherFor({ev:FIN_EV},true),final:F.phase==='f',ev:FIN_EV,stage:'pro',surf:'hard',bo:3,g:6,stats:careerStats(),meId:save.char,me:myName(),opp:o,style:save.style,perks:perkLevel(),
+  startMatch({mode:'career',meV:save.v||null,meLefty:!!save.lefty,night:true,walkout:true,weather:weatherFor({ev:FIN_EV},true),final:F.phase==='f',ev:FIN_EV,stage:'pro',surf:'hard',bo:3,g:6,stats:careerStats(),meId:save.char,me:myName(),opp:o,style:save.style,perks:perkLevel(),
     fat:save.fat||0,ofat:F.phase==='rr'?0.04*F.day:0.1,label:'Tour Finals · '+finRoundName(F),intro:o.line?o.name+': “'+o.line+'”':'Tour Finals. The best eight players of the season.',onEnd:careerResult})}
 function finalsResult(won,score,st){const F=finalsMode(),lines=[],xp=Math.round((won?60:20)*(SIMMED?0.6:1));let text,champ=false,out=false;
   const opp=F.P[F.next],stageKey='pro';statMine(opp,won,score,lines,'Tour Finals',finRoundName(F));
@@ -3710,10 +3756,105 @@ function hawkPoint(w,text,call,kind){if(M.hawkBypass){M.hawkBypass=false;return 
 /* a first-serve fault (no point is scored): the server may challenge */
 function hawkFault(sh,server,go){return hawkOffer(sh,server,()=>{M.lock=false;go()},()=>hawkCorrect(sh))}
 
+/* ================= walkouts: the TV-style entrance before big matches =================
+   Majors, the Tour Finals, finals of any event, the late rounds of the bigger events and rival matches open like a
+   broadcast: each player walks out of their own tunnel with the camera leading them and a caption with a few facts,
+   the announcer calls their name, then a "tale of the tape" puts the two side by side before the first serve.
+   Tap to skip ahead. */
+const WALK={on:false,t:0,phase:'',who:-1,legs:null,cam:null,timers:[]};
+const NAT_NAME={USA:'the United States',GBR:'Great Britain',ESP:'Spain',FRA:'France',ITA:'Italy',GER:'Germany',AUS:'Australia',ARG:'Argentina',CAN:'Canada',JPN:'Japan',BRA:'Brazil',
+  SRB:'Serbia',CRO:'Croatia',NED:'the Netherlands',SWE:'Sweden',NOR:'Norway',CZE:'the Czech Republic',POL:'Poland',RSA:'South Africa',MEX:'Mexico',KOR:'Korea',CHN:'China',IND:'India',
+  CHI:'Chile',BEL:'Belgium',SUI:'Switzerland',AUT:'Austria',POR:'Portugal',GRE:'Greece',DEN:'Denmark',NGR:'Nigeria',KAZ:'Kazakhstan'};
+/* is this career match big enough for the full entrance? */
+function walkoutWanted(ev,round,total,qual,opp){if(!ev||round<=qual)return false;const left=total-round;
+  if(['Major','Finals','Junior major'].includes(ev.tier))return true;
+  if(left===0)return true;                                              // any final
+  if(['Masters','Tour 500','National','Conference'].includes(ev.tier)||/NCAA/.test(ev.n||''))return left<=2;   // quarterfinals on
+  return!!(opp&&opp.rival!=null&&left<=2)}
+function hashStr(s){let h=2166136261;for(const c of String(s))h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0}
+/* a few made-up but stable facts for generated players: age by level, and height */
+function factAge(key,stage){const [a,b]={junior:[15,18],college:[18,22],pro:[19,33]}[stage]||[19,30];return a+hashStr(key+'age')%(b-a+1)}
+function factHeight(key){return 172+hashStr(key+'ht')%26}
+function fmtHeight(cm){const inch=Math.round(cm/2.54);return Math.floor(inch/12)+'′'+(inch%12)+'″ ('+cm+' cm)'}
+/* both players' tale-of-the-tape facts */
+function walkFacts(){const c=M.cfg,o=c.opp,stage=c.stage||save.stage,line=stOf(o,stage)||stLine(),mine=myTotal(stage),okey=o.fid||o.id||o.name;
+  const key=stKey(o),h=(save.log||[]).filter(x=>x.k===key).reduce((a,x)=>(a[x.w?0:1]++,a),[0,0]);
+  const STY=STYLES.find(s=>s.id===c.style);
+  return{label:RANK_SCALE[stage].label,stage,h2h:h,
+    me:{name:c.me,nat:save.nat||'',rank:myRankIn(stage),seed:null,age:save.age,ht:save.height||factHeight((save.char||'')+c.me),plays:c.meLefty?'Left-handed':'Right-handed',style:STY?STY.name:'',rating:myRating(),w:mine.w,l:mine.l,t:mine.t,ace:mine.ace},
+    op:{name:o.name,nat:o.nat||'',rank:o.rk||null,seed:o.seed||null,age:factAge(okey,stage),ht:factHeight(okey),plays:o.lefty?'Left-handed':'Right-handed',style:(OSTYLE[o.style]||{}).name||'',rating:o.skill,w:line.w,l:line.l,t:line.t,ace:line.ace,rival:o.rival!=null}}}
+function stageWord(st){return{junior:'Junior',college:'College',pro:'Tour'}[st]}
+function announce(F,i){const p=i?F.op:F.me,nat=NAT_NAME[p.nat];
+  return(i?'Please welcome to the court, ':'And now, ')+(p.rank?'ranked number '+p.rank+(F.stage==='pro'?' in the world':'')+', ':'')+(nat?'from '+nat+', ':'')+p.name+'!'}
+function walkCaption(F,i){const p=i?F.op:F.me,el=$('walkCard');
+  el.innerHTML='<p class="eyebrow">'+(p.rank?F.label+' #'+p.rank:'Unranked')+(p.seed?' · '+p.seed+' seed':'')+(i&&p.rival?' · Rival':'')+(i?'':' · You')+'</p>'+
+    '<h2>'+esc(p.name)+(p.nat?' <small>'+esc(p.nat)+'</small>':'')+'</h2>'+
+    '<p>Age '+p.age+' · '+fmtHeight(p.ht).split(' (')[0]+' · '+p.plays+(p.style?' · '+p.style:'')+'</p>'+
+    '<p class="wk-stats">'+(p.w+p.l?'<b>'+p.w+'–'+p.l+'</b> '+stageWord(F.stage)+' record'+(p.t?' · <b>'+p.t+'</b> title'+(p.t===1?'':'s'):'')+(p.ace?' · <b>'+p.ace+'</b> aces':''):'First '+stageWord(F.stage).toLowerCase()+' match on record')+'</p>';
+  el.hidden=false;el.classList.remove('in');void el.offsetWidth;el.classList.add('in')}
+function tapeHtml(F){const A=F.me,B=F.op,r=(k,a,b,cmp)=>{const better=cmp==null?-1:cmp>0?0:cmp<0?1:-1;
+    return'<div class="tp-row"><b class="'+(better===0?'up':'')+'">'+a+'</b><span>'+k+'</span><b class="'+(better===1?'up':'')+'">'+b+'</b></div>'};
+  const h=F.h2h,h2=h[0]+h[1]?(h[0]>h[1]?'You lead '+h[0]+'–'+h[1]:h[1]>h[0]?B.name.split(' ').pop()+' leads '+h[1]+'–'+h[0]:'Level at '+h[0]+'–'+h[1]):'First meeting';
+  return'<p class="eyebrow">'+esc(M.cfg.label||'')+'</p><h3>Tale of the tape</h3>'+
+    '<div class="tp-head"><span>'+esc(A.name)+'<small>'+esc(A.nat||'You')+'</small></span><i>vs</i><span>'+esc(B.name)+'<small>'+esc(B.nat||'')+'</small></span></div>'+
+    r(F.label+' rank',A.rank?'#'+A.rank:'–',B.rank?'#'+B.rank:'–',A.rank&&B.rank?B.rank-A.rank:null)+
+    r('Age',A.age,B.age)+r('Height',fmtHeight(A.ht).split(' (')[0],fmtHeight(B.ht).split(' (')[0])+r('Plays',A.plays.split('-')[0],B.plays.split('-')[0])+r('Style',A.style,B.style)+
+    r('Rating',A.rating.toFixed(1),B.rating.toFixed(1),A.rating-B.rating)+r('Record',A.w+'–'+A.l,B.w+'–'+B.l,(A.w/Math.max(1,A.w+A.l))-(B.w/Math.max(1,B.w+B.l)))+
+    r('Titles',A.t,B.t,A.t-B.t)+r('Aces',A.ace,B.ace,A.ace-B.ace)+
+    '<p class="tp-h2h">Head to head · <b>'+h2+'</b></p><small>Tap to play</small>'}
+/* where the tunnels are (set by the court builder) and the path from each one to the baseline */
+function walkLegs(i){const T0=(W3.tunnels||{})[i?'op':'me']||{x:i?-9:9,z:i?-7:7,nx:i?1:-1,nz:0},end=toW(i?-0.3:0.3,i?1.08:-0.05);
+  return[{x:T0.x-T0.nx*1.5,z:T0.z-T0.nz*1.5},{x:T0.x+T0.nx*1.6,z:T0.z+T0.nz*1.6},{x:end.x,z:end.z}]}
+function startWalkout(){const F=walkFacts();WALK.on=true;WALK.t=0;WALK.F=F;WALK.cam=null;M.state='walkout';M.lock=true;
+  document.querySelector('#match .hud.top').style.visibility='hidden';document.querySelector('#match .hud.bot').style.visibility='hidden';
+  $('walk').hidden=false;$('walkSkip').hidden=false;$('tape').hidden=true;$('walkCard').hidden=true;W3.ball.visible=W3.bshadow.visible=false;
+  for(const i of [0,1]){const L=walkLegs(i);P[i].pos.set(L[0].x,0,L[0].z);P[i].yaw=i?0:Math.PI;P[i].yawOff=0;P[i].runW=0;M.mv[i]={x:L[0].x,z:L[0].z,v:0,vz:0}}
+  P[0].stroll=P[1].stroll=true;WALK.walker=[null,null];
+  if(!WALK.light){WALK.light=new T.SpotLight(0xFFF0DC,0,24,0.42,0.75,1);W3.scene.add(WALK.light);W3.scene.add(WALK.light.target)}WALK.light.intensity=0;WALK.light.visible=true;   // a soft follow-spot on whoever is walking
+  walkPhase(1)}
+/* one player's entrance: the opponent first, then you */
+function walkPhase(i){if(!WALK.on)return;WALK.phase='walk';WALK.who=i;WALK.walker[i]={legs:walkLegs(i),k:1,arrived:false};WALK.cam=null;
+  const F=WALK.F,myT=++WALK.tok;
+  after(()=>{if(WALK.tok===myT)walkCaption(F,i)},700);
+  after(()=>{if(WALK.tok!==myT)return;sndApplause(i?0.75:1);if(!i)after(()=>sndCrowdVoice('cheer',0.9),400);speak(announce(F,i),{rate:0.95})},900)}
+WALK.tok=0;
+function walkArrived(i){if(!WALK.on||WALK.who!==i)return;const myT=WALK.tok;after(()=>{if(WALK.tok!==myT||!WALK.on)return;$('walkCard').hidden=true;if(i)walkPhase(0);else walkTape()},900)}
+function walkTape(){if(!WALK.on)return;WALK.tok++;WALK.phase='tape';WALK.who=-1;WALK.tt=0;WALK.cam=null;$('walkCard').hidden=true;$('walkSkip').hidden=true;
+  for(const i of [0,1]){const L=walkLegs(i),e=L[L.length-1];P[i].pos.set(e.x,0,e.z);M.mv[i]={x:e.x,z:e.z,v:0,vz:0};WALK.walker[i]=null}
+  const el=$('tape');el.innerHTML=tapeHtml(WALK.F);el.hidden=false;el.classList.remove('in');void el.offsetWidth;el.classList.add('in');
+  const myT=WALK.tok;after(()=>{if(WALK.tok===myT)endWalkout()},12000)}
+function endWalkout(){if(!WALK.on)return;WALK.on=false;WALK.tok++;$('walk').hidden=true;$('tape').hidden=true;$('walkCard').hidden=true;
+  document.querySelector('#match .hud.top').style.visibility='';document.querySelector('#match .hud.bot').style.visibility='';
+  P[0].yaw=Math.PI;P[1].yaw=0;P[0].stroll=P[1].stroll=false;if(WALK.light)WALK.light.intensity=0;M.lock=false;M.state='between';if(M.cfg.intro)say(M.cfg.intro);after(nextPoint,700)}
+/* tap: skip the entrances, or start the match from the tale of the tape */
+function walkTap(){if(!WALK.on)return;if(WALK.phase==='tape')endWalkout();else walkTape()}
+/* per frame while walking: move the walker along the path, face where they're going, then turn to the net */
+function walkTick(dt){if(!WALK.on)return;WALK.t+=dt;const SPD=1.45;
+  for(const i of [0,1]){const w=WALK.walker[i],pl=P[i],face=i?0:Math.PI;M.mv[i].v=0;M.mv[i].vz=0;
+    if(w&&!w.arrived){const tg=w.legs[w.k],dx=tg.x-pl.pos.x,dz=tg.z-pl.pos.z,d=Math.hypot(dx,dz),step=SPD*dt;
+      if(d<=step){pl.pos.set(tg.x,0,tg.z);w.k++;if(w.k>=w.legs.length){w.arrived=true;walkArrived(i)}}
+      else{pl.pos.x+=dx/d*step;pl.pos.z+=dz/d*step;const want=Math.atan2(dx,dz);let dy=want-pl.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));pl.yaw+=dy*Math.min(1,dt*6);M.mv[i].vz=i?SPD:-SPD}}
+    else{let dy=face-pl.yaw;dy=Math.atan2(Math.sin(dy),Math.cos(dy));pl.yaw+=dy*Math.min(1,dt*4)}
+    pl.yawOff=0;pl.runW=0;M.mv[i].x=pl.pos.x;M.mv[i].z=pl.pos.z}
+  W3.ball.visible=W3.bshadow.visible=false;
+  const L=WALK.light;if(L){const on=WALK.phase==='walk'&&WALK.who>=0,pl=on?P[WALK.who]:null;L.intensity+=((on?38:0)-L.intensity)*Math.min(1,dt*2.5);
+    if(pl){const c=W3.cam.position;L.position.set(pl.pos.x+(c.x-pl.pos.x)*0.6,7.5,pl.pos.z+(c.z-pl.pos.z)*0.6);L.target.position.set(pl.pos.x,0.9,pl.pos.z)}}}
+/* the camera walks backwards in front of the player, a little to one side, at eye height */
+function walkCam(dt){if(!WALK.on)return false;
+  if(WALK.phase==='tape'){const a=0.85+WALK.tt*0.045,Dm=W3.dims||{xS:9,zF:18};WALK.tt+=dt;const tp=new T.Vector3(Math.sin(a)*(Dm.xS-1.3),5.6,Math.cos(a)*(Dm.zF-2.2)),tl=new T.Vector3(0,0.6,0);   // a slow crane around the court behind the card
+    if(!WALK.cam)WALK.cam={p:tp.clone(),l:tl.clone()};const k=Math.min(1,dt*1.5);WALK.cam.p.lerp(tp,k);WALK.cam.l.lerp(tl,k);W3.cam.position.copy(WALK.cam.p);W3.cam.lookAt(WALK.cam.l);W3.camPos.copy(WALK.cam.p);W3.camLook.copy(WALK.cam.l);return true}
+  if(WALK.phase!=='walk'||WALK.who<0)return false;const i=WALK.who,w=WALK.walker[i],pl=P[i];if(!w)return false;
+  const tg=w.legs[Math.min(w.k,w.legs.length-1)],dx=tg.x-pl.pos.x,dz=tg.z-pl.pos.z,d=Math.hypot(dx,dz)||1;let ux=dx/d,uz=dz/d;
+  if(w.arrived){ux=0;uz=i?1:-1}
+  const tp=new T.Vector3(pl.pos.x+ux*5.4-uz*1.6,1.75,pl.pos.z+uz*5.4+ux*1.6),tl=new T.Vector3(pl.pos.x,0.7,pl.pos.z);
+  if(!WALK.cam){WALK.cam={p:tp.clone(),l:tl.clone()}}const k=Math.min(1,dt*2.2);WALK.cam.p.lerp(tp,k);WALK.cam.l.lerp(tl,k);
+  W3.cam.position.copy(WALK.cam.p);W3.cam.lookAt(WALK.cam.l);W3.camPos.copy(WALK.cam.p);W3.camLook.copy(WALK.cam.l);return true}
+$('walk').onclick=e=>{e.stopPropagation();walkTap()};
+
 for(const ev of ['pointerdown','touchend','click','keydown'])document.addEventListener(ev,sndResume,{passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SND.ctx&&SND.ctx.state!=='running')SND.ctx.resume().catch(()=>{});if(SND.tag){if(document.hidden)SND.tag.pause();else if(SND.on)SND.tag.play().catch(()=>{})}});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{doServe:a=>doServe(a),cordShot:(...a)=>cordShot(...a),tryLet:(...a)=>tryLet(...a),lineMargin:(...a)=>lineMargin(...a),startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},setWindXZ:(x,z)=>{WIND={x,z}},get chal(){return M&&M.chal},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},get RECS(){return RECS},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{get WALK(){return WALK},walkTap:()=>walkTap(),doServe:a=>doServe(a),cordShot:(...a)=>cordShot(...a),tryLet:(...a)=>tryLet(...a),lineMargin:(...a)=>lineMargin(...a),startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},setWindXZ:(x,z)=>{WIND={x,z}},get chal(){return M&&M.chal},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},get RECS(){return RECS},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
 </script>

@@ -360,7 +360,7 @@ function playNext(){
   if(!save.cur.opp)makeOpp();store();
   const c=save.cur,f=fmt(save.stage,c.ev);
   const mr=c.round-c.qual,night=nightFor(c.ev,c.total-c.round),weather=weatherFor({ev:c.ev},night);
-  startMatch({mode:'career',meV:save.v||null,meLefty:!!save.lefty,night,weather,final:c.round===c.total,ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:careerStats(),fat:save.fat||0,ofat:mr>1?clamp(rnd(0.02,0.06)*(mr-1),0,0.22):0,meId:save.char,me:myName(),opp:c.opp,style:save.style,perks:perkLevel(),
+  startMatch({mode:'career',meV:save.v||null,meLefty:!!save.lefty,night,weather,final:c.round===c.total,walkout:walkoutWanted(c.ev,c.round,c.total,c.qual,c.opp),ev:c.ev,stage:save.stage,college:save.college,surf:c.ev.surf,bo:f.bo,g:f.g,stats:careerStats(),fat:save.fat||0,ofat:mr>1?clamp(rnd(0.02,0.06)*(mr-1),0,0.22):0,meId:save.char,me:myName(),opp:c.opp,style:save.style,perks:perkLevel(),
     label:c.ev.n+' · '+roundName(c.round,c.total,c.qual),intro:c.opp.line?c.opp.name+': “'+c.opp.line+'”':null,onEnd:careerResult});
 }
 const SHORT={Semifinal:'SF',Quarterfinal:'QF','Round of 16':'R16','Round of 32':'R32','Round of 64':'R64'};
@@ -755,7 +755,7 @@ class Player{
       this.blend(q,h,qb,hb,this.wLoco)}
     if(this.react){this.react.t+=dt;const r=this.react,w=Math.min(1,r.t/0.2,(r.dur-r.t)/0.3);if(r.t>=r.dur)this.react=null;else if(this.sample(r.name,r.t,qb,hb,false))this.blend(q,h,qb,hb,clamp(w,0,1))}
     // stroke parameters: swing keys, or the ready position; blended in, and eased back to ready after the finish
-    let P=null,wT=0,wA=0,u=0;const base=this.react?0:(1-0.55*this.wLoco)*(this.relax?0.5:1);
+    let P=null,wT=0,wA=0,u=0;const base=this.react?0:(1-0.55*this.wLoco)*(this.stroll?0.22:this.relax?0.5:1);   // stroll: the walk-on, racket carried loosely
     if(this.swing){const s=this.swing,S=SWINGS[s.type];s.t+=dt;u=s.t/S.dur;
       if(u>=1){this.post={P:this.lastP||READYS,t:0};this.swing=null}
       else{let Pk=sampleSwing(S,u);if(s.yo){const bell=Math.sin(Math.PI*clamp(u,0,1));Pk.hand[1]+=s.yo*bell;Pk.L[1]+=s.yo*bell*0.6}const wi=s.type==='sv'?1:Math.min(1,u/0.08);if(wi<1)Pk=mixP(READYS,Pk,wi);P=Pk;this.lastP=Pk;wT=1;wA=1}}
@@ -776,7 +776,7 @@ class Player{
       if(st.clay&&sA>0.45&&W3.venue){this._dust=(this._dust||0)-dt;if(this._dust<=0){this._dust=0.06;const lf=this.bones[this.legs[j][2]];if(lf){const wp=lf.getWorldPosition(new T.Vector3());puff(wp.x,wp.z,'clay',3+sA*3)}}}}
     if(!this.swing&&this.str){if(this.str.a>0.7)this.land=0.25;this.str=null}
     // posture: low and wide, deeper as a stroke loads, extending up through contact
-    let dT=this.react?0.1:this.relax?0.45:1;
+    let dT=this.react?0.1:this.stroll?0.05:this.relax?0.45:1;
     if(this.swing){const S=SWINGS[this.swing.type],sm=x=>x*x*(3-2*x);
       if(this.swing.type==='sm')dT=u<0.44?0.7+0.6*sm(clamp(u/0.44,0,1)):u<0.6?1.3-1.15*sm((u-0.44)/0.16):0.15+0.65*sm(clamp((u-0.6)/0.4,0,1));
       else if(this.swing.type==='sv')dT=u<0.52?0.4+0.9*sm(clamp(u/0.52,0,1)):u<0.66?1.3-1.2*sm((u-0.52)/0.14):0.1+0.5*sm(clamp((u-0.66)/0.34,0,1));
@@ -991,6 +991,7 @@ function beginMatch(cfg){
   renderBoard();{const O=OSTYLE[M.ostyle],cs=conditionsSay(cfg);say((cfg.intro||(cfg.opp.name+' plays a '+O.name+' game. '+O.tip))+(cs?' '+cs:''))}
   REP.setsN=1;REP.lastPt=-9;REP.buf=[];perfReset();W3.camPos.set(0,4,22);
   if(cfg.drill){drillBegin(cfg);return}
+  if(cfg.walkout&&!cfg.resume){after(startWalkout,350);return}
   after(nextPoint,cfg.intro?2600:1100);
 }
 function ptLabel(i){const a=M.pts[i],b=M.pts[1-i];if(M.tb)return String(a);if(a>=3&&b>=3)return a===b?'40':a>b?'AD':'40';return['0','15','30','40'][Math.min(a,3)]}
@@ -1316,13 +1317,14 @@ function loop(t){
   crowdTick(dtr);sndAmbience(!!M&&['op','me','oppServing','serving'].includes(M.state));
   if(window.__POSE&&P[0]){if(window.__STR!==undefined)P[0].str=window.__STR;const Q=window.__POSE,S=SWINGS[Q.type];P[0].swing={type:Q.type,t:Q.u*S.dur-dt};P[0].post=null;if(Q.type==='sv'&&Q.u<0.38){P[0].tossR=null}}
   if(P[0]){P[0].serveReady=!!M&&M.state==='serveMe';P[1].serveReady=!!M&&M.state==='oppServe'}
-  const rlx=!M||M.state==='between';P[0].relax=rlx;P[1].relax=rlx||(M&&(M.state==='serveMe'));
+  const rlx=!M||M.state==='between'||M.state==='walkout';P[0].relax=rlx;P[1].relax=rlx||(M&&(M.state==='serveMe'));
   P[0].update(dt,1,M?M.mv[0].v:0,M?M.mv[0].vz:0);P[1].update(dt,-1,M?M.mv[1].v:0,M?M.mv[1].vz:0);
   ceremonyTick(dtr);advTick(dtr);camera(dtr);fxTick(dt);if(M&&!window.__FREEZE)recordFrame();
   W3.r.render(W3.scene,W3.cam);
 }
 function swingFor(pl,side,tHit,hz){const S=SWINGS[side];if(!pl.swing&&now()>=tHit-S.dur*S.cf*1000){const yo=yoFor(side,hz);const off=Math.max(0,(now()-(tHit-S.dur*S.cf*1000))/1000);pl.startSwing(side,Math.min(off,S.dur*S.cf),yo)}}
 function step(dt){
+  if(M.state==='walkout'){walkTick(dt);return}
   const t=now(),sh=M.shot;let p=0;
   if(sh){p=(t-M.t0)/1000/sh.T;
     if(sh.r&&p<1.4){const tt=p*sh.T,lt=sh._lt||0;for(const b of sh.r.bounces)if(b.t>lt&&b.t<=tt){sndBounce(-b.vy,b.x,b.z);if(W3.venue){puff(b.x,b.z,W3.venue.surf,-b.vy);ballMark(b.x,b.z,Math.atan2(b.x-sh.S[0],b.z-sh.S[2]))}}if(sh.r.net&&sh.r.net.t>lt&&sh.r.net.t<=tt){if(sh.r.cord)sndCord();else sndNet()}if(sh.r.cord&&!sh.r.net&&sh.r.cord.t>lt&&sh.r.cord.t<=tt){sndCord();if(!sh.serve&&sh.type!=='serve'&&!M.drill){sndCrowdVoice('ooh',0.55);say('Net cord! It trickles over.')}}sh._lt=tt}
@@ -1394,6 +1396,7 @@ function step(dt){
 }
 function camera(dt){
   if(CER.on&&ceremonyCam())return;
+  if(WALK.on&&walkCam(dt))return;
   if(window.__CAM){const c=window.__CAM,me=P[0].pos;W3.cam.position.set(me.x+c[0],c[1],me.z+c[2]);W3.cam.lookAt(me.x,c[3],me.z);return}
   // three views (Game settings): behind your baseline, a higher TV broadcast view, or close behind you
   const me=P[0].pos,cm=TUNE.cam||'baseline';let tp,tl;
@@ -1413,9 +1416,10 @@ function camera(dt){
 /*@MOMENTS*/
 /*@SEASON*/
 /*@HAWK*/
+/*@WALK*/
 for(const ev of ['pointerdown','touchend','click','keydown'])document.addEventListener(ev,sndResume,{passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SND.ctx&&SND.ctx.state!=='running')SND.ctx.resume().catch(()=>{});if(SND.tag){if(document.hidden)SND.tag.pause();else if(SND.on)SND.tag.play().catch(()=>{})}});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{doServe:a=>doServe(a),cordShot:(...a)=>cordShot(...a),tryLet:(...a)=>tryLet(...a),lineMargin:(...a)=>lineMargin(...a),startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},setWindXZ:(x,z)=>{WIND={x,z}},get chal(){return M&&M.chal},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},get RECS(){return RECS},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{get WALK(){return WALK},walkTap:()=>walkTap(),doServe:a=>doServe(a),cordShot:(...a)=>cordShot(...a),tryLet:(...a)=>tryLet(...a),lineMargin:(...a)=>lineMargin(...a),startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},setWindXZ:(x,z)=>{WIND={x,z}},get chal(){return M&&M.chal},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},get RECS(){return RECS},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();

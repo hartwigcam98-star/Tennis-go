@@ -101,6 +101,20 @@ function boardWall(G,V,P,h,off){
   G.add(new T.Mesh(g,new T.MeshLambertMaterial({map:tex,side:T.DoubleSide})))
 }
 /* the radar-gun speed board: a dark LED panel that lights up with the speed of every serve */
+/* a players' tunnel set into the end wall: a dark mouth that fades back into shadow, a framed opening and a sign */
+/* a players' tunnel set into a side wall: a dark mouth that fades back into shadow, a framed opening, a sign and a
+   pool of warm light on the floor. ry turns it to face the court; n is the direction it faces, t runs along the wall */
+function playerTunnel(G,V,x,z,ry,wallH,fence){const w=2.0,h=Math.min(wallH-0.32,1.95),n={x:Math.sin(ry),z:Math.cos(ry)},t={x:Math.cos(ry),z:-Math.sin(ry)};
+  const at=(along,out)=>[x+t.x*along+n.x*out,z+t.z*along+n.z*out];
+  const mouth=canvasTex(256,256,(g,cw,ch)=>{const gr=g.createLinearGradient(0,0,0,ch);gr.addColorStop(0,'#0E1116');gr.addColorStop(0.55,'#05070A');gr.addColorStop(1,'#1A1E24');g.fillStyle=gr;g.fillRect(0,0,cw,ch);
+    const rg=g.createRadialGradient(cw/2,ch*0.95,4,cw/2,ch*0.95,cw*0.7);rg.addColorStop(0,'rgba(255,214,150,0.25)');rg.addColorStop(1,'rgba(255,214,150,0)');g.fillStyle=rg;g.fillRect(0,0,cw,ch);   // warm light from inside
+    g.fillStyle='rgba(255,255,255,0.05)';for(let i=1;i<6;i++)g.fillRect(0,ch*0.18*i,cw,1)});
+  {const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({map:mouth}));const p=at(0,0.04);m.position.set(p[0],h/2,p[1]);m.rotation.y=ry;G.add(m)}
+  const fm=new T.MeshStandardMaterial({color:fence?0x2A3036:shade(V.wall,0.55),metalness:0.35,roughness:0.5});
+  for(const [al,dy,bw,bh] of [[-w/2-0.07,h/2+0.035,0.14,h+0.07],[w/2+0.07,h/2+0.035,0.14,h+0.07],[0,h+0.07,w+0.28,0.14]]){const b=new T.Mesh(new T.BoxGeometry(bw,bh,0.16),fm);const p=at(al,0.08);b.position.set(p[0],dy,p[1]);b.rotation.y=ry;G.add(b)}
+  {const p=at(0,0.07);textPlane(G,'PLAYERS',1.3,0.24,0xF4F1E6,0x101418,p[0],Math.min(h+0.32,wallH-0.14),p[1],ry)}
+  {const gl=new T.Mesh(new T.PlaneGeometry(w*0.9,1.1),new T.MeshBasicMaterial({color:0xFFE2B0,transparent:true,opacity:0.09,depthWrite:false}));gl.rotation.order='YXZ';gl.rotation.y=ry;gl.rotation.x=-Math.PI/2;const p=at(0,0.6);gl.position.set(p[0],0.008,p[1]);G.add(gl)}
+  return{x,z,nx:n.x,nz:n.z}}
 function radarBoard(G,x,y,z,ry,w,h){const c=document.createElement('canvas');c.width=512;c.height=Math.round(512*h/w);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;
   const fr=new T.Mesh(new T.BoxGeometry(w+0.12,h+0.12,0.06),new T.MeshLambertMaterial({color:0x15181C}));fr.position.set(x,y,z);fr.rotation.y=ry;G.add(fr);
   const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({map:t,toneMapped:false}));m.position.set(x+Math.sin(ry)*0.035,y,z+Math.cos(ry)*0.035);m.rotation.y=ry;G.add(m);
@@ -174,7 +188,7 @@ function buildCourt(surf,cfg){
   const V=W3.venue=venueFor(Object.assign({},cfg||{},{surf}));venueLight(V);
   const hz=CL/2,people=[];
   const stadium=V.kind==='tour'||V.kind==='major';
-  const xS=stadium?(V.kind==='major'?10.2:9.7):V.kind==='college'?9.2:8.9,zF=stadium?(V.kind==='major'?18.6:18.3):18.3;
+  const xS=stadium?(V.kind==='major'?10.2:9.7):V.kind==='college'?9.2:8.9,zF=stadium?(V.kind==='major'?18.6:18.3):18.3;W3.dims={xS,zF};
   // ground: the painted surface inside the walls, plain ground outside
   const outer=new T.PlaneGeometry(260,260);outer.rotateX(-Math.PI/2);
   {const om=new T.Mesh(outer,new T.MeshLambertMaterial({color:stadium?shade(V.wall,0.8):0x5C8A45}));om.position.y=-0.02;G.add(om)}
@@ -207,13 +221,14 @@ function buildCourt(surf,cfg){
     {const wh=V.kind==='major'?2.4:2.2;textPlane(G,V.title,17.4,wh,0xF4F1E6,V.wall,0,wh/2,-zF+0.03,0,null,0.42)}
     umpireChair(G,V,-(postX+0.9),people);
     {const wh=V.kind==='major'?2.4:2.2;radarBoard(G,5.6,wh*0.5,-zF+0.07,0,2.9,wh*0.62);radarBoard(G,-5.6,wh*0.5,zF-0.07,Math.PI,2.9,wh*0.62)}   // speed panels set into the base of each end wall
+    {const wh=V.kind==='major'?2.4:2.2;W3.tunnels={op:playerTunnel(G,V,-xS,-7,Math.PI/2,wh),me:playerTunnel(G,V,xS,7,-Math.PI/2,wh)}}   // tunnels in the side walls
     // ball kids: two crouched at the net posts, two at the far corners
     for(const [x,z,yw] of[[postX+0.5,0.6,-Math.PI/2],[-(postX+0.4),-1.2,Math.PI/2],[-4.5,-(hz+4.6),0],[4.5,-(hz+4.6),0]])people.push({x,y:0.02,z,yaw:yw,ex:0.15,shirt:V.acc,staff:1});
     // line judges seated against the back wall
     if(V.kind==='major')for(const x of[-6.5,6.5])people.push({x,y:0.45,z:-(zF-0.6),yaw:0,ex:0,shirt:shade(V.wall,1.6),staff:1});
   }else{
     const club=V.kind==='club';
-    fenceRect(G,V,xS,zF,3.6,club?2.2:2.4,club?null:V.windText);
+    fenceRect(G,V,xS,zF,3.6,club?2.2:2.4,club?null:V.windText);W3.tunnels={op:playerTunnel(G,V,-xS,-7,Math.PI/2,club?2.2:2.4,true),me:playerTunnel(G,V,xS,7,-Math.PI/2,club?2.2:2.4,true)};
     if(club){neighbourCourt(G,V,-18.3,0);neighbourCourt(G,V,18.3,0);
       seats=seats.concat(bleacher(G,-(xS+1.4),-6,8,3,Math.PI/2,[]),bleacher(G,-2.5,-(zF-1.2),7,2,0,[]),bleacher(G,0,zF+1.3,6,2,Math.PI,[]));
       const tp=[];for(let i=0;i<46;i++){const a=Math.random()*Math.PI*2,r=34+Math.random()*16;tp.push([Math.cos(a)*r,Math.sin(a)*r*1.1-6])}trees(G,tp);
