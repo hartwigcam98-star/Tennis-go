@@ -296,7 +296,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 63 · pause-menu stats</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 64 · ball bounces and racket twirls</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -1247,6 +1247,7 @@ class Player{
     this.aH=mid?mid.position.clone().normalize():new T.Vector3(0,1,0);
     if(hand){const d=this.aH.clone();this.racket.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),d);
       if(mid)this.racket.position.copy(mid.position).multiplyScalar(0.55);this.racket.rotateY(Math.PI/2);hand.add(this.racket)}
+    this.rq0=this.racket.quaternion.clone();this.twirl=null;this.twT=2+Math.random()*3;this.bnc=null;
     this.loco={t:0,clip:'ready'};this.tReady=Math.random()*3;this.swing=null;this.react=null;this.wLoco=0;this.locoClip='walkR';
     this.pos=new T.Vector3();this.yaw=0;this.vx=0;this.prevX=null;
   }
@@ -1265,7 +1266,7 @@ class Player{
     for(let k=0;k<nb;k++){let d=0;for(let e=0;e<4;e++)d+=qa[k*4+e]*qb[k*4+e];const s=d<0?-1:1;let l=0;
       for(let e=0;e<4;e++){qa[k*4+e]=qa[k*4+e]*(1-w)+qb[k*4+e]*s*w;l+=qa[k*4+e]*qa[k*4+e]}l=Math.sqrt(l)||1;for(let e=0;e<4;e++)qa[k*4+e]/=l}
     ha[1]=ha[1]*(1-w)+hb[1]*w}
-  startSwing(type,offset,yo){this.swing={type,t:offset||0,yo:yo||0};sndSwing(this,type,offset);this.post=null;if(type==='sv'){this.tossR=null;this.tossC=null}}
+  startSwing(type,offset,yo){if(this.twirl){this.twirl=null;this.racket.quaternion.copy(this.rq0)}this.bnc=null;this.swing={type,t:offset||0,yo:yo||0};sndSwing(this,type,offset);this.post=null;if(type==='sv'){this.tossR=null;this.tossC=null}}
   startReact(name){const c=this.clips[name];if(c)this.react={name,t:0,dur:c.dur}}
   fk(q,h){const nb=this.nb,D=this.D,W=this.W,PP=this.PP,B=this.bones,v=this._v;
     for(let k=0;k<nb;k++){this.L[k].set(q[k*4],q[k*4+1],q[k*4+2],q[k*4+3]);const p=D.parent[k];
@@ -1329,6 +1330,14 @@ class Player{
   contactWorld(){const S=SWINGS.sv,k=S.keys.find(k=>Math.abs(k.t-S.cf)<1e-6),s=this.sz,r=V(...k.rd),hb=this.bones[0].position.y*0.985;
     const v=new T.Vector3(k.hand[0]*s+r.x*44*s,hb+(k.hand[1]-96)*s+r.y*44*s,k.hand[2]*s+r.z*44*s);
     const m=new T.Matrix4().makeRotationY(this.yaw+(this.lefty?-1:1)*(k.body||0)*Math.PI/180).scale(new T.Vector3((this.lefty?-1:1)*.01*PSCALE,.01*PSCALE,.01*PSCALE)).setPosition(this.pos.x,this.pos.y,this.pos.z);return v.applyMatrix4(m)}
+  /* pre-serve ritual: bounce the ball n times. Each bounce: the hand pushes down, the ball drops to the court beside the front foot and
+     comes back up into the hand. */
+  startBounces(n){this.bnc={t:0,n,per:0.62};this.bncG=null}
+  bounceBall(){const b=this.bnc;if(!b)return null;const k=Math.floor(b.t/b.per);if(k>=b.n)return null;const ph=(b.t-k*b.per)/b.per,rel=0.14,back=0.8;
+    if(ph<rel||ph>back)return null;const H=this.tossPos(0),r=0.034;if(!this.bncG||this.bncG.k!==k)this.bncG={k,x:H.x+Math.sin(this.yaw)*0.22,z:H.z+Math.cos(this.yaw)*0.22,hit:false};/* lands a little in front of the front foot */const G=this.bncG,s=(ph-rel)/(back-rel),down=0.42;
+    let y;if(s<down)y=H.y-(H.y-r)*Math.pow(s/down,2);else{const u=(s-down)/(1-down);y=r+(H.y-r)*(1-Math.pow(1-u,2));if(!G.hit){G.hit=true;if(this.onBounce)this.onBounce(G.x,G.z)}}
+    return new T.Vector3(G.x+(H.x-G.x)*0.2,y,G.z+(H.z-G.z)*0.2)}
+  heldBall(){return this.bounceBall()||this.tossPos(0)}
   tossPos(u){const rel=0.38,cf=SWINGS.sv.cf;this.root.updateMatrixWorld(true);
     if(u<rel||!this.tossR){const hb=this.bones[this.idx.LeftHand];const p=hb?hb.getWorldPosition(new T.Vector3()):this.pos.clone().setY(1);if(u>=rel){this.tossR=p.clone();this.tossC=this.contactWorld()}return p}
     const R=this.tossR,C=this.tossC,s=clamp((u-rel)/(cf-rel),0,1.3),peak=C.y+0.45,hA=peak-(R.y+C.y)/2;
@@ -1356,10 +1365,14 @@ class Player{
       if(u>=1){this.post={P:this.lastP||READYS,t:0};this.swing=null}
       else{let Pk=sampleSwing(S,u);if(s.yo){const bell=Math.sin(Math.PI*clamp(u,0,1));Pk.hand[1]+=s.yo*bell;Pk.L[1]+=s.yo*bell*0.6}const wi=s.type==='sv'?1:Math.min(1,u/0.08);if(wi<1)Pk=mixP(READYS,Pk,wi);P=Pk;this.lastP=Pk;wT=1;wA=1}}
     if(!P){if(this.post){this.post.t+=dt;const a=clamp(this.post.t/0.4,0,1),e=a*a*(3-2*a);P=mixP(this.post.P,READYS,e);wT=1-e;wA=Math.max(base,1-e);if(a>=1)this.post=null}
-      else if(this.serveReady){this._sv0=this._sv0||sampleSwing(SWINGS.sv,0);this.ssW=Math.min(1,(this.ssW||0)+dt*4);P=mixP(READYS,this._sv0,this.ssW);wT=1;wA=1}
+      else if(this.serveReady){this._sv0=this._sv0||sampleSwing(SWINGS.sv,0);this.ssW=Math.min(1,(this.ssW||0)+dt*4);P=mixP(READYS,this._sv0,this.ssW);wT=1;wA=1;
+        if(this.bnc){const b=this.bnc;b.t+=dt;const k=Math.floor(b.t/b.per);if(k>=b.n)this.bnc=null;else{const ph=(b.t-k*b.per)/b.per,push=ph<0.14?Math.sin(ph/0.14*Math.PI/2):ph<0.8?1-0.35*Math.sin((ph-0.14)/0.66*Math.PI):1-(ph-0.8)/0.2,dip=Math.sin(Math.PI*clamp(ph,0,1));
+          P=Object.assign({},P,{L:[P.L[0]+2,P.L[1]-24*push,P.L[2]+6*push],pitch:(P.pitch||0)+0.07*dip,hand:[P.hand[0],P.hand[1]-4*dip,P.hand[2]]});this.bncDip=dip}}}
       else{P=READYS;wT=0;wA=base}}
     if(this.trophyT!=null){P=trophyPose(this.trophyT);wT=1;wA=1}
-    if(!this.serveReady)this.ssW=0;
+    if(!this.serveReady){this.ssW=0;this.bnc=null}
+    // racket twirl: a full spin of the racket in the fingers while waiting
+    if(this.twirl){this.twirl.t+=dt;const a=clamp(this.twirl.t/this.twirl.dur,0,1),e=a<0.5?2*a*a:1-2*(1-a)*(1-a);this.racket.quaternion.copy(this.rq0).multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0,1,0),this.twirl.dir*Math.PI*2*this.twirl.turns*e));if(a>=1){this.twirl=null;this.racket.quaternion.copy(this.rq0)}}
     this.bodyYaw=(P.body||0)*Math.PI/180;
     // stretching for a wide ball: lead foot steps out, hips drop, body leans in, racket reaches; the free arm counterbalances
     let sA=0;this.footOff=null;
@@ -1372,7 +1385,7 @@ class Player{
       if(st.clay&&sA>0.45&&W3.venue){this._dust=(this._dust||0)-dt;if(this._dust<=0){this._dust=0.06;const lf=this.bones[this.legs[j][2]];if(lf){const wp=lf.getWorldPosition(new T.Vector3());puff(wp.x,wp.z,'clay',3+sA*3)}}}}
     if(!this.swing&&this.str){if(this.str.a>0.7)this.land=0.25;this.str=null}
     // posture: low and wide, deeper as a stroke loads, extending up through contact
-    let dT=this.react?0.1:this.stroll?0.05:this.relax?0.45:1;
+    let dT=this.react?0.1:this.stroll?0.05:this.relax?0.45:1;if(this.bnc&&this.serveReady)dT+=0.18*(this.bncDip||0);
     if(this.swing){const S=SWINGS[this.swing.type],sm=x=>x*x*(3-2*x);
       if(this.swing.type==='sm')dT=u<0.44?0.7+0.6*sm(clamp(u/0.44,0,1)):u<0.6?1.3-1.15*sm((u-0.44)/0.16):0.15+0.65*sm(clamp((u-0.6)/0.4,0,1));
       else if(this.swing.type==='sv')dT=u<0.52?0.4+0.9*sm(clamp(u/0.52,0,1)):u<0.66?1.3-1.2*sm((u-0.52)/0.14):0.1+0.5*sm(clamp((u-0.66)/0.34,0,1));
@@ -2186,7 +2199,7 @@ function startMatch(cfg){
   let got={};const done=()=>{if(!('me' in got&&'op' in got))return;
     for(const p of P)if(p)p.dispose(W3.scene);
     const mk2=(D,id,v)=>{try{return new Player(D||R3BOSS,!D||id==='boss',W3.scene,v)}catch(e){console.error(e);return new Player(R3BOSS,true,W3.scene)}};
-    P=[mk2(got.me,cfg.meId,cfg.meV),mk2(got.op,cfg.opp.id,cfg.opp.v)];P[0].lefty=!!cfg.meLefty;P[1].lefty=!!cfg.opp.lefty;
+    P=[mk2(got.me,cfg.meId,cfg.meV),mk2(got.op,cfg.opp.id,cfg.opp.v)];P[0].lefty=!!cfg.meLefty;P[1].lefty=!!cfg.opp.lefty;for(const pl of P)pl.onBounce=(x,z)=>sndBounce(4.5,x,z);
     $('loading').hidden=true;beginMatch(cfg)};
   loadChar(cfg.meId,D=>{got.me=D;done()});loadChar(cfg.opp.id,D=>{got.op=D;done()});
 }
@@ -2225,7 +2238,7 @@ function nextPoint(){
   M.lock=false;M.fault=false;M.oFault=false;M.shot=null;M.land=null;M.aim=null;M.commit=null;M.pending=null;M.rally=0;M.home=[{x:0,y:-0.05},{x:0,y:1.08}];W3.homeMark&&(W3.homeMark.visible=false);
   const d=side()==='deuce';
   if(M.server===0){M.me={x:d?0.4:-0.4,y:-0.05};M.op={x:d?-0.45:0.45,y:1.08};M.state='serveMe';say((M.tb?'Tiebreak. ':'')+'Your serve. Swipe up into the box.')}
-  else{M.op={x:d?-0.4:0.4,y:1.08};M.me={x:d?0.45:-0.45,y:-0.05};M.state='oppServe';say(M.cfg.opp.name+' to serve.');after(oppServeStart,900)}
+  else{M.op={x:d?-0.4:0.4,y:1.08};M.me={x:d?0.45:-0.45,y:-0.05};M.state='oppServe';say(M.cfg.opp.name+' to serve.');oppRitual(900)}
   M.mv[0]={x:M.me.x*HW,v:0,z:toW(0,-0.05).z,vz:0};M.mv[1]={x:M.op.x*HW,v:0,z:toW(0,1.08).z,vz:0};M.me.y=-0.05;M.op.y=1.08;P[0].pos.x=M.mv[0].x;P[1].pos.x=M.mv[1].x;P[0].runW=P[1].runW=0;saveLive();
 }
 function pointTo(w,text,call,kind){
@@ -2310,6 +2323,10 @@ function setReach(sh){fallbackHit(0,sh);if(!canReach(0,sh))sh.unreach=true;else 
 const SMH=1.95; // racket-centre height at smash contact
 function sideFor(who,hx,volley,smash){if(smash)return'sm';const L=P[who]&&P[who].lefty,f=who===0?(L?hx<0.12:hx>-0.12):(L?hx>-0.12:hx<0.12);return volley?(f?'fv':'bv'):(f?'fh':'bh')}
 function yoFor(side,hz){return(side==='fv'||side==='bv')?clamp(((hz||1.05)-1.05)/(0.01*PSCALE),-45,95):side==='sm'?clamp(((hz||SMH)-SMH)/(0.01*PSCALE),-40,40):0}
+/* the opponent's routine before serving: a few bounces of the ball (each player has a habit), then the serve */
+function oppBounceHabit(){const h=hashStr((M.cfg.opp.id||'')+M.cfg.opp.name);return h%9===0?5:1+h%3}
+function oppRitual(base){const hb=oppBounceHabit(),n=clamp(hb+(Math.random()<0.3?(Math.random()<0.5?-1:1):0),1,6),lead=base*0.45,tok=(M.ritTok=(M.ritTok||0)+1);
+  after(()=>{if(M&&M.state==='oppServe'&&M.ritTok===tok)P[1].startBounces(n)},lead);after(()=>{if(M&&M.ritTok===tok)oppServeStart()},lead+n*620+380)}
 function oppServeStart(){
   if(!M||M.state!=='oppServe')return;
   M.state='oppServing';P[1].startSwing('sv');M.serveT0=now();M.server_who=1;
@@ -2319,7 +2336,7 @@ function oppServeLaunch(){
   if(!M||M.state!=='oppServing')return;
   const s=M.os,d=side()==='deuce',lo=d?0:-1,hi=d?1:0,C=P[1].tossC||P[1].contactWorld(),from={x:C.x/HW,y:0.5-C.z/CL,z:C.y/ZS};
   const sec=!!M.oFault,O=OSTYLE[M.ostyle],mix=OSERVE[M.ostyle],q=Math.random(),oty=sec?(q<0.7?'kick':'slice'):q<mix[0]?'flat':q<mix[0]+mix[1]?'slice':'kick',OV=SVT[oty],spd=(31.2+s*2.64+O.serve+rnd(-2,2))*(0.92+0.08*M.en[1])*OV.spd*(sec?0.9:1);radarShow(spd,1,sec);fadeBadge();tire(1,0.006);onContact('op',C.clone?C.clone():toW(from.x,from.y,from.z),spd*0.8,false);sndShot({pw:Math.min(1.2,spd/45),kind:sec?'top':'serve',who:'op',x:C.x,z:C.z});
-  const oppFault=()=>{M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('FAULT');const go=()=>{say('Fault. Second serve.');M.oFault=true;M.shot=null;M.state='oppServe';after(oppServeStart,1000)};if(!(sh0&&sh0.hawk&&hawkFault(sh0,1,go)))go()},sh0.net?600:900)};let sh0=null;
+  const oppFault=()=>{M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('FAULT');const go=()=>{say('Fault. Second serve.');M.oFault=true;M.shot=null;M.state='oppServe';oppRitual(1000)};if(!(sh0&&sh0.hawk&&hawkFault(sh0,1,go)))go()},sh0.net?600:900)};let sh0=null;
   // first serves miss about a third of the time (less for better players); double faults only happen on the second
   if(!sec&&!M.drill&&Math.random()<clamp(0.4-s*0.022,0.18,0.4)){// a missed first serve that really is a fault: into the net, long or wide, checked so it never lands in the box
     const miss=()=>{const q=Math.random();return q<0.35?{x:(lo+hi)/2+rnd(-0.3,0.3),y:0.56}:q<0.7?{x:(lo+hi)/2+rnd(-0.3,0.3),y:rnd(0.12,0.17)}:{x:(Math.random()<0.5?lo-rnd(0.08,0.2):hi+rnd(0.08,0.2)),y:rnd(0.28,0.42)}};
@@ -2335,7 +2352,7 @@ function oppServeLaunch(){
   const by=0.24+Math.random()*0.1;
   let sh=null;for(let k=0;k<4;k++){sh=makeShot(from,{x:bx,y:by},spd*Math.pow(0.88,k),OV.w+k*70,{who:'op',serve:true,recv:null,ss:OV.ss*(P[1].lefty?-1:1)});sh.svType=oty;if(!sh.net&&sh.land.y>0.2&&sh.land.y<0.5)break}
   if(!M.drill&&!sh.net&&lineMargin(sh,true,false).d>0.02&&Math.random()<LET_P[sec?1:0]){const lt=tryLet(from,{x:bx,y:by},sh.speed,OV.w,{who:'op',serve:true,recv:null,ss:OV.ss*(P[1].lefty?-1:1)},false);
-    if(lt){M.shot=lt;M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('LET');say(sec?'Let. Still a second serve.':'Let. First serve again.');M.shot=null;M.state='oppServe';after(oppServeStart,1000)},Math.min(1500,lt.tb*1000+250));return}}
+    if(lt){M.shot=lt;M.t0=now();M.state='oppErr';after(()=>{if(!M||M.lock)return;callOut('LET');say(sec?'Let. Still a second serve.':'Let. First serve again.');M.shot=null;M.state='oppServe';oppRitual(1000)},Math.min(1500,lt.tb*1000+250));return}}
   M.shot=sh;
   sh.second=sec;{const inBox=judge(sh,true,false);if(!inBox){sh.err=true;if(!sec&&!M.drill){sh0=sh;oppFault();return}M.t0=now();M.state='oppErr';after(()=>pointTo(0,'Double fault from '+M.cfg.opp.name+'.','DOUBLE FAULT'),900);return}}
   setReach(M.shot);if(M.shot.unreach)M.shot.ace=true;
@@ -2554,6 +2571,11 @@ function step(dt){
       else if(!M.returns&&p>1.15){if(sh.type==='serve'){M.stat.aces++;pointTo(0,'Ace!','ACE')}else{M.stat.winners++;pointTo(0,'Winner!','WINNER','wn')}}
     }
   }
+  // little habits: you bounce the ball while lining up a serve; the receiver (and both, between points) twirls the racket
+  if(M.state!==M._ps){if(M.state==='serveMe')M.ritT=0.55;M._ps=M.state}
+  if(M.state==='serveMe'&&!M.drill){M.ritT-=dt;if(M.ritT<=0&&!P[0].bnc){const n=2+Math.floor(Math.random()*3);P[0].startBounces(n);M.ritT=n*0.62+4.5+Math.random()*2}}
+  for(let i=0;i<2;i++){const pl=P[i],ok=M.state==='between'||(i===1&&M.state==='serveMe')||(i===0&&M.state==='oppServe');
+    if(ok&&!pl.swing&&!pl.twirl){pl.twT-=dt;if(pl.twT<=0){pl.twirl={t:0,dur:0.42+Math.random()*0.18,turns:Math.random()<0.25?2:1,dir:Math.random()<0.5?-1:1};pl.twT=3.5+Math.random()*5}}}
   // players: accelerate and brake like people, side to side and up and back; the body ends up beside the ball
   const mv=M.mv,fixed=M.state==='serveMe'||M.state==='serving'||M.state==='oppServe'||M.state==='oppServing';
   const zMe=toW(0,-0.05).z,zOp=toW(0,1.08).z;
@@ -2577,8 +2599,8 @@ function step(dt){
   // ball
   let bw=null;
   if(M.state==='serving'||M.state==='oppServing'){const pl=M.state==='serving'?P[0]:P[1];bw=pl.swing&&pl.swing.type==='sv'?pl.tossPos(pl.swing.t/SWINGS.sv.dur):pl.tossPos(0)}
-  else if(M.state==='serveMe'){bw=P[0].tossPos(0)}
-  else if(M.state==='oppServe'){bw=P[1].tossPos(0)}
+  else if(M.state==='serveMe'){bw=P[0].heldBall()}
+  else if(M.state==='oppServe'){bw=P[1].heldBall()}
   else if(sh){const b=pos(sh,Math.min(p,1.3));bw=toW(b.x,b.y,b.z);bw.y+=0.075}
   {const tcl=M.state==='op'&&sh&&!sh.err&&!sh.unreach&&!M.commit?(M.t0+0.9*sh.T*1000-t)/1000:-1,on=tcl>=PERFECT[0]&&tcl<=PERFECT[1];
     W3.ball.material.emissive.setHex(on?0x9FE03A:0x4a5a10);W3.ball.material.emissiveIntensity=on?1.6:1}
