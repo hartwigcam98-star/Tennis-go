@@ -257,7 +257,7 @@ textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);borde
   <div class="hero">
     <p class="eyebrow">A tennis career on your phone</p>
     <h1>Tennis <span>Go</span></h1>
-    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 57 · your rating</p>
+    <p class="eyebrow" id="ver" style="color:var(--ball)">Build 58 · speed in the wall</p>
     <p class="muted">Pick a player, start in the juniors, earn a college scholarship, turn pro, and chase the four majors.</p>
   </div>
   <div class="card" id="liveCard" hidden>
@@ -1486,8 +1486,8 @@ function boardWall(G,V,P,h,off){
 }
 /* the radar-gun speed board: a dark LED panel that lights up with the speed of every serve */
 function radarBoard(G,x,y,z,ry,w,h){const c=document.createElement('canvas');c.width=512;c.height=Math.round(512*h/w);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;
-  const fr=new T.Mesh(new T.BoxGeometry(w+0.14,h+0.14,0.1),new T.MeshLambertMaterial({color:0x15181C}));fr.position.set(x,y,z);fr.rotation.y=ry;G.add(fr);
-  const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({map:t,toneMapped:false}));m.position.set(x+Math.sin(ry)*0.06,y,z+Math.cos(ry)*0.06);m.rotation.y=ry;G.add(m);
+  const fr=new T.Mesh(new T.BoxGeometry(w+0.12,h+0.12,0.06),new T.MeshLambertMaterial({color:0x15181C}));fr.position.set(x,y,z);fr.rotation.y=ry;G.add(fr);
+  const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({map:t,toneMapped:false}));m.position.set(x+Math.sin(ry)*0.035,y,z+Math.cos(ry)*0.035);m.rotation.y=ry;G.add(m);
   const b={c,t};W3.radar.push(b);drawRadar(b,null,'')}
 function drawRadar(b,mph,label){const g=b.c.getContext('2d'),w=b.c.width,h=b.c.height,amber='#FFB21E';
   g.fillStyle='#0A0C0F';g.fillRect(0,0,w,h);g.fillStyle='rgba(255,178,30,0.05)';for(let y=4;y<h;y+=8)for(let x=4;x<w;x+=8)g.fillRect(x,y,3,3);   // unlit LEDs
@@ -1496,9 +1496,9 @@ function drawRadar(b,mph,label){const g=b.c.getContext('2d'),w=b.c.width,h=b.c.h
   g.shadowColor=amber;g.shadowBlur=18;g.fillStyle=amber;g.textAlign='right';g.font='800 120px "Saira Condensed","Arial Narrow",sans-serif';g.fillText(mph==null?'---':String(Math.round(mph)),w*0.66,h*0.6);
   g.shadowBlur=8;g.textAlign='left';g.font='800 46px "Saira Condensed","Arial Narrow",sans-serif';g.fillText('MPH',w*0.69,h*0.52);
   g.font='700 30px "Saira Condensed","Arial Narrow",sans-serif';g.fillStyle='rgba(255,178,30,0.8)';g.fillText(mph==null?'':Math.round(mph*1.609)+' KM/H',w*0.69,h*0.8);g.shadowBlur=0;b.t.needsUpdate=true}
-function textPlane(G,txt,w,h,col,bg,x,y,z,ry,font){
+function textPlane(G,txt,w,h,col,bg,x,y,z,ry,font,fit){fit=fit||0.94;
   const tex=canvasTex(1024,Math.round(1024*h/w),(g,cw,ch)=>{if(bg!=null){g.fillStyle=hex(bg);g.fillRect(0,0,cw,ch)}g.fillStyle=hex(col);g.textAlign='center';g.textBaseline='middle';
-    let fs=ch*0.78;g.font='800 '+fs+'px "Saira Condensed","Arial Narrow",sans-serif';while(g.measureText(txt).width>cw*0.94&&fs>10){fs*=0.92;g.font='800 '+fs+'px "Saira Condensed","Arial Narrow",sans-serif'}g.fillText(txt,cw/2,ch*0.55)});
+    let fs=ch*0.78;g.font='800 '+fs+'px "Saira Condensed","Arial Narrow",sans-serif';while(g.measureText(txt).width>cw*fit&&fs>10){fs*=0.92;g.font='800 '+fs+'px "Saira Condensed","Arial Narrow",sans-serif'}g.fillText(txt,cw/2,ch*0.55)});
   const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({map:tex,transparent:bg==null,depthWrite:bg!=null}));m.position.set(x,y,z);m.rotation.y=ry||0;G.add(m);return m}
 /* chain-link fence with a windscreen along the bottom, around a rectangle */
 function fenceRect(G,V,xS,zF,h,wh,text){
@@ -1588,9 +1588,9 @@ function buildCourt(surf,cfg){
     const P=bowlPath(xS+0.3,zF+0.3,V.kind==='major'?7:5,zF+2);
     boardWall(G,V,P,V.kind==='major'?2.4:2.2,-0.3);
     const B=buildBowl(G,V,P,{rows:V.rows,rise:0.42,tread:0.85,y0:V.kind==='major'?2.4:2.2,brk:V.brk||0,gap:1.6});seats=B.seats;
-    {const wh=V.kind==='major'?2.4:2.2;textPlane(G,V.title,17.4,wh,0xF4F1E6,V.wall,0,wh/2,-zF+0.03,0)}
+    {const wh=V.kind==='major'?2.4:2.2;textPlane(G,V.title,17.4,wh,0xF4F1E6,V.wall,0,wh/2,-zF+0.03,0,null,0.42)}
     umpireChair(G,V,-(postX+0.9),people);
-    {const wh=V.kind==='major'?2.4:2.2;radarBoard(G,6.4,wh+0.85,-zF+0.05,0,3.2,1.3);radarBoard(G,-6.4,wh+0.85,zF-0.05,Math.PI,3.2,1.3)}   // speed boards above each end wall
+    {const wh=V.kind==='major'?2.4:2.2;radarBoard(G,5.6,wh*0.5,-zF+0.07,0,2.9,wh*0.62);radarBoard(G,-5.6,wh*0.5,zF-0.07,Math.PI,2.9,wh*0.62)}   // speed panels set into the base of each end wall
     // ball kids: two crouched at the net posts, two at the far corners
     for(const [x,z,yw] of[[postX+0.5,0.6,-Math.PI/2],[-(postX+0.4),-1.2,Math.PI/2],[-4.5,-(hz+4.6),0],[4.5,-(hz+4.6),0]])people.push({x,y:0.02,z,yaw:yw,ex:0.15,shirt:V.acc,staff:1});
     // line judges seated against the back wall
@@ -1607,7 +1607,7 @@ function buildCourt(surf,cfg){
       seats=seats.concat(bleacher(G,-(xS+1.3),-3,20,6,Math.PI/2,[]),bleacher(G,xS+1.3,-3,20,6,-Math.PI/2,[]),bleacher(G,0,-(zF+1.3),14,8,0,[]));
       const tp=[];for(let i=0;i<36;i++){const a=Math.random()*Math.PI*2,r=40+Math.random()*14;tp.push([Math.cos(a)*r,Math.sin(a)*r*1.1-8])}trees(G,tp);
       for(const [x,z] of[[-xS,-zF],[xS,-zF],[-xS,zF],[xS,zF]])lightPole(G,x,z,11);
-      textPlane(G,V.windText,6,0.9,V.acc,V.wind,0,3.9,-(zF+0.05),0);radarBoard(G,6,4.2,-(zF+0.08),0,2.8,1.14);radarBoard(G,-6,4.2,zF+0.08,Math.PI,2.8,1.14);
+      textPlane(G,V.windText,6,0.9,V.acc,V.wind,0,3.9,-(zF+0.05),0);radarBoard(G,5.2,1.25,-zF+0.07,0,2.6,1.4);radarBoard(G,-5.2,1.25,zF-0.07,Math.PI,2.6,1.4);
       umpireChair(G,V,-(postX+0.9),people);
     }
   }
