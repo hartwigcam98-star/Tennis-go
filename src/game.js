@@ -899,7 +899,10 @@ function makeShot(from,tgt,speed,w,o){
   WIND_K=0.8;let aim={x:tw.x,z:tw.z},v=launch(st,aim,speed,w,sf,o.lob);
   for(let k=0;k<5&&v.short;k++){speed*=1.15;v=launch(st,aim,speed,w,sf,o.lob)}  // too slow to get there: the player swings a bit harder
   if(SS||WIND.x||WIND.z)for(let k=0;k<3;k++){const q=simulate(st,v,w,sf,4,true).bounces[0];if(!q)break;aim.x+=tw.x-q.x;aim.z+=tw.z-q.z;v=launch(st,aim,speed,w,sf,o.lob)}  // aim off so the curve lands on target
-  WIND_K=1;const r=simulate(st,v,w,sf,5,false);SS=0;
+  WIND_K=1;let r=simulate(st,v,w,sf,5,false);
+  if(r.net&&(WIND.x||WIND.z)){v=launch(st,aim,speed,w,sf,o.lob);r=simulate(st,v,w,sf,5,false);   // wind nudges where a ball lands, but never drags a good shot into the net
+    if(r.net){WIND_K=0;v=launch(st,{x:tw.x,z:tw.z},speed,w,sf,o.lob);r=simulate(st,v,w,sf,5,false);WIND_K=1}}
+  SS=0;
   const toMe=tw.z>0,b=r.bounces[0];
   const sh=Object.assign({S:r.S,n:r.S.length/3,dt:PDT*SAMPLE,who:o.who,net:!!r.net,speed},o);
   if(b){sh.land={x:b.x/HW,y:0.5-b.z/CL};sh.tb=b.t}else{sh.land={x:tgt.x,y:tgt.y};sh.tb=r.T}
@@ -1367,6 +1370,6 @@ function camera(dt){
 for(const ev of ['pointerdown','touchend','click','keydown'])document.addEventListener(ev,sndResume,{passive:true});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&SND.ctx&&SND.ctx.state!=='running')SND.ctx.resume().catch(()=>{});if(SND.tag){if(document.hidden)SND.tag.pause();else if(SND.on)SND.tag.play().catch(()=>{})}});
 $('snd').textContent=SND.on?'Sound on':'Sound off';$('snd').onclick=()=>{sndResume();$('snd').textContent=sndToggle()?'Sound on':'Sound off'};
-window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},get chal(){return M&&M.chal},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},get RECS(){return RECS},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
+window.__TG={dbg:{startMatch:c=>startMatch(c),get GT(){return GT},endMatch:()=>endMatch(),get PROF(){return PROF},pointTo:(w,t,c,k)=>pointTo(w,t,c,k),nextPoint:()=>nextPoint(),startCeremony:f=>startCeremony(f),setWind:w=>{WIND={x:w,z:0}},setWindXZ:(x,z)=>{WIND={x,z}},get chal(){return M&&M.chal},get CER(){return CER},showStatCard:t=>showStatCard(t),startReplay,finalsMode,ageMods,myRating,simWinP,careerStats,get save(){return save},get SND(){return SND},get RECS(){return RECS},onContact,puff,REP,CLK,FX,slowMo,reachMargin,pressureOf,canReach,fallbackHit,scatter,aimFromSwipe,side,SURF},snd:{sndResume,sndHit,sndBounce,sndNet,sndApplause,sndCrowdVoice,umpireScore,crowdCheer,lineCall,get ctx(){return SND.ctx}},get M(){return M},P:()=>P,pos,W3:W3,makeShot,canReach,fallbackHit,oppHit:f=>oppHit(f),exec:()=>executeShot()};
 renderTitle();
 })();
